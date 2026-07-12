@@ -85,6 +85,51 @@ const EVAL_OPTIONS = [
 ];
 let selectedEvals = EVAL_OPTIONS.map(opt => opt.value);
 
+const CLASSROOM_OPTIONS = [
+  { value: "공A", label: "공A (제1공학관)" },
+  { value: "공B", label: "공B (제2공학관)" },
+  { value: "공C", label: "공C (제3공학관)" },
+  { value: "상본", label: "상본 (대우관 본관)" },
+  { value: "상별", label: "상별 (대우관 별관)" },
+  { value: "위", label: "위당관" },
+  { value: "외", label: "외솔관" },
+  { value: "경", label: "경영관" },
+  { value: "연", label: "연희관" },
+  { value: "과", label: "과학관" },
+  { value: "과S", label: "과학원" },
+  { value: "광", label: "광복관" },
+  { value: "광별", label: "광별 (광복관 별관)" },
+  { value: "음A", label: "음A (음악관 A)" },
+  { value: "음B", label: "음B (음악관 B)" },
+  { value: "삼", label: "삼성관" },
+  { value: "신", label: "원두우신학관" },
+  { value: "교", label: "교육과학관" },
+  { value: "간", label: "간호대학" },
+  { value: "의", label: "의과대학" },
+  { value: "치", label: "치과대학" },
+  { value: "백", label: "백양관" },
+  { value: "학", label: "학술정보관" },
+  { value: "중", label: "중앙도서관" },
+  { value: "체", label: "체육관" },
+  { value: "학회", label: "학생회관" },
+  { value: "대", label: "대강당" },
+  { value: "박", label: "백주년기념관" },
+  { value: "새", label: "새천년관" },
+  { value: "공원", label: "연세공학원" },
+  { value: "상남", label: "상남경영관" },
+  { value: "국", label: "국제학사" },
+  { value: "자A", label: "자A (자유관 A)" },
+  { value: "자B", label: "자B (자유관 B)" },
+  { value: "진A", label: "진A (진리관 A)" },
+  { value: "진B", label: "진B (진리관 B)" },
+  { value: "진C", label: "진C (진리관 C)" },
+  { value: "진D", label: "진D (진리관 D)" },
+  { value: "종", label: "종합관" },
+  { value: "언기", label: "언더우드기념도서관" },
+  { value: "온라인", label: "온라인/동영상" }
+];
+let selectedClassrooms = CLASSROOM_OPTIONS.map(opt => opt.value);
+
 // ─── localStorage TTL Cache ──────────────────────────────────────────────────
 // 브라우저 측 캐시: 백엔드 API 요청 자체를 생략해 응답 속도를 대폭 향상합니다.
 const LS_TTL = {
@@ -140,6 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCreditsMultiselect();
   initGradeMultiselect();
   initEvaluationMultiselect();
+  initRoomMultiselect();
   loadDataFromStorage();
   loadWishlist(); // Restore starred courses sandbox
   
@@ -385,6 +431,24 @@ function renderCourses(courses) {
       });
       if (!match) return false;
     } else if (selectedEvals.length === 0) {
+      return false;
+    }
+
+    // 5.5. Classroom (강의실) matching
+    if (selectedClassrooms.length > 0 && selectedClassrooms.length < CLASSROOM_OPTIONS.length) {
+      const roomStr = String(c.room || '').trim();
+      const isOnline = roomStr.includes("동영상") || roomStr.includes("콘텐츠") || roomStr.includes("온라인") || roomStr.includes("인터넷");
+      let match = false;
+      if (isOnline) {
+        match = selectedClassrooms.includes("온라인");
+      } else {
+        match = selectedClassrooms.some(val => {
+          if (val === "온라인") return false;
+          return roomStr.startsWith(val);
+        });
+      }
+      if (!match) return false;
+    } else if (selectedClassrooms.length === 0) {
       return false;
     }
 
@@ -1627,6 +1691,108 @@ function updateEvaluationSelection() {
   renderCourses(coursesData);
 }
 
+// 강의실 멀티셀렉트(체크박스 팝오버) 초기화 함수
+function initRoomMultiselect() {
+  const grid = document.querySelector('#room-popover .checkbox-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  CLASSROOM_OPTIONS.forEach(opt => {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '6px';
+    label.style.fontSize = '10px';
+    label.style.color = 'var(--text-primary)';
+    label.style.cursor = 'pointer';
+    label.style.padding = '2px 0';
+    label.style.userSelect = 'none';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = opt.value;
+    cb.checked = true;
+    cb.style.cursor = 'pointer';
+    cb.style.accentColor = 'var(--accent-light)';
+    cb.style.width = '12px';
+    cb.style.height = '12px';
+    
+    cb.addEventListener('change', () => {
+      updateRoomSelection();
+    });
+    
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(opt.label));
+    grid.appendChild(label);
+  });
+
+  const triggerBtn = document.getElementById('btn-room-trigger');
+  const popover = document.getElementById('room-popover');
+  
+  if (triggerBtn && popover) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popover.style.display === 'none' || popover.style.display === '';
+      popover.style.display = isHidden ? 'flex' : 'none';
+    });
+    
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+  }
+
+  document.getElementById('btn-room-select-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = true);
+    updateRoomSelection();
+  });
+  
+  document.getElementById('btn-room-reset')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = false);
+    updateRoomSelection();
+  });
+}
+
+function updateRoomSelection() {
+  const grid = document.querySelector('#room-popover .checkbox-grid');
+  if (!grid) return;
+  
+  const cbs = grid.querySelectorAll('input[type="checkbox"]');
+  selectedClassrooms = [];
+  cbs.forEach(cb => {
+    if (cb.checked) {
+      selectedClassrooms.push(cb.value);
+    }
+  });
+  
+  // Update trigger button label
+  const labelSpan = document.querySelector('#btn-room-trigger .trigger-label');
+  if (labelSpan) {
+    if (selectedClassrooms.length === CLASSROOM_OPTIONS.length) {
+      labelSpan.textContent = "전체";
+    } else if (selectedClassrooms.length === 0) {
+      labelSpan.textContent = "선택 없음";
+    } else if (selectedClassrooms.length <= 2) {
+      const names = selectedClassrooms.map(val => {
+        const found = CLASSROOM_OPTIONS.find(opt => opt.value === val);
+        return found ? found.value : val;
+      });
+      labelSpan.textContent = names.join(', ');
+    } else {
+      labelSpan.textContent = `선택됨 (${selectedClassrooms.length}개)`;
+    }
+  }
+  
+  // Re-render courses list
+  renderCourses(coursesData);
+}
+
 // Event Listeners setup
 function setupEventListeners() {
   // Search input typing filter
@@ -1678,6 +1844,16 @@ function setupEventListeners() {
     selectedEvals = EVAL_OPTIONS.map(opt => opt.value);
     const evalLabelSpan = document.querySelector('#btn-evaluation-trigger .trigger-label');
     if (evalLabelSpan) evalLabelSpan.textContent = "전체";
+
+    // Reset room multiselect checkboxes to all checked (default)
+    const roomGrid = document.querySelector('#room-popover .checkbox-grid');
+    if (roomGrid) {
+      const cbs = roomGrid.querySelectorAll('input[type="checkbox"]');
+      cbs.forEach(cb => cb.checked = true);
+    }
+    selectedClassrooms = CLASSROOM_OPTIONS.map(opt => opt.value);
+    const roomLabelSpan = document.querySelector('#btn-room-trigger .trigger-label');
+    if (roomLabelSpan) roomLabelSpan.textContent = "전체";
   }
 
   // College / Dept / Campus dropdowns change

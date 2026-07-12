@@ -120,32 +120,34 @@
           
           <!-- Sub-Tab 1: General Search -->
           <div class="search-tab-content active" id="search-general">
-            <div class="search-filters">
-              <div class="filter-group">
-                <label for="select-campus">캠퍼스</label>
-                <select id="select-campus">
-                  <option value="">전체 캠퍼스</option>
-                  <option value="S" selected>신촌캠퍼스</option>
-                  <option value="G">국제캠퍼스(송도)</option>
-                </select>
-              </div>
-              <div class="filter-group">
-                <label for="select-college">대학(원)</label>
-                <select id="select-college">
-                  <!-- Dynamically loaded -->
-                </select>
-              </div>
-              <div class="filter-group">
-                <label for="select-dept">개설학과</label>
-                <select id="select-dept">
-                  <!-- Dynamically loaded -->
-                </select>
-              </div>
-              <div class="filter-group">
-                <label for="input-search">과목명/교수명/과목코드</label>
-                <div class="search-input-wrapper">
-                  <input type="text" id="input-search" placeholder="검색어를 입력하세요...">
-                  <i data-lucide="search" class="input-icon"></i>
+            <div id="sidebar-filters-placeholder">
+              <div class="search-filters" id="search-filters-container">
+                <div class="filter-group">
+                  <label for="select-campus">캠퍼스</label>
+                  <select id="select-campus">
+                    <option value="">전체 캠퍼스</option>
+                    <option value="S" selected>신촌캠퍼스</option>
+                    <option value="G">국제캠퍼스(송도)</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="select-college">대학(원)</label>
+                  <select id="select-college">
+                    <!-- Dynamically loaded -->
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="select-dept">개설학과</label>
+                  <select id="select-dept">
+                    <!-- Dynamically loaded -->
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <label for="input-search">과목명/교수명/과목코드</label>
+                  <div class="search-input-wrapper">
+                    <input type="text" id="input-search" placeholder="검색어를 입력하세요...">
+                    <i data-lucide="search" class="input-icon"></i>
+                  </div>
                 </div>
               </div>
             </div>
@@ -187,57 +189,106 @@
         <!-- Tab 0 Content: Course Search Workspace -->
         <div class="tab-content" id="tab-search" style="display: none;">
           <div class="card glass-card search-workspace-card" style="margin-bottom: 0; min-height: 550px; display: flex; flex-direction: column;">
+            <!-- Horizontal Search Filter Bar -->
+            <div id="tab-filters-placeholder"></div>
+
             <!-- Horizontal Advanced Search Filter Bar -->
             <div class="advanced-search-bar" style="padding: 12px 18px; background: var(--canvas-soft); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 11px;">
               <span style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 14px;">
                 <i data-lucide="filter" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 상세 필터
               </span>
               
-              <!-- 이수구분 -->
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <!-- 이수구분 멀티셀렉트 -->
+              <div class="custom-multiselect" id="multiselect-classification" style="position: relative; display: flex; align-items: center; gap: 6px;">
                 <span style="color: var(--text-secondary); font-weight: 500;">이수구분</span>
-                <select id="select-filter-classification" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
-                  <option value="">전체</option>
-                  <option value="전필">전필 (전공필수)</option>
-                  <option value="전선">전선 (전공선택)</option>
-                  <option value="교필">교필 (교양필수)</option>
-                  <option value="교선">교선 (교양선택)</option>
-                  <option value="일교">일교 (일반교양)</option>
-                </select>
+                <button type="button" class="multiselect-trigger" id="btn-classification-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 120px; gap: 6px;">
+                  <span class="trigger-label">전체</span>
+                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                </button>
+                
+                <!-- Popover list -->
+                <div class="multiselect-popover" id="classification-popover" style="position: absolute; top: calc(100% + 4px); left: 60px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 280px; gap: 10px;">
+                  <!-- Action Buttons -->
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                    <button type="button" id="btn-class-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
+                    <button type="button" id="btn-class-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">초기화</button>
+                  </div>
+                  
+                  <!-- Checkbox Grid -->
+                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+                </div>
               </div>
 
               <!-- 학점 수 -->
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <!-- 학점 멀티셀렉트 -->
+              <div class="custom-multiselect" id="multiselect-credits" style="position: relative; display: flex; align-items: center; gap: 6px;">
                 <span style="color: var(--text-secondary); font-weight: 500;">학점</span>
-                <select id="select-filter-credits" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
-                  <option value="">전체</option>
-                  <option value="3">3학점</option>
-                  <option value="2">2학점</option>
-                  <option value="1">1학점</option>
-                </select>
+                <button type="button" class="multiselect-trigger" id="btn-credits-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
+                  <span class="trigger-label">전체</span>
+                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                </button>
+                
+                <!-- Popover list -->
+                <div class="multiselect-popover" id="credits-popover" style="position: absolute; top: calc(100% + 4px); left: 35px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 220px; gap: 10px;">
+                  <!-- Action Buttons -->
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                    <button type="button" id="btn-credits-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
+                    <button type="button" id="btn-credits-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">초기화</button>
+                  </div>
+                  
+                  <!-- Checkbox Grid -->
+                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+                </div>
               </div>
 
-              <!-- 대상학년 -->
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <!-- 학년 멀티셀렉트 -->
+              <div class="custom-multiselect" id="multiselect-grade" style="position: relative; display: flex; align-items: center; gap: 6px;">
                 <span style="color: var(--text-secondary); font-weight: 500;">학년</span>
-                <select id="select-filter-grade" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
-                  <option value="">전체</option>
-                  <option value="1">1학년</option>
-                  <option value="2">2학년</option>
-                  <option value="3">3학년</option>
-                  <option value="4">4학년</option>
-                </select>
+                <button type="button" class="multiselect-trigger" id="btn-grade-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
+                  <span class="trigger-label">전체</span>
+                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                </button>
+                
+                <!-- Popover list -->
+                <div class="multiselect-popover" id="grade-popover" style="position: absolute; top: calc(100% + 4px); left: 35px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 220px; gap: 10px;">
+                  <!-- Action Buttons -->
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                    <button type="button" id="btn-grade-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
+                    <button type="button" id="btn-grade-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">초기화</button>
+                  </div>
+                  
+                  <!-- Checkbox Grid -->
+                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+                </div>
               </div>
 
-              <!-- 평가방식 -->
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <!-- 평가 멀티셀렉트 -->
+              <div class="custom-multiselect" id="multiselect-evaluation" style="position: relative; display: flex; align-items: center; gap: 6px;">
                 <span style="color: var(--text-secondary); font-weight: 500;">평가</span>
-                <select id="select-filter-evaluation" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
-                  <option value="">전체</option>
-                  <option value="상대평가">상대평가</option>
-                  <option value="절대평가">절대평가</option>
-                  <option value="P/NP">P/NP (PF)</option>
-                </select>
+                <button type="button" class="multiselect-trigger" id="btn-evaluation-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
+                  <span class="trigger-label">전체</span>
+                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                </button>
+                
+                <!-- Popover list -->
+                <div class="multiselect-popover" id="evaluation-popover" style="position: absolute; top: calc(100% + 4px); left: 35px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 220px; gap: 10px;">
+                  <!-- Action Buttons -->
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                    <button type="button" id="btn-evaluation-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
+                    <button type="button" id="btn-evaluation-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">초기화</button>
+                  </div>
+                  
+                  <!-- Checkbox Grid -->
+                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                    <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+                </div>
               </div>
 
               <!-- 금공강 체크박스 -->
@@ -291,6 +342,16 @@
                 <div class="grid-cell day-header">금</div>
 
                 <!-- Time rows generated dynamically via JS -->
+              </div>
+            </div>
+            
+            <!-- Online Video-only Courses list -->
+            <div id="online-only-courses-container" style="margin-top: 15px; padding: 12px; border-top: 1px dashed var(--border-color); display: none;">
+              <h3 style="font-size: 11.5px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
+                <i data-lucide="video" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 시간표 외 인터넷/동영상 강좌
+              </h3>
+              <div id="online-only-courses-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <!-- Dynamically filled with badges -->
               </div>
             </div>
           </div>

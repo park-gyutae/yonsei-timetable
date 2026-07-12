@@ -49,8 +49,41 @@ async function loadPrecomputedCurves() {
 }
 
 // Map days to grid column indexes (column 1 is period labels, columns 2-6 are Mon-Fri)
-const DAY_MAP = { '월': 2, '화': 3, '수': 4, '목': 5, '금': 6 };
-const DAY_NAMES = { 2: '월', 3: '화', 4: '수', 5: '목', 6: '금' };
+const DAY_MAP = { '월': 2, '화': 3, '수': 4, '목': 5, '금': 6, '토': 7 };
+const DAY_NAMES = { 2: '월', 3: '화', 4: '수', 5: '목', 6: '금', 7: '토' };
+
+const YONSEI_CLASSIFICATIONS = [
+  "교기", "대교", "자율", "RC", "공기", "필교", "선교", "일반", "전기", "전선", 
+  "교직", "전필", "UICE", "CC", "ME", "MB", "MR", "전공", "공통", "선택", 
+  "학기", "학필", "계기", "학선"
+];
+let selectedClassifications = [...YONSEI_CLASSIFICATIONS];
+
+const CREDIT_OPTIONS = [
+  { value: "0", label: "0학점" },
+  { value: "0.5", label: "0.5학점" },
+  { value: "1", label: "1학점" },
+  { value: "2", label: "2학점" },
+  { value: "3", label: "3학점" },
+  { value: "4+", label: "4학점 이상" }
+];
+let selectedCredits = CREDIT_OPTIONS.map(opt => opt.value);
+
+const GRADE_OPTIONS = [
+  { value: "1", label: "1학년" },
+  { value: "2", label: "2학년" },
+  { value: "3", label: "3학년" },
+  { value: "4", label: "4학년" },
+  { value: "other", label: "기타" }
+];
+let selectedGrades = GRADE_OPTIONS.map(opt => opt.value);
+
+const EVAL_OPTIONS = [
+  { value: "상대평가", label: "상대평가" },
+  { value: "절대평가", label: "절대평가" },
+  { value: "P/NP", label: "P/NP (PF)" }
+];
+let selectedEvals = EVAL_OPTIONS.map(opt => opt.value);
 
 // ─── localStorage TTL Cache ──────────────────────────────────────────────────
 // 브라우저 측 캐시: 백엔드 API 요청 자체를 생략해 응답 속도를 대폭 향상합니다.
@@ -103,6 +136,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.documentElement.setAttribute('data-theme', activeTheme);
   
   initTimetableCalendar();
+  initClassificationMultiselect();
+  initCreditsMultiselect();
+  initGradeMultiselect();
+  initEvaluationMultiselect();
   loadDataFromStorage();
   loadWishlist(); // Restore starred courses sandbox
   
@@ -121,51 +158,100 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-// Generate timetable grid time labels (1 to 10 periods)
+// 특정 슬롯이 가상 동영상 슬롯(중복수강 가능)인지 체크하는 함수
+function isSlotVirtual(c, s) {
+  const specificRoom = getRoomForDay(c.time, c.room, s.day);
+  if (specificRoom) {
+    const cleanRoom = specificRoom.replace(/\s+/g, '');
+    if (cleanRoom.includes('동영상콘텐츠') || cleanRoom === '동영상' || cleanRoom.includes('동영상컨텐츠')) {
+      if (!cleanRoom.includes('중복수강불가')) {
+        return true; // 가상 동영상 슬롯 (시간표 미노출, 중복수강 가능)
+      }
+    }
+  }
+  return false;
+}
+
+// 시간표 범위(요일 및 최대 교시)를 동적으로 계산하는 함수
+function getActiveTimetableLimits() {
+  const activeDays = ['월', '화', '수', '목', '금'];
+  let maxPeriod = 10;
+  let hasSaturday = false;
+
+  selectedCourses.forEach(c => {
+    const slots = parseTimeSlots(c.time);
+    slots.forEach(s => {
+      if (!isSlotVirtual(c, s)) {
+        if (s.day === '토') {
+          hasSaturday = true;
+        }
+        if (s.period > maxPeriod) {
+          maxPeriod = s.period;
+        }
+      }
+    });
+  });
+
+  if (hasSaturday) {
+    activeDays.push('토');
+  }
+
+  return { activeDays, maxPeriod };
+}
+
+// Generate timetable grid dynamically based on active days and max period
 function initTimetableCalendar() {
   const calendar = document.getElementById('timetable-calendar');
-  
-  // Clear any existing period rows (keep headers)
-  const headers = calendar.querySelectorAll('.day-header');
+  if (!calendar) return;
+
+  const { activeDays, maxPeriod } = getActiveTimetableLimits();
+
+  // CSS Grid columns & rows 동적 적용
+  calendar.style.gridTemplateColumns = `60px repeat(${activeDays.length}, minmax(130px, 1fr))`;
+  calendar.style.gridTemplateRows = `40px repeat(${maxPeriod}, 50px)`;
+
   calendar.innerHTML = '';
-  headers.forEach(h => calendar.appendChild(h));
 
-  const periodTimes = [
-    { name: "1교시", time: "09:00" },
-    { name: "2교시", time: "10:00" },
-    { name: "3교시", time: "11:00" },
-    { name: "4교시", time: "12:00" },
-    { name: "5교시", time: "13:00" },
-    { name: "6교시", time: "14:00" },
-    { name: "7교시", time: "15:00" },
-    { name: "8교시", time: "16:00" },
-    { name: "9교시", time: "17:00" },
-    { name: "10교시", time: "18:00" }
-  ];
+  // Corner cell
+  const corner = document.createElement('div');
+  corner.className = 'grid-cell day-header corner-cell';
+  calendar.appendChild(corner);
 
-  // Draw empty cells for periods 1-10 (rows)
-  for (let p = 1; p <= 10; p++) {
-    // Period Label Cell (Column 1)
-    const timeLabel = periodTimes[p - 1];
+  // Day headers (월~금, 필요시 토 추가)
+  activeDays.forEach(day => {
+    const header = document.createElement('div');
+    header.className = 'grid-cell day-header';
+    header.textContent = day;
+    calendar.appendChild(header);
+  });
+
+  // Periods rows (1교시부터 maxPeriod교시까지)
+  for (let p = 1; p <= maxPeriod; p++) {
+    // 9시부터 1시간 간격 표시 (p교시 -> 8 + p 시 시작)
+    const hour = 8 + p;
+    const timeStr = `${String(hour).padStart(2, '0')}:00`;
     const labelCell = document.createElement('div');
     labelCell.className = 'grid-cell period-cell';
-    labelCell.innerHTML = `<strong>${p}</strong><span>${timeLabel.time}</span>`;
+    labelCell.innerHTML = `<strong>${p}</strong><span>${timeStr}</span>`;
     labelCell.style.gridColumn = '1';
     labelCell.style.gridRow = `${p + 1}`;
     calendar.appendChild(labelCell);
 
-    // Empty day cells (Columns 2-6)
-    for (let dayCol = 2; dayCol <= 6; dayCol++) {
+    // Empty grid cells for day columns
+    for (let dayCol = 2; dayCol < 2 + activeDays.length; dayCol++) {
       const cell = document.createElement('div');
       cell.className = 'grid-cell empty-grid-cell';
       cell.style.gridColumn = `${dayCol}`;
       cell.style.gridRow = `${p + 1}`;
-      cell.dataset.day = DAY_NAMES[dayCol];
+      
+      const dayName = activeDays[dayCol - 2];
+      cell.dataset.day = dayName;
       cell.dataset.period = p;
       calendar.appendChild(cell);
     }
   }
 }
+
 
 // Fetch Courses from backend API with advanced sub-tab routing
 async function fetchCourses() {
@@ -235,10 +321,6 @@ function renderCourses(courses) {
   const query = document.getElementById('input-search').value.toLowerCase().trim();
   
   // Query Advanced Search filters
-  const filterClassification = document.getElementById('select-filter-classification')?.value || '';
-  const filterCredits = document.getElementById('select-filter-credits')?.value || '';
-  const filterGrade = document.getElementById('select-filter-grade')?.value || '';
-  const filterEvaluation = document.getElementById('select-filter-evaluation')?.value || '';
   const checkFridayFree = document.getElementById('check-friday-free')?.checked || false;
 
   // Filter courses by search query and advanced options
@@ -255,25 +337,55 @@ function renderCourses(courses) {
     if (!matchesQuery) return false;
 
     // 2. Classification (이수구분) matching
-    if (filterClassification && c.classification !== filterClassification) return false;
+    if (selectedClassifications.length > 0 && selectedClassifications.length < YONSEI_CLASSIFICATIONS.length) {
+      if (!selectedClassifications.includes(c.classification)) return false;
+    } else if (selectedClassifications.length === 0) {
+      return false;
+    }
 
     // 3. Credits (학점수) matching
-    if (filterCredits && c.credits !== parseInt(filterCredits)) return false;
+    if (selectedCredits.length > 0 && selectedCredits.length < CREDIT_OPTIONS.length) {
+      const match = selectedCredits.some(val => {
+        if (val === "4+") {
+          return c.credits >= 4;
+        }
+        return c.credits === parseFloat(val);
+      });
+      if (!match) return false;
+    } else if (selectedCredits.length === 0) {
+      return false;
+    }
 
     // 4. Target Grade (대상학년) matching
-    if (filterGrade) {
-      const gradeStr = String(c.grade || '');
-      if (!gradeStr.includes(filterGrade)) return false;
+    if (selectedGrades.length > 0 && selectedGrades.length < GRADE_OPTIONS.length) {
+      const gradeStr = String(c.grade || '').trim();
+      const hasDigits1To4 = /[1234]/.test(gradeStr);
+      let match = false;
+      if (!hasDigits1To4) {
+        match = selectedGrades.includes("other");
+      } else {
+        match = selectedGrades.some(val => {
+          if (val === "other") return false;
+          return gradeStr.includes(val);
+        });
+      }
+      if (!match) return false;
+    } else if (selectedGrades.length === 0) {
+      return false;
     }
 
     // 5. Evaluation (평가방식) matching
-    if (filterEvaluation) {
+    if (selectedEvals.length > 0 && selectedEvals.length < EVAL_OPTIONS.length) {
       const evalStr = String(c.evaluation || '');
-      if (filterEvaluation === 'P/NP') {
-        if (evalStr !== 'P/NP' && evalStr !== 'PF' && evalStr !== 'P/F') return false;
-      } else {
-        if (evalStr !== filterEvaluation) return false;
-      }
+      const match = selectedEvals.some(val => {
+        if (val === 'P/NP') {
+          return evalStr === 'P/NP' || evalStr === 'PF' || evalStr === 'P/F';
+        }
+        return evalStr === val;
+      });
+      if (!match) return false;
+    } else if (selectedEvals.length === 0) {
+      return false;
     }
 
     // 6. Friday-Free (금공강 필터) matching
@@ -401,7 +513,7 @@ function parseTimeSlots(timeStr) {
   const blocks = cleanStr.split('/');
   
   for (let block of blocks) {
-    const regex = /([월화수목금])([0-9,]+)/g;
+    const regex = /([월화수목금토])([0-9,]+)/g;
     let match;
     while ((match = regex.exec(block)) !== null) {
       const day = match[1];
@@ -416,12 +528,13 @@ function parseTimeSlots(timeStr) {
 
 // Add Course to Timetable & check conflicts
 function addCourseToTimetable(course) {
-  const newSlots = parseTimeSlots(course.time);
+  // 가상 동영상(중복수강 가능) 슬롯은 시간표 겹침 체크에서 제외
+  const newSlots = parseTimeSlots(course.time).filter(s => !isSlotVirtual(course, s));
   
   // 1. Check for time overlap conflicts
   let conflict = null;
   for (let selected of selectedCourses) {
-    const selectedSlots = parseTimeSlots(selected.time);
+    const selectedSlots = parseTimeSlots(selected.time).filter(s => !isSlotVirtual(selected, s));
     const hasOverlap = selectedSlots.some(s1 => 
       newSlots.some(s2 => s1.day === s2.day && s1.period === s2.period)
     );
@@ -458,12 +571,47 @@ function removeCourse(code, division) {
   renderCourses(coursesData);
 }
 
+// 요일별 강의실 매핑 함수 (예: 화5,6/목4 -> 외01/동영상콘텐츠 인 경우 요일에 맞춰 추출)
+function getRoomForDay(timeStr, roomStr, targetDay) {
+  if (!roomStr) return '';
+  if (!timeStr) return roomStr;
+
+  // 강의실 구분이 없을 경우 그대로 반환 (외곽 괄호만 제거)
+  if (!roomStr.includes('/')) {
+    return roomStr.replace(/^\((.*)\)$/, '$1');
+  }
+
+  const timeParts = timeStr.split('/');
+  const roomParts = roomStr.split('/');
+
+  if (timeParts.length === roomParts.length) {
+    for (let i = 0; i < timeParts.length; i++) {
+      const timePart = timeParts[i];
+      const cleanTime = timePart.replace(/[\(\)]/g, '');
+      if (cleanTime.startsWith(targetDay)) {
+        // 내부 괄호는 살리고 전체 감싸는 외곽 괄호만 제거 (예: (과118) -> 과118, 동영상(중복수강불가) -> 동영상(중복수강불가))
+        return roomParts[i].replace(/^\((.*)\)$/, '$1');
+      }
+    }
+  }
+
+  // 매핑 실패 시 원본 문자열 반환
+  return roomStr;
+}
+
+// 전체가 비정규 동영상 콘텐츠/온라인 강의인지 체크하는 함수 (시간표 그리드에 전혀 렌더링되지 않는 과목)
+function isEntirelyOnlineCourse(c) {
+  const slots = parseTimeSlots(c.time);
+  if (slots.length === 0) return true;
+  return slots.every(s => isSlotVirtual(c, s));
+}
+
 // Render blocks on the visual calendar grid
 function renderTimetableGrid() {
-  // Clear any existing blocks
+  // Re-build the calendar grid dynamically based on selected courses
+  initTimetableCalendar();
+
   const calendar = document.getElementById('timetable-calendar');
-  const existingBlocks = calendar.querySelectorAll('.timetable-event-block');
-  existingBlocks.forEach(b => b.remove());
 
   selectedCourses.forEach(c => {
     const slots = parseTimeSlots(c.time);
@@ -493,6 +641,14 @@ function renderTimetableGrid() {
 
     // Draw the blocks on the grid
     blocks.forEach(b => {
+      // 가상 동영상(중복수강 가능) 슬롯은 시간표 블록을 그리지 않음
+      if (isSlotVirtual(c, { day: b.day })) {
+        return;
+      }
+
+      // 요일별 해당하는 강의실을 정확히 찾아 매핑
+      const specificRoom = getRoomForDay(c.time, c.room, b.day);
+
       const col = DAY_MAP[b.day];
       const startRow = b.start + 1; // row index offset (period 1 is row 2)
       const span = b.end - b.start + 1;
@@ -521,6 +677,9 @@ function renderTimetableGrid() {
       eventBlock.style.borderLeft = `3.5px solid ${borderCol}`;
       eventBlock.style.boxShadow = 'var(--shadow-whisper)';
 
+      // Add descriptive hover tooltip
+      eventBlock.title = `${c.title}\n교수: ${c.professor || '미지정'}\n강의실: ${specificRoom || '미지정'}\n마일리지: ${c.mileage || 0}pt`;
+
       if (span === 1) {
         eventBlock.innerHTML = `
           <div class="event-title" style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;" title="${c.title}">${c.title}</div>
@@ -531,7 +690,8 @@ function renderTimetableGrid() {
           <div class="event-title">${c.title}</div>
           <div class="event-details">
             <span>${c.professor || '미지정'}</span>
-            <span class="event-mileage-badge">${c.mileage || 0} pt</span>
+            <span style="font-size: 8.5px; opacity: 0.9; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">📍 ${specificRoom || '미지정'}</span>
+            <span class="event-mileage-badge" style="margin-top: 4px;">${c.mileage || 0} pt</span>
           </div>
         `;
       }
@@ -550,45 +710,122 @@ function renderTimetableGrid() {
   const totalCreditsEl = document.getElementById('total-credits');
   if (totalCreditsEl) totalCreditsEl.textContent = `${totalCdt}학점 신청됨`;
 
+  // Render entirely online/video-only courses list at the bottom of the timetable card
+  const onlineOnlyCourses = selectedCourses.filter(isEntirelyOnlineCourse);
+  const onlineContainer = document.getElementById('online-only-courses-container');
+  const onlineList = document.getElementById('online-only-courses-list');
+
+  if (onlineContainer && onlineList) {
+    onlineList.innerHTML = '';
+    if (onlineOnlyCourses.length > 0) {
+      onlineContainer.style.display = 'block';
+      onlineOnlyCourses.forEach(c => {
+        const badge = document.createElement('div');
+        badge.className = 'online-course-badge';
+        
+        const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark' || 
+                           (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.getAttribute('data-theme'));
+        const hash = getHashCode(c.code);
+        const hue = hash % 360;
+        const s = isDarkMode ? 35 : 60;
+        const l = isDarkMode ? 18 : 88;
+        const textCol = isDarkMode ? '#f3f3f3' : '#171717';
+        const borderCol = `hsl(${hue}, ${s + 10}%, ${isDarkMode ? 45 : 55}%)`;
+        const bgVal = `hsl(${hue}, ${s}%, ${l}%)`;
+
+        badge.style.background = bgVal;
+        badge.style.color = textCol;
+        badge.style.borderLeft = `3px solid ${borderCol}`;
+        badge.style.padding = '5px 9px';
+        badge.style.borderRadius = 'var(--border-radius-sm)';
+        badge.style.fontSize = '10px';
+        badge.style.fontWeight = '500';
+        badge.style.display = 'flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '6px';
+        badge.style.cursor = 'pointer';
+        badge.style.boxShadow = 'var(--shadow-whisper)';
+        badge.style.transition = 'transform 0.15s ease, filter 0.15s ease';
+        badge.title = `${c.title}\n교수: ${c.professor || '미지정'}\n시간: ${c.time || '시간 미지정'}\n강의실: ${c.room || '인터넷강의'}\n마일리지: ${c.mileage || 0}pt`;
+
+        badge.innerHTML = `
+          <span style="font-weight: 700; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.title}</span>
+          <span style="opacity: 0.8; font-size: 8.5px; white-space: nowrap;">👤 ${c.professor || '미지정'}</span>
+          <span style="opacity: 0.8; font-size: 8.5px; white-space: nowrap;">💻 ${c.room || '인터넷강의'}</span>
+          <span class="event-mileage-badge" style="font-size: 8px; padding: 1.5px 4px; margin: 0; background: ${borderCol}; color: #fff; font-weight: 600; border-radius: 3px;">${c.mileage || 0}pt</span>
+        `;
+
+        badge.addEventListener('click', () => {
+          openCourseActionModal(c);
+        });
+        
+        // Add subtle hover effect
+        badge.addEventListener('mouseenter', () => {
+          badge.style.transform = 'translateY(-1px)';
+          badge.style.filter = 'brightness(1.03)';
+        });
+        badge.addEventListener('mouseleave', () => {
+          badge.style.transform = 'none';
+          badge.style.filter = 'none';
+        });
+
+        onlineList.appendChild(badge);
+      });
+      // Re-trigger Lucide icons for the newly added elements
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    } else {
+      onlineContainer.style.display = 'none';
+    }
+  }
+
   // Always sync mini timetable grid as well
   renderMiniTimetableGrid();
 }
 
-// Generate sidebar mini timetable grid time labels (1 to 10 periods)
+// Generate sidebar mini timetable grid dynamically based on active days and max period
 function initMiniTimetableCalendar() {
   const calendar = document.getElementById('mini-timetable-calendar');
   if (!calendar) return;
 
+  const { activeDays, maxPeriod } = getActiveTimetableLimits();
+
+  // CSS Grid columns & rows 동적 적용
+  calendar.style.gridTemplateColumns = `28px repeat(${activeDays.length}, 1fr)`;
+  calendar.style.gridTemplateRows = `24px repeat(${maxPeriod}, 1fr)`;
+
   calendar.innerHTML = '';
   
-  // Header
+  // Header Corner
   const headerCorner = document.createElement('div');
   headerCorner.className = 'grid-cell day-header';
   calendar.appendChild(headerCorner);
   
-  const days = ['월', '화', '수', '목', '금'];
-  days.forEach(d => {
+  activeDays.forEach(d => {
     const header = document.createElement('div');
     header.className = 'grid-cell day-header';
     header.textContent = d;
     calendar.appendChild(header);
   });
 
-  // Draw empty cells for periods 1-10 (rows)
-  for (let p = 1; p <= 10; p++) {
+  // Draw empty cells for periods 1 to maxPeriod (rows)
+  for (let p = 1; p <= maxPeriod; p++) {
     // Row time label
     const label = document.createElement('div');
     label.className = 'grid-cell period-label';
     label.textContent = p;
     calendar.appendChild(label);
 
-    // Empty day cells (Columns 2-6)
-    for (let dayCol = 2; dayCol <= 6; dayCol++) {
+    // Empty day cells (Columns 2 to 2 + activeDays.length - 1)
+    for (let dayCol = 2; dayCol < 2 + activeDays.length; dayCol++) {
       const cell = document.createElement('div');
       cell.className = 'grid-cell';
       cell.style.gridColumn = `${dayCol}`;
       cell.style.gridRow = `${p + 1}`;
-      cell.dataset.day = DAY_NAMES[dayCol];
+      
+      const dayName = activeDays[dayCol - 2];
+      cell.dataset.day = dayName;
       cell.dataset.period = p;
       calendar.appendChild(cell);
     }
@@ -597,12 +834,11 @@ function initMiniTimetableCalendar() {
 
 // Render Sidebar Mini Timetable Grid blocks dynamically
 function renderMiniTimetableGrid() {
+  // Re-build the mini calendar grid dynamically based on selected courses
+  initMiniTimetableCalendar();
+
   const calendar = document.getElementById('mini-timetable-calendar');
   if (!calendar) return;
-
-  // Clear any existing mini blocks
-  const existingBlocks = calendar.querySelectorAll('.mini-timetable-event-block');
-  existingBlocks.forEach(b => b.remove());
 
   selectedCourses.forEach(c => {
     const slots = parseTimeSlots(c.time);
@@ -631,6 +867,14 @@ function renderMiniTimetableGrid() {
 
     // Draw the blocks on the grid
     blocks.forEach(b => {
+      // 가상 동영상(중복수강 가능) 슬롯은 시간표 블록을 그리지 않음
+      if (isSlotVirtual(c, { day: b.day })) {
+        return;
+      }
+
+      // 요일별 해당하는 강의실을 정확히 찾아 매핑
+      const specificRoom = getRoomForDay(c.time, c.room, b.day);
+
       const col = DAY_MAP[b.day];
       const startRow = b.start + 1; // row index offset (period 1 is row 2)
       const span = b.end - b.start + 1;
@@ -658,12 +902,9 @@ function renderMiniTimetableGrid() {
       eventBlock.style.borderLeft = `2px solid ${borderCol}`;
       eventBlock.style.boxShadow = 'var(--shadow-whisper)';
 
-      // Compact text: slice title to 4 characters + mileage badge
-      const displayTitle = c.title ? c.title.substring(0, 4) : '';
-      eventBlock.innerHTML = `
-        <span class="mini-event-title" title="${c.title}">${displayTitle}</span>
-        <span style="font-size: 7px; opacity: 0.8; margin-top: 1px;">${c.mileage || 0}pt</span>
-      `;
+      // No visible text inside the mini calendar event block for clean design, but show room in tooltip
+      eventBlock.title = `${c.title} (${specificRoom || '미지정'}, ${c.mileage || 0}pt)`;
+      eventBlock.innerHTML = '';
 
       // Click mini block to open course actions context menu!
       eventBlock.addEventListener('click', () => {
@@ -982,6 +1223,410 @@ function updateMileageLabel() {
   runAdvisorDiagnostic();
 }
 
+// 이수구분 멀티셀렉트(체크박스 팝오버) 초기화 함수
+function initClassificationMultiselect() {
+  const grid = document.querySelector('#classification-popover .checkbox-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  YONSEI_CLASSIFICATIONS.forEach(cls => {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '6px';
+    label.style.fontSize = '10px';
+    label.style.color = 'var(--text-primary)';
+    label.style.cursor = 'pointer';
+    label.style.padding = '2px 0';
+    label.style.userSelect = 'none';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = cls;
+    cb.checked = true;
+    cb.style.cursor = 'pointer';
+    cb.style.accentColor = 'var(--accent-light)';
+    cb.style.width = '12px';
+    cb.style.height = '12px';
+    
+    cb.addEventListener('change', () => {
+      updateClassificationSelection();
+    });
+    
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(cls));
+    grid.appendChild(label);
+  });
+
+  const triggerBtn = document.getElementById('btn-classification-trigger');
+  const popover = document.getElementById('classification-popover');
+  
+  if (triggerBtn && popover) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popover.style.display === 'none' || popover.style.display === '';
+      popover.style.display = isHidden ? 'flex' : 'none';
+    });
+    
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+  }
+
+  document.getElementById('btn-class-select-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = true);
+    updateClassificationSelection();
+  });
+  
+  document.getElementById('btn-class-reset')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = false);
+    updateClassificationSelection();
+  });
+}
+
+function updateClassificationSelection() {
+  const grid = document.querySelector('#classification-popover .checkbox-grid');
+  if (!grid) return;
+  
+  const cbs = grid.querySelectorAll('input[type="checkbox"]');
+  selectedClassifications = [];
+  cbs.forEach(cb => {
+    if (cb.checked) {
+      selectedClassifications.push(cb.value);
+    }
+  });
+  
+  // Update trigger button label
+  const labelSpan = document.querySelector('#btn-classification-trigger .trigger-label');
+  if (labelSpan) {
+    if (selectedClassifications.length === YONSEI_CLASSIFICATIONS.length) {
+      labelSpan.textContent = "전체";
+    } else if (selectedClassifications.length === 0) {
+      labelSpan.textContent = "선택 없음";
+    } else if (selectedClassifications.length <= 3) {
+      labelSpan.textContent = selectedClassifications.join(', ');
+    } else {
+      labelSpan.textContent = `선택됨 (${selectedClassifications.length}개)`;
+    }
+  }
+  
+  // Re-render courses list
+  renderCourses(coursesData);
+}
+
+// 학점 멀티셀렉트(체크박스 팝오버) 초기화 함수
+function initCreditsMultiselect() {
+  const grid = document.querySelector('#credits-popover .checkbox-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  CREDIT_OPTIONS.forEach(opt => {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '6px';
+    label.style.fontSize = '10px';
+    label.style.color = 'var(--text-primary)';
+    label.style.cursor = 'pointer';
+    label.style.padding = '2px 0';
+    label.style.userSelect = 'none';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = opt.value;
+    cb.checked = true;
+    cb.style.cursor = 'pointer';
+    cb.style.accentColor = 'var(--accent-light)';
+    cb.style.width = '12px';
+    cb.style.height = '12px';
+    
+    cb.addEventListener('change', () => {
+      updateCreditsSelection();
+    });
+    
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(opt.label));
+    grid.appendChild(label);
+  });
+
+  const triggerBtn = document.getElementById('btn-credits-trigger');
+  const popover = document.getElementById('credits-popover');
+  
+  if (triggerBtn && popover) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popover.style.display === 'none' || popover.style.display === '';
+      popover.style.display = isHidden ? 'flex' : 'none';
+    });
+    
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+  }
+
+  document.getElementById('btn-credits-select-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = true);
+    updateCreditsSelection();
+  });
+  
+  document.getElementById('btn-credits-reset')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = false);
+    updateCreditsSelection();
+  });
+}
+
+function updateCreditsSelection() {
+  const grid = document.querySelector('#credits-popover .checkbox-grid');
+  if (!grid) return;
+  
+  const cbs = grid.querySelectorAll('input[type="checkbox"]');
+  selectedCredits = [];
+  cbs.forEach(cb => {
+    if (cb.checked) {
+      selectedCredits.push(cb.value);
+    }
+  });
+  
+  // Update trigger button label
+  const labelSpan = document.querySelector('#btn-credits-trigger .trigger-label');
+  if (labelSpan) {
+    if (selectedCredits.length === CREDIT_OPTIONS.length) {
+      labelSpan.textContent = "전체";
+    } else if (selectedCredits.length === 0) {
+      labelSpan.textContent = "선택 없음";
+    } else if (selectedCredits.length <= 2) {
+      const names = selectedCredits.map(val => {
+        const found = CREDIT_OPTIONS.find(opt => opt.value === val);
+        return found ? found.label : val;
+      });
+      labelSpan.textContent = names.join(', ');
+    } else {
+      labelSpan.textContent = `선택됨 (${selectedCredits.length}개)`;
+    }
+  }
+  
+  // Re-render courses list
+  renderCourses(coursesData);
+}
+
+// 학년 멀티셀렉트(체크박스 팝오버) 초기화 함수
+function initGradeMultiselect() {
+  const grid = document.querySelector('#grade-popover .checkbox-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  GRADE_OPTIONS.forEach(opt => {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '6px';
+    label.style.fontSize = '10px';
+    label.style.color = 'var(--text-primary)';
+    label.style.cursor = 'pointer';
+    label.style.padding = '2px 0';
+    label.style.userSelect = 'none';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = opt.value;
+    cb.checked = true;
+    cb.style.cursor = 'pointer';
+    cb.style.accentColor = 'var(--accent-light)';
+    cb.style.width = '12px';
+    cb.style.height = '12px';
+    
+    cb.addEventListener('change', () => {
+      updateGradeSelection();
+    });
+    
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(opt.label));
+    grid.appendChild(label);
+  });
+
+  const triggerBtn = document.getElementById('btn-grade-trigger');
+  const popover = document.getElementById('grade-popover');
+  
+  if (triggerBtn && popover) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popover.style.display === 'none' || popover.style.display === '';
+      popover.style.display = isHidden ? 'flex' : 'none';
+    });
+    
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+  }
+
+  document.getElementById('btn-grade-select-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = true);
+    updateGradeSelection();
+  });
+  
+  document.getElementById('btn-grade-reset')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = false);
+    updateGradeSelection();
+  });
+}
+
+function updateGradeSelection() {
+  const grid = document.querySelector('#grade-popover .checkbox-grid');
+  if (!grid) return;
+  
+  const cbs = grid.querySelectorAll('input[type="checkbox"]');
+  selectedGrades = [];
+  cbs.forEach(cb => {
+    if (cb.checked) {
+      selectedGrades.push(cb.value);
+    }
+  });
+  
+  // Update trigger button label
+  const labelSpan = document.querySelector('#btn-grade-trigger .trigger-label');
+  if (labelSpan) {
+    if (selectedGrades.length === GRADE_OPTIONS.length) {
+      labelSpan.textContent = "전체";
+    } else if (selectedGrades.length === 0) {
+      labelSpan.textContent = "선택 없음";
+    } else if (selectedGrades.length <= 2) {
+      const names = selectedGrades.map(val => {
+        const found = GRADE_OPTIONS.find(opt => opt.value === val);
+        return found ? found.label : val;
+      });
+      labelSpan.textContent = names.join(', ');
+    } else {
+      labelSpan.textContent = `선택됨 (${selectedGrades.length}개)`;
+    }
+  }
+  
+  // Re-render courses list
+  renderCourses(coursesData);
+}
+
+// 평가 멀티셀렉트(체크박스 팝오버) 초기화 함수
+function initEvaluationMultiselect() {
+  const grid = document.querySelector('#evaluation-popover .checkbox-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  EVAL_OPTIONS.forEach(opt => {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '6px';
+    label.style.fontSize = '10px';
+    label.style.color = 'var(--text-primary)';
+    label.style.cursor = 'pointer';
+    label.style.padding = '2px 0';
+    label.style.userSelect = 'none';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = opt.value;
+    cb.checked = true;
+    cb.style.cursor = 'pointer';
+    cb.style.accentColor = 'var(--accent-light)';
+    cb.style.width = '12px';
+    cb.style.height = '12px';
+    
+    cb.addEventListener('change', () => {
+      updateEvaluationSelection();
+    });
+    
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(opt.label));
+    grid.appendChild(label);
+  });
+
+  const triggerBtn = document.getElementById('btn-evaluation-trigger');
+  const popover = document.getElementById('evaluation-popover');
+  
+  if (triggerBtn && popover) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popover.style.display === 'none' || popover.style.display === '';
+      popover.style.display = isHidden ? 'flex' : 'none';
+    });
+    
+    // Click outside to close
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
+        popover.style.display = 'none';
+      }
+    });
+  }
+
+  document.getElementById('btn-evaluation-select-all')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = true);
+    updateEvaluationSelection();
+  });
+  
+  document.getElementById('btn-evaluation-reset')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cbs = grid.querySelectorAll('input[type="checkbox"]');
+    cbs.forEach(cb => cb.checked = false);
+    updateEvaluationSelection();
+  });
+}
+
+function updateEvaluationSelection() {
+  const grid = document.querySelector('#evaluation-popover .checkbox-grid');
+  if (!grid) return;
+  
+  const cbs = grid.querySelectorAll('input[type="checkbox"]');
+  selectedEvals = [];
+  cbs.forEach(cb => {
+    if (cb.checked) {
+      selectedEvals.push(cb.value);
+    }
+  });
+  
+  // Update trigger button label
+  const labelSpan = document.querySelector('#btn-evaluation-trigger .trigger-label');
+  if (labelSpan) {
+    if (selectedEvals.length === EVAL_OPTIONS.length) {
+      labelSpan.textContent = "전체";
+    } else if (selectedEvals.length === 0) {
+      labelSpan.textContent = "선택 없음";
+    } else if (selectedEvals.length <= 2) {
+      const names = selectedEvals.map(val => {
+        const found = EVAL_OPTIONS.find(opt => opt.value === val);
+        return found ? found.label : val;
+      });
+      labelSpan.textContent = names.join(', ');
+    } else {
+      labelSpan.textContent = `선택됨 (${selectedEvals.length}개)`;
+    }
+  }
+  
+  // Re-render courses list
+  renderCourses(coursesData);
+}
+
 // Event Listeners setup
 function setupEventListeners() {
   // Search input typing filter
@@ -991,17 +1636,48 @@ function setupEventListeners() {
 
   // Reset advanced search selectors to empty default values to prevent filter locks
   function resetAdvancedSearchFilters() {
-    const selectClass = document.getElementById('select-filter-classification');
-    const selectCred = document.getElementById('select-filter-credits');
-    const selectGrade = document.getElementById('select-filter-grade');
-    const selectEval = document.getElementById('select-filter-evaluation');
     const checkFriday = document.getElementById('check-friday-free');
-
-    if (selectClass) selectClass.value = '';
-    if (selectCred) selectCred.value = '';
-    if (selectGrade) selectGrade.value = '';
-    if (selectEval) selectEval.value = '';
     if (checkFriday) checkFriday.checked = false;
+
+    // Reset custom multiselect checkboxes to all checked (default)
+    const grid = document.querySelector('#classification-popover .checkbox-grid');
+    if (grid) {
+      const cbs = grid.querySelectorAll('input[type="checkbox"]');
+      cbs.forEach(cb => cb.checked = true);
+    }
+    selectedClassifications = [...YONSEI_CLASSIFICATIONS];
+    const labelSpan = document.querySelector('#btn-classification-trigger .trigger-label');
+    if (labelSpan) labelSpan.textContent = "전체";
+
+    // Reset credits multiselect checkboxes to all checked (default)
+    const credGrid = document.querySelector('#credits-popover .checkbox-grid');
+    if (credGrid) {
+      const cbs = credGrid.querySelectorAll('input[type="checkbox"]');
+      cbs.forEach(cb => cb.checked = true);
+    }
+    selectedCredits = CREDIT_OPTIONS.map(opt => opt.value);
+    const credLabelSpan = document.querySelector('#btn-credits-trigger .trigger-label');
+    if (credLabelSpan) credLabelSpan.textContent = "전체";
+
+    // Reset grade multiselect checkboxes to all checked (default)
+    const gradeGrid = document.querySelector('#grade-popover .checkbox-grid');
+    if (gradeGrid) {
+      const cbs = gradeGrid.querySelectorAll('input[type="checkbox"]');
+      cbs.forEach(cb => cb.checked = true);
+    }
+    selectedGrades = GRADE_OPTIONS.map(opt => opt.value);
+    const gradeLabelSpan = document.querySelector('#btn-grade-trigger .trigger-label');
+    if (gradeLabelSpan) gradeLabelSpan.textContent = "전체";
+
+    // Reset evaluation multiselect checkboxes to all checked (default)
+    const evalGrid = document.querySelector('#evaluation-popover .checkbox-grid');
+    if (evalGrid) {
+      const cbs = evalGrid.querySelectorAll('input[type="checkbox"]');
+      cbs.forEach(cb => cb.checked = true);
+    }
+    selectedEvals = EVAL_OPTIONS.map(opt => opt.value);
+    const evalLabelSpan = document.querySelector('#btn-evaluation-trigger .trigger-label');
+    if (evalLabelSpan) evalLabelSpan.textContent = "전체";
   }
 
   // College / Dept / Campus dropdowns change
@@ -1156,21 +1832,7 @@ function setupEventListeners() {
 
 
 
-  // ── Advanced Search Live Filtering Re-renderers ───────────────────────────
-  const advSelects = [
-    'select-filter-classification',
-    'select-filter-credits',
-    'select-filter-grade',
-    'select-filter-evaluation'
-  ];
-  advSelects.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('change', () => {
-        renderCourses(coursesData);
-      });
-    }
-  });
+  // (All advanced select dropdowns are now custom multiselect popovers)
 
   const checkFriday = document.getElementById('check-friday-free');
   if (checkFriday) {
@@ -1266,6 +1928,23 @@ function switchTab(tabId) {
     }
   });
 
+  // ── Dynamic relocation of search filters container ────────────────
+  const filtersContainer = document.getElementById('search-filters-container');
+  const sidebarFiltersPlaceholder = document.getElementById('sidebar-filters-placeholder');
+  const tabFiltersPlaceholder = document.getElementById('tab-filters-placeholder');
+
+  if (filtersContainer) {
+    if (tabId === 'tab-search') {
+      if (tabFiltersPlaceholder) {
+        tabFiltersPlaceholder.appendChild(filtersContainer);
+      }
+    } else {
+      if (sidebarFiltersPlaceholder) {
+        sidebarFiltersPlaceholder.appendChild(filtersContainer);
+      }
+    }
+  }
+
   // ── Dynamic relocation of shared search results container ────────────────
   const sharedResults = document.getElementById('shared-search-results');
   const sidebarPlaceholder = document.getElementById('sidebar-search-results-placeholder');
@@ -1302,7 +1981,12 @@ function switchTab(tabId) {
       miniTimetableCard.style.display = 'flex';
       renderMiniTimetableGrid();
     }
+  } else if (tabId === 'tab-search') {
+    // Hide search card in sidebar because filters are relocated inside the tab!
+    if (searchCard) searchCard.style.display = 'none';
+    if (miniTimetableCard) miniTimetableCard.style.display = 'none';
   } else {
+    // Timetable tab: show search card in sidebar
     if (searchCard) searchCard.style.display = 'flex';
     if (miniTimetableCard) miniTimetableCard.style.display = 'none';
   }

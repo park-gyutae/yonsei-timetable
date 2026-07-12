@@ -1903,6 +1903,78 @@ body {
   z-index: 99 !important;
 }
 
+/* Tab search filters layout override */
+#tab-filters-placeholder .search-filters {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 16px;
+  background: var(--canvas-soft);
+}
+
+#tab-filters-placeholder .filter-group {
+  flex: 1;
+  min-width: 160px;
+}
+
+#tab-filters-placeholder .search-input-wrapper {
+  margin-top: 0;
+}
+
+/* Sidebar layout reset (explicit column representation) */
+#sidebar-filters-placeholder .search-filters {
+  flex-direction: column;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  gap: 14px;
+  background: transparent;
+}
+
+#sidebar-filters-placeholder .filter-group {
+  flex: none;
+  width: 100%;
+}
+
+/* Custom Multiselect Popover Styles */
+.multiselect-popover {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-popup) !important;
+}
+
+.multiselect-popover button {
+  font-family: var(--font-sans);
+  transition: opacity 0.15s ease;
+}
+
+.multiselect-popover button:hover {
+  opacity: 0.8;
+}
+
+.checkbox-grid label {
+  transition: background 0.1s ease;
+  padding: 4px 6px !important;
+  border-radius: 4px;
+}
+
+.checkbox-grid label:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Custom scrollbar for checklist popover */
+.checkbox-grid::-webkit-scrollbar {
+  width: 5px;
+}
+.checkbox-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.checkbox-grid::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
 
 
 

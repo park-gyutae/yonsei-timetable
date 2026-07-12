@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연세대학교 마일리지 시간표 플래너</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Emergency Global Error Trap -->
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errDiv = document.createElement('div');
+      errDiv.id = 'emergency-error-popup';
+      errDiv.style.position = 'fixed';
+      errDiv.style.top = '10px';
+      errDiv.style.left = '10px';
+      errDiv.style.right = '10px';
+      errDiv.style.padding = '20px';
+      errDiv.style.background = '#ffeaee';
+      errDiv.style.border = '2px solid #ff4d4f';
+      errDiv.style.borderRadius = '8px';
+      errDiv.style.color = '#ff4d4f';
+      errDiv.style.fontFamily = 'monospace';
+      errDiv.style.fontSize = '12px';
+      errDiv.style.zIndex = '999999';
+      errDiv.style.whiteSpace = 'pre-wrap';
+      errDiv.innerHTML = '<h3>🚨 런타임 오류 감지됨</h3><p><strong>에러:</strong> ' + message + '</p><p><strong>위치:</strong> ' + source + ' (Line: ' + lineno + ', Col: ' + colno + ')</p><p><strong>스택트레이스:</strong> ' + (error ? error.stack : 'N/A') + '</p>';
+      document.body.appendChild(errDiv);
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      const errDiv = document.createElement('div');
+      errDiv.id = 'emergency-error-popup';
+      errDiv.style.position = 'fixed';
+      errDiv.style.top = '10px';
+      errDiv.style.left = '10px';
+      errDiv.style.right = '10px';
+      errDiv.style.padding = '20px';
+      errDiv.style.background = '#ffeaee';
+      errDiv.style.border = '2px solid #ff4d4f';
+      errDiv.style.borderRadius = '8px';
+      errDiv.style.color = '#ff4d4f';
+      errDiv.style.fontFamily = 'monospace';
+      errDiv.style.fontSize = '12px';
+      errDiv.style.zIndex = '999999';
+      errDiv.style.whiteSpace = 'pre-wrap';
+      errDiv.innerHTML = '<h3>🚨 비동기 예외(Unhandled Promise Rejection)</h3><p><strong>이유:</strong> ' + event.reason + '</p><p><strong>스택트레이스:</strong> ' + (event.reason && event.reason.stack ? event.reason.stack : event.reason) + '</p>';
+      document.body.appendChild(errDiv);
+    });
+  </script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-shield">Y</span>
+        <div class="logo-text">
+          <h1>YONSEI MILEAGE</h1>
+          <p>Undergraduate Timetable Planner</p>
+        </div>
+      </div>
+      <div class="header-status" style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn btn-secondary" id="btn-toggle-theme" style="width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--border-radius-sm);" title="테마 전환 (라이트/다크)">
+          <i data-lucide="sun" id="theme-icon"></i>
+        </button>
+        <div class="status-badge">
+          <i data-lucide="check-circle" class="badge-icon"></i>
+          <span>2026-2학기 수강편람 연동 완료</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- Left Panel: Sidebar / Controls -->
+      <section class="sidebar-panel">
+        <!-- 1. My Profile Card -->
+        <div class="card glass-card profile-card">
+          <div class="card-header">
+            <i data-lucide="user" class="header-icon"></i>
+            <h2>내 마일리지 프로필</h2>
+          </div>
+          <div class="profile-summary">
+            <div class="profile-item">
+              <span class="item-label">소속</span>
+              <span class="item-value">이과대학 수학전공</span>
+            </div>
+            <div class="profile-item">
+              <span class="item-label">신청 과목수</span>
+              <span class="item-value">6과목</span>
+            </div>
+            <div class="profile-item">
+              <span class="item-label">학점 비율</span>
+              <span class="item-value">95 / 130 (73%)</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-full" id="btn-edit-profile">
+            <i data-lucide="settings"></i> 프로필 정보 수정
+          </button>
+        </div>
+
+        <!-- 2. Search Courses Card - Geist Multi-Tabs -->
+        <div class="card search-card">
+          <div class="card-header">
+            <div class="flex-align">
+              <i data-lucide="search" class="header-icon"></i>
+              <h2>개설과목 조건 지정</h2>
+            </div>
+          </div>
+          
+          <!-- Sub-Tab 1: General Search -->
+          <div class="search-tab-content active" id="search-general">
+            <div class="search-filters">
+              <div class="filter-group">
+                <label for="select-campus">캠퍼스</label>
+                <select id="select-campus">
+                  <option value="">전체 캠퍼스</option>
+                  <option value="S" selected>신촌캠퍼스</option>
+                  <option value="G">국제캠퍼스(송도)</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="select-college">대학(원)</label>
+                <select id="select-college">
+                  <!-- Dynamically loaded -->
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="select-dept">개설학과</label>
+                <select id="select-dept">
+                  <!-- Dynamically loaded -->
+                </select>
+              </div>
+              <div class="filter-group">
+                <label for="input-search">과목명/교수명/과목코드</label>
+                <div class="search-input-wrapper">
+                  <input type="text" id="input-search" placeholder="검색어를 입력하세요...">
+                  <i data-lucide="search" class="input-icon"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Placeholder for sidebar search results (used when in timetable tab) -->
+          <div id="sidebar-search-results-placeholder" style="display: none; flex-direction: column; overflow: hidden; border-top: 1px solid var(--hairline); height: calc(100vh - 430px); max-height: 480px;"></div>
+        </div>
+
+        <!-- 3. Mini Timetable Card (Shows only when Mileage optimization tab is active) -->
+        <div class="card mini-timetable-card" id="mini-timetable-card" style="display: none; flex-direction: column; padding: 12px;">
+          <div class="card-header" style="padding: 6px 8px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; margin-bottom: 10px; background: transparent; height: auto;">
+            <i data-lucide="calendar" class="header-icon" style="width: 14px; height: 14px;"></i>
+            <h2 style="font-size: 12px; font-weight: 700; margin: 0; padding: 0;">내 시간표 (미니 캘린더)</h2>
+          </div>
+          <div class="mini-timetable-grid-wrapper" style="overflow: hidden; width: 100%; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); background: var(--canvas-card);">
+            <div class="mini-timetable-grid" id="mini-timetable-calendar" style="display: grid; grid-template-columns: 28px repeat(5, 1fr); gap: 1px; background: var(--border-color); font-size: 9px; text-align: center;">
+              <!-- Header, row time labels and cells will be dynamically built via JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Unified 3-Tab Workspace (Search, Timetable, Mileage) -->
+      <section class="timetable-panel">
+        <!-- Vercel Geist Tab Navigation (3 Main Tabs) -->
+        <div class="tabs-nav">
+          <button class="tab-btn" data-tab="tab-search" id="btn-tab-search">
+            <i data-lucide="search"></i> 개설과목 검색
+          </button>
+          <button class="tab-btn active" data-tab="tab-timetable" id="btn-tab-timetable">
+            <i data-lucide="calendar"></i> 시간표 플래너
+          </button>
+          <button class="tab-btn" data-tab="tab-mileage" id="btn-tab-mileage">
+            <i data-lucide="sliders"></i> 마일리지 최적화 & 분석
+          </button>
+        </div>
+
+        <!-- Tab 0 Content: Course Search Workspace -->
+        <div class="tab-content" id="tab-search" style="display: none;">
+          <div class="card glass-card search-workspace-card" style="margin-bottom: 0; min-height: 550px; display: flex; flex-direction: column;">
+            <!-- Horizontal Advanced Search Filter Bar -->
+            <div class="advanced-search-bar" style="padding: 12px 18px; background: var(--canvas-soft); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 11px;">
+              <span style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 14px;">
+                <i data-lucide="filter" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 상세 필터
+              </span>
+              
+              <!-- 이수구분 -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-secondary); font-weight: 500;">이수구분</span>
+                <select id="select-filter-classification" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
+                  <option value="">전체</option>
+                  <option value="전필">전필 (전공필수)</option>
+                  <option value="전선">전선 (전공선택)</option>
+                  <option value="교필">교필 (교양필수)</option>
+                  <option value="교선">교선 (교양선택)</option>
+                  <option value="일교">일교 (일반교양)</option>
+                </select>
+              </div>
+
+              <!-- 학점 수 -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-secondary); font-weight: 500;">학점</span>
+                <select id="select-filter-credits" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
+                  <option value="">전체</option>
+                  <option value="3">3학점</option>
+                  <option value="2">2학점</option>
+                  <option value="1">1학점</option>
+                </select>
+              </div>
+
+              <!-- 대상학년 -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-secondary); font-weight: 500;">학년</span>
+                <select id="select-filter-grade" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
+                  <option value="">전체</option>
+                  <option value="1">1학년</option>
+                  <option value="2">2학년</option>
+                  <option value="3">3학년</option>
+                  <option value="4">4학년</option>
+                </select>
+              </div>
+
+              <!-- 평가방식 -->
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: var(--text-secondary); font-weight: 500;">평가</span>
+                <select id="select-filter-evaluation" style="padding: 3px 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px;">
+                  <option value="">전체</option>
+                  <option value="상대평가">상대평가</option>
+                  <option value="절대평가">절대평가</option>
+                  <option value="P/NP">P/NP (PF)</option>
+                </select>
+              </div>
+
+              <!-- 금공강 체크박스 -->
+              <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                <input type="checkbox" id="check-friday-free" style="cursor: pointer; width: 13px; height: 13px; accent-color: var(--accent-light);">
+                <label for="check-friday-free" style="font-weight: 600; color: var(--text-secondary); cursor: pointer; margin: 0;">금공강만</label>
+              </div>
+            </div>
+
+            <!-- Placeholder for tab search results (used when in course search tab) -->
+            <div id="tab-search-results-placeholder" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+              <!-- Shared Search Results Container -->
+              <div id="shared-search-results" class="search-results-container" style="flex: 1; display: flex; flex-direction: column; height: 100%;">
+                <div class="results-header" style="padding: 10px 18px; border-bottom: 1px solid var(--border-color); background: rgba(0, 0, 0, 0.01); display: flex; justify-content: space-between; align-items: center;">
+                  <span id="results-count" style="font-size: 11px; font-weight: 600; color: var(--text-muted);">조회된 과목 0개</span>
+                </div>
+                <div class="results-list" id="search-results-list" style="padding: 14px; overflow-y: auto; flex: 1; max-height: 600px;">
+                  <!-- Dynamically populated via JS -->
+                  <div class="list-placeholder">
+                    <i data-lucide="loader-2" class="spin"></i>
+                    <p>과목 데이터를 불러오는 중...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 1 Content: Timetable Calendar -->
+        <div class="tab-content active" id="tab-timetable" style="display: block;">
+          <div class="card glass-card timetable-card" style="margin-bottom: 0;">
+            <div class="card-header flex-between">
+              <div class="flex-align">
+                <i data-lucide="calendar" class="header-icon"></i>
+                <h2>내 시간표 시각표</h2>
+              </div>
+              <div class="timetable-stats">
+                <span class="stat-badge" id="total-credits">0학점 신청됨</span>
+              </div>
+            </div>
+
+            <!-- Timetable Grid -->
+            <div class="timetable-grid-wrapper">
+              <div class="timetable-grid" id="timetable-calendar">
+                <!-- Calendar days header -->
+                <div class="grid-cell day-header corner-cell"></div>
+                <div class="grid-cell day-header">월</div>
+                <div class="grid-cell day-header">화</div>
+                <div class="grid-cell day-header">수</div>
+                <div class="grid-cell day-header">목</div>
+                <div class="grid-cell day-header">금</div>
+
+                <!-- Time rows generated dynamically via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2 Content: Mileage Optimization & Monte Carlo -->
+        <div class="tab-content" id="tab-mileage" style="display: none;">
+          <!-- Mileage Distribution Manager -->
+          <div class="card glass-card mileage-dist-card">
+            <div class="card-header flex-between">
+              <div class="flex-align">
+                <i data-lucide="sliders" class="header-icon"></i>
+                <h2>마일리지 분배 관리</h2>
+              </div>
+              <div class="flex-align" style="gap: 14px;">
+                <button class="btn btn-primary" id="btn-auto-allocate" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                  <i data-lucide="zap" style="display:inline-block;width:12px;height:12px;vertical-align:middle;margin-right:2px;"></i> 자동 최적 분배
+                </button>
+                <div class="mileage-status">
+                  <span class="status-label">총 마일리지 배분</span>
+                  <span class="status-val" id="allocated-mileage-label">0 / 72</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optimization Constraints configuration -->
+            <div class="optimization-constraints" style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; gap: 20px; flex-wrap: wrap; background: rgba(255,255,255,0.01);">
+              <div class="constraint-control" style="flex: 1; min-width: 200px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">최소 확보 목표 학점</span>
+                  <strong id="target-credits-label" style="color: var(--accent-light);">9학점</strong>
+                </div>
+                <input type="range" id="input-target-credits" min="3" max="18" step="3" value="9" style="width: 100%; accent-color: var(--accent-light);">
+              </div>
+              <div class="constraint-control" style="flex: 1; min-width: 200px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 12px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">목표 달성 안정도 (보장 확률)</span>
+                  <strong id="target-prob-label" style="color: var(--success);">85%</strong>
+                </div>
+                <input type="range" id="input-target-prob" min="50" max="99" step="5" value="85" style="width: 100%; accent-color: var(--success);">
+              </div>
+            </div>
+
+            <!-- Selected courses list with sliders -->
+            <div class="selected-courses-list" id="selected-courses-container">
+              <div class="no-courses-placeholder">
+                <i data-lucide="calendar-plus"></i>
+                <p>왼쪽 검색창에서 과목을 시간표에 추가한 뒤 마일리지를 분배하세요.</p>
+              </div>
+            </div>
+          </div>
+          <!-- Monte Carlo Risk Dashboard -->
+          <div class="card glass-card risk-dashboard-card" id="risk-dashboard-card" style="margin-top: 20px; display: none;">
+            <div class="card-header">
+              <i data-lucide="activity" class="header-icon"></i>
+              <h2>Monte Carlo 리스크 대시보드 (10,000회 시뮬레이션)</h2>
+            </div>
+            <div class="monte-carlo-trigger-wrapper" style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+              <button class="btn btn-primary" id="btn-run-monte-carlo" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; background: linear-gradient(135deg, var(--accent-light), #00aaff); border: none; cursor: pointer; transition: transform var(--transition-fast);">
+                <i data-lucide="play" id="icon-monte-carlo" style="width: 15px; height: 15px;"></i>
+                <span id="text-monte-carlo">10,000회 리스크 시뮬레이션 실행</span>
+              </button>
+            </div>
+            <div class="advisor-content" id="risk-dashboard-content" style="filter: blur(3px); opacity: 0.5; transition: all 0.3s ease; pointer-events: none;">
+              <div class="risk-metrics-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">기대 학점 (E[Credits])</div>
+                  <strong id="risk-expected-credits" style="font-size: 18px; color: var(--accent-light);">0.0 ± 0.0</strong>
+                </div>
+                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">기대 효용 (E[Utility])</div>
+                  <strong id="risk-expected-utility" style="font-size: 18px; color: var(--warning);">0.0000</strong>
+                </div>
+                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">VaR (5% 최악 기준)</div>
+                  <strong id="risk-var" style="font-size: 18px; color: var(--danger);">0.0</strong>
+                </div>
+                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">공동 탈락 확률 (Joint Fail)</div>
+                  <strong id="risk-joint-fail" style="font-size: 18px; color: var(--text-primary);">0.0%</strong>
+                </div>
+              </div>
+
+              <!-- Probability Table -->
+              <div style="margin-bottom: 16px;">
+                <h4 style="font-size: 11.5px; margin-bottom: 8px; color: var(--text-secondary);">목표 학점 달성 확률</h4>
+                <div style="display: flex; gap: 6px;" id="risk-probability-bar-container">
+                  <!-- Dynamically updated -->
+                </div>
+              </div>
+
+              <!-- Plan B Recommendations -->
+              <div>
+                <h4 style="font-size: 11.5px; margin-bottom: 8px; color: var(--text-secondary);"><i data-lucide="corner-down-right" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:2px;"></i> Plan B 대체 전략</h4>
+                <div id="risk-plan-b-list" class="suggestions-list">
+                  <!-- Dynamically populated Plan B -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Profile Edit Modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h2>프로필 정보 입력 (마일리지 동점자 처리 기준)</h2>
+        <button class="modal-close-btn" id="btn-close-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="profile-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>제1전공 (본전공)</label>
+              <select id="profile-first-major">
+                <option value="math" selected>수학전공</option>
+                <option value="stats">응용통계학전공</option>
+                <option value="other">기타전공</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>제2전공 (복수전공)</label>
+              <select id="profile-second-major">
+                <option value="none" selected>없음</option>
+                <option value="math">수학전공</option>
+                <option value="stats">응용통계학전공</option>
+                <option value="other">기타전공</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>학년</label>
+              <select id="profile-grade">
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3" selected>3학년</option>
+                <option value="4">4학년</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>총 신청 과목수</label>
+              <input type="number" id="profile-courses" min="1" max="10" value="6">
+            </div>
+            <div class="form-group">
+              <label>초수강 여부</label>
+              <select id="profile-first">
+                <option value="Y" selected>초수강 (재수강 아님 - Y)</option>
+                <option value="N">재수강 (N)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>졸업/수료 신청 여부</label>
+              <select id="profile-grad">
+                <option value="Y">신청함 (Y)</option>
+                <option value="N" selected>신청안함 (N)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>이번 학기 신청 총 학점 (3단계)</label>
+              <input type="number" id="profile-applied-credits" value="18" min="3" max="24">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>총 재학 학기 수 (7단계)</label>
+              <input type="number" id="profile-enrolled-semesters" value="5" min="1" max="16">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>총 이수 학점 / 졸업 요건 학점</label>
+              <div class="input-double">
+                <input type="number" id="profile-earned-credits" value="95" min="0" max="200">
+                <span>/</span>
+                <input type="number" id="profile-req-credits" value="130" min="1" max="200">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>직전학기 이수 / 수강가능 학점</label>
+              <div class="input-double">
+                <input type="number" id="profile-last-credits" value="18" min="0" max="24">
+                <span>/</span>
+                <input type="number" id="profile-max-credits" value="18" min="1" max="24">
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">설정 저장</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mileage Analysis Modal -->
+  <div class="modal-overlay" id="mileage-modal">
+    <div class="modal-content glass-card" style="max-width: 750px;">
+      <div class="modal-header">
+        <h2 id="mileage-modal-title">[MAT2103-01] 통계학 마일리지 분석</h2>
+        <button class="modal-close-btn" id="btn-close-mileage-modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="max-height: 550px; overflow-y: auto; padding-right: 8px;">
+        <!-- Divisions Comparison Card -->
+        <div class="quota-constraints-card" style="margin-bottom: 20px; border-left: 3px solid var(--accent-light);">
+          <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--text-primary);">동일 교과목 분반 통합 비교 (인기 vs 비인기 대조)</h3>
+          <div class="div-comp-list" id="divisions-comparison-list" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Dynamically populated divisions comparative items -->
+          </div>
+        </div>
+
+        <!-- AI Cutoff Prediction Card (Precomputed curves ML estimates) -->
+        <div class="quota-constraints-card" id="ai-prediction-card" style="margin-bottom: 20px; border-left: 3px solid var(--success); display: none;">
+          <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="brain" style="width: 14px; height: 14px;"></i> AI 머신러닝 컷오프 예측 (전체 이력 학습)
+          </h3>
+          <div class="constraints-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div class="constraint-item" style="text-align: center;">
+              <span class="lbl" style="font-size: 10px; color: var(--text-muted);">안전 마지노선 (Q10)</span>
+              <strong class="val" id="ai-q10" style="font-size: 16px; color: var(--text-secondary);">- 점</strong>
+            </div>
+            <div class="constraint-item" style="text-align: center;">
+              <span class="lbl" style="font-size: 10px; color: var(--text-muted);">중위 컷오프 (Q50)</span>
+              <strong class="val" id="ai-q50" style="font-size: 16px; color: var(--success);">- 점</strong>
+            </div>
+            <div class="constraint-item" style="text-align: center;">
+              <span class="lbl" style="font-size: 10px; color: var(--text-muted);">상위 안정선 (Q90)</span>
+              <strong class="val" id="ai-q90" style="font-size: 16px; color: var(--danger);">- 점</strong>
+            </div>
+          </div>
+          <!-- AI P(m) Probability Curve Chart -->
+          <div class="ai-chart-container" style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 8px;">📊 AI 머신러닝 합격 확률 곡선 P(m) 그래프</span>
+            <div style="height: 180px; position: relative;">
+              <canvas id="ai-probability-chart"></canvas>
+            </div>
+          </div>
+          
+          <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
+            ※ 본 데이터는 과거 경쟁률 및 수강인원 정원 추이와 요일/시간대, 전공 필수 여부 등의 시계열 피처를 LightGBM Quantile ML 모델로 학습하여 추정한 통계 예측치입니다.
+          </div>
+        </div>
+
+        <!-- Summary Stats grid -->
+        <div class="stats-section-title">전체 지원 현황</div>
+        <div class="mileage-stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">총 정원 대비 신청자</span>
+            <span class="stat-val-large" id="global-ratio">- / - <small>(-:1)</small></span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">전체 합격 커트라인</span>
+            <span class="stat-val-large" id="global-cutline" style="color: var(--warning)">-점</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">전체 합격자 평균</span>
+            <span class="stat-val-large" id="global-avg">-점</span>
+          </div>
+        </div>
+
+        <div class="stats-section-title" id="year-stats-title">나의 학년 지원 현황 (3학년)</div>
+        <div class="mileage-stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">학년 정원 대비 신청자</span>
+            <span class="stat-val-large" id="year-ratio">- / - <small>(-:1)</small></span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">학년 합격 커트라인</span>
+            <span class="stat-val-large" id="year-cutline" style="color: var(--warning)">-점</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">학년 합격자 평균</span>
+            <span class="stat-val-large" id="year-avg">-점</span>
+          </div>
+        </div>
+
+        <!-- Constraints details -->
+        <div class="quota-constraints-card">
+          <h3>수강신청 제한 및 정원 상세 규정</h3>
+          <div class="constraints-grid">
+            <div class="constraint-item">
+              <span class="lbl">학년별 배정 정원</span>
+              <span class="val" id="detail-year-quotas">1학년: -명 | 2학년: -명 | 3학년: -명 | 4학년: -명</span>
+            </div>
+            <div class="constraint-item">
+              <span class="lbl">전공자 보호 정원 (본전공/복수전공 우선선발)</span>
+              <span class="val" id="detail-major-quota">기록 없음</span>
+            </div>
+            <div class="constraint-item">
+              <span class="lbl">최대 입력 가능 마일리지 (Max Mileage)</span>
+              <span class="val" id="detail-max-mileage">-점</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Major vs Non-major stats -->
+        <div class="quota-analysis-row">
+          <div class="quota-box">
+            <h3>본전공자 합격 기준</h3>
+            <div class="quota-stat"><span class="lbl">커트라인</span><strong id="major-cut">-점</strong></div>
+            <div class="quota-stat"><span class="lbl">합격 평균</span><span id="major-avg">-점</span></div>
+          </div>
+          <div class="quota-box">
+            <h3>비전공자 합격 기준</h3>
+            <div class="quota-stat"><span class="lbl">커트라인</span><strong id="nonmajor-cut">-점</strong></div>
+            <div class="quota-stat"><span class="lbl">합격 평균</span><span id="nonmajor-avg">-점</span></div>
+          </div>
+        </div>
+
+        <!-- Success Predictor Section -->
+        <div class="predictor-section">
+          <h3>나의 합격 확률 예측 (2025-2학기 기준 대조)</h3>
+          <div class="predictor-controls">
+            <div class="predictor-slider-group">
+              <label>테스트 마일리지 점수: <strong id="predict-score-label">12</strong>점</label>
+              <input type="range" id="predict-score-slider" min="0" max="36" value="12">
+            </div>
+            <div class="predict-result-box" id="predict-outcome-box">
+              <div class="predict-status">계산 중...</div>
+              <p class="predict-desc">마일리지 동점자 처리 기준을 대조 중입니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historical Semesters Section -->
+        <div class="historical-semesters-section" style="margin-top: 20px;">
+          <h3>과거 마일리지 선발 이력 (최근 개설 학기 대조)</h3>
+          <div class="history-table-wrapper" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow: hidden; margin-top: 10px;">
+            <table class="history-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: center;">
+              <thead>
+                <tr style="background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600; height: 32px;">
+                  <th style="padding: 8px;">개설 학기</th>
+                  <th style="padding: 8px;">정원 (Capacity)</th>
+                  <th style="padding: 8px;">지원자 (Applicants)</th>
+                  <th style="padding: 8px;">경쟁률</th>
+                  <th style="padding: 8px;">최소 합격 (Cutline)</th>
+                  <th style="padding: 8px;">평균 마일리지</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body" style="color: var(--text-secondary);">
+                <!-- Dynamically populated rows -->
+                <tr>
+                  <td colspan="6" style="padding: 12px; color: var(--text-muted);">데이터를 불러오는 중...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Bids distribution chart -->
+        <div class="distribution-chart-section">
+          <h3>마일리지 배분 분포도 (합격/불합격 비율)</h3>
+          <div class="chart-container" id="mileage-chart-container">
+            <!-- Dynamically rendered bars -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Course Syllabus Modal -->
+  <div class="modal-overlay" id="syllabus-modal">
+    <div class="modal-content" style="max-width: 1000px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+      <div class="modal-header" style="padding: 12px 20px; border-bottom: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; background: var(--canvas-elevated);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="book-open" style="color: var(--primary); width: 18px; height: 18px;"></i>
+          <h2 id="syllabus-modal-title" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">강의계획서 조회</h2>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="btn-syllabus-external" style="font-size: 11px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; border: 1px solid var(--hairline); cursor: pointer; background: var(--canvas-soft); color: var(--text-secondary); transition: all 0.15s; font-weight: 500;">
+            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i> 새 창으로 열기
+          </button>
+          <button class="btn-close" id="btn-close-syllabus-modal" style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; display: inline-flex; align-items: center; transition: color 0.15s;">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+      </div>
+      <div class="iframe-mask-container" style="flex: 1; position: relative; overflow: hidden; background: #ffffff;">
+        <iframe id="syllabus-iframe" class="masked-iframe" src="about:blank" style="width: 100%; height: calc(100% + 72px); margin-top: -72px; border: none; background: #ffffff;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Course Action Modal (Floating Course Card Popup) -->
+  <div class="modal-overlay" id="course-action-modal">
+    <div class="modal-content glass-card" style="max-width: 850px; width: 95%; padding: 14px; position: relative;">
+      <button class="modal-close-btn" id="btn-close-action-modal" style="position: absolute; top: -14px; right: -14px; background: var(--canvas-elevated); border: 1px solid var(--hairline); border-radius: 50%; cursor: pointer; color: var(--text-primary); padding: 6px; display: inline-flex; align-items: center; box-shadow: var(--shadow-md); z-index: 9999;">
+        <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+      </button>
+      <div id="action-modal-card-container" style="padding-top: 4px;"></div>
+    </div>
+  </div>
+
+  <!-- JavaScript file -->
+  <script src="app.js?v=1.2.1"></script>
+</body>
+</html>

@@ -34,9 +34,13 @@ app.add_middleware(
 )
 
 # ─── Disk-persisted cache ────────────────────────────────────────────────────
-# 캐시 파일은 api/cache/ 디렉토리에 저장됩니다.
-# TTL(초) 설정: 과목목록 6시간, 마일리지 이력 24시간, 대학/학과 목록 7일
-CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
+# Vercel 환경에서는 파일 시스템이 읽기 전용이므로 /tmp/api_cache 폴더를 사용합니다.
+_PROJECT_CACHE_DIR = os.path.join(os.path.dirname(__file__), "cache")
+if os.environ.get("VERCEL"):
+    CACHE_DIR = "/tmp/api_cache"
+else:
+    CACHE_DIR = _PROJECT_CACHE_DIR
+
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 TTL = {
@@ -54,8 +58,14 @@ def _cache_path(key: str) -> str:
 def cache_get(key: str, ttl_type: str = "courses"):
     """디스크 캐시에서 값을 읽습니다. TTL이 지났으면 None 반환."""
     path = _cache_path(key)
+    # 캐시 파일이 /tmp에 없고 프로젝트 내장 캐시(git에 올려진 캐시)에 존재할 때, 내장 캐시 파일 경로를 바라봅니다.
     if not os.path.exists(path):
-        return None
+        safe = key.replace("/", "_").replace(":", "_").replace("?", "_").replace("&", "_").replace("=", "_").replace(" ", "_")
+        fallback_path = os.path.join(_PROJECT_CACHE_DIR, f"{safe}.json")
+        if os.path.exists(fallback_path):
+            path = fallback_path
+        else:
+            return None
     try:
         with open(path, "r", encoding="utf-8") as f:
             entry = json.load(f)

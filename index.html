@@ -314,10 +314,12 @@
                 </div>
               </div>
 
-              <!-- 금공강 체크박스 -->
+              <!-- 시간선택 버튼 -->
               <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-                <input type="checkbox" id="check-friday-free" style="cursor: pointer; width: 13px; height: 13px; accent-color: var(--accent-light);">
-                <label for="check-friday-free" style="font-weight: 600; color: var(--text-secondary); cursor: pointer; margin: 0;">금공강만</label>
+                <button type="button" id="btn-open-time-filter" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; gap: 6px; font-weight: 600; transition: border-color 0.15s ease, color 0.15s ease;">
+                  <i data-lucide="clock" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  <span id="time-filter-btn-label">시간선택</span>
+                </button>
               </div>
             </div>
 
@@ -774,6 +776,47 @@
         <i data-lucide="x" style="width: 15px; height: 15px;"></i>
       </button>
       <div id="action-modal-card-container" style="padding-top: 4px;"></div>
+    </div>
+  </div>
+
+  <!-- 6. 시간으로 찾기 모달 -->
+  <div class="modal-overlay" id="time-filter-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000;">
+    <div class="modal-content glass-card" style="width: 550px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 20px; font-weight: 700; margin: 0; color: var(--text-primary);">시간</h2>
+        <button class="modal-close-btn" id="btn-close-time-modal" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: background-color 0.15s ease;">
+          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        </button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 13px; margin: 0;">선택한 시간 내에 개설된 과목만 검색합니다.</p>
+      
+      <!-- Time Grid Table -->
+      <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 6px; background: var(--canvas-card);">
+        <table id="time-filter-grid-table" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 11px; user-select: none;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); background: var(--canvas-soft);">
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); width: 45px; font-weight: 600; color: var(--text-secondary);"></th>
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); width: 14%;">월</th>
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); width: 14%;">화</th>
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); width: 14%;">수</th>
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); width: 14%;">목</th>
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); width: 14%;">금</th>
+              <th style="padding: 6px; border-right: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); width: 14%;">토</th>
+              <th style="padding: 6px; font-weight: 600; color: var(--text-secondary); width: 14%;">일</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Grid generated dynamically via JS -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Footer Action -->
+      <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+        <button type="button" id="btn-apply-time-filter" style="background: #ff1111; color: #fff; border: none; padding: 10px 32px; font-size: 13px; font-weight: 700; border-radius: 24px; cursor: pointer; transition: opacity 0.15s ease; box-shadow: var(--shadow-sm);">
+          적용
+        </button>
+      </div>
     </div>
   </div>
 

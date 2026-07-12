@@ -129,6 +129,7 @@ const CLASSROOM_OPTIONS = [
   { value: "온라인", label: "온라인/동영상" }
 ];
 let selectedClassrooms = CLASSROOM_OPTIONS.map(opt => opt.value);
+let selectedTimeSlots = new Set(); // Day-Hour strings, e.g. "월-9"
 
 // ─── localStorage TTL Cache ──────────────────────────────────────────────────
 // 브라우저 측 캐시: 백엔드 API 요청 자체를 생략해 응답 속도를 대폭 향상합니다.
@@ -186,6 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initGradeMultiselect();
   initEvaluationMultiselect();
   initRoomMultiselect();
+  initTimeFilterGrid();
   loadDataFromStorage();
   loadWishlist(); // Restore starred courses sandbox
   
@@ -365,9 +367,6 @@ function renderCourses(courses) {
   const countLabel = document.getElementById('results-count');
   
   const query = document.getElementById('input-search').value.toLowerCase().trim();
-  
-  // Query Advanced Search filters
-  const checkFridayFree = document.getElementById('check-friday-free')?.checked || false;
 
   // Filter courses by search query and advanced options
   const filtered = courses.filter(c => {
@@ -452,10 +451,18 @@ function renderCourses(courses) {
       return false;
     }
 
-    // 6. Friday-Free (금공강 필터) matching
-    if (checkFridayFree) {
-      const timeStr = String(c.time || '');
-      if (timeStr.includes('금')) return false;
+    // 6. Time Slot (시간 필터) matching
+    if (selectedTimeSlots.size > 0) {
+      const slots = parseTimeSlots(c.time).filter(s => !isSlotVirtual(c, s));
+      if (slots.length === 0) {
+        return false;
+      }
+      const matches = slots.every(s => {
+        const hour = s.period + 8;
+        const key = `${s.day}-${hour}`;
+        return selectedTimeSlots.has(key);
+      });
+      if (!matches) return false;
     }
 
     return true;
@@ -1793,6 +1800,161 @@ function updateRoomSelection() {
   renderCourses(coursesData);
 }
 
+// 시간으로 찾기(주간 시간선택 그리드 모달) 초기화 함수
+function initTimeFilterGrid() {
+  const tbody = document.querySelector('#time-filter-grid-table tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+  const days = ['월', '화', '수', '목', '금', '토', '일'];
+
+  for (let hour = 8; hour <= 23; hour++) {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--border-color)';
+    
+    // Hour cell
+    const tdHour = document.createElement('td');
+    tdHour.style.padding = '6px';
+    tdHour.style.borderRight = '1px solid var(--border-color)';
+    tdHour.style.fontWeight = '600';
+    tdHour.style.color = 'var(--text-secondary)';
+    tdHour.textContent = hour;
+    tr.appendChild(tdHour);
+
+    // Day cells
+    days.forEach((day, index) => {
+      const tdDay = document.createElement('td');
+      tdDay.style.padding = '6px';
+      if (index < days.length - 1) {
+        tdDay.style.borderRight = '1px solid var(--border-color)';
+      }
+      tdDay.style.cursor = 'pointer';
+      tdDay.style.transition = 'background-color 0.1s ease';
+      tdDay.dataset.day = day;
+      tdDay.dataset.hour = hour;
+      
+      // Hover styles dynamically
+      tdDay.addEventListener('mouseenter', () => {
+        if (!tdDay.classList.contains('selected-time-cell')) {
+          tdDay.style.background = 'var(--canvas-soft)';
+        }
+      });
+      tdDay.addEventListener('mouseleave', () => {
+        if (!tdDay.classList.contains('selected-time-cell')) {
+          tdDay.style.background = 'transparent';
+        }
+      });
+
+      tr.appendChild(tdDay);
+    });
+
+    tbody.appendChild(tr);
+  }
+
+  // Handle cell selection interactions (click-and-drag)
+  let isMouseDown = false;
+  let isSelecting = true; // true: select, false: deselect
+
+  tbody.addEventListener('mousedown', (e) => {
+    const cell = e.target.closest('td[data-day]');
+    if (!cell) return;
+    
+    e.preventDefault();
+    isMouseDown = true;
+    isSelecting = !cell.classList.contains('selected-time-cell');
+    toggleCell(cell, isSelecting);
+  });
+
+  tbody.addEventListener('mouseover', (e) => {
+    if (!isMouseDown) return;
+    const cell = e.target.closest('td[data-day]');
+    if (!cell) return;
+    
+    toggleCell(cell, isSelecting);
+  });
+
+  document.addEventListener('mouseup', () => {
+    isMouseDown = false;
+  });
+
+  function toggleCell(cell, select) {
+    if (select) {
+      cell.classList.add('selected-time-cell');
+      cell.style.background = '#ff1111'; // Red accent color
+    } else {
+      cell.classList.remove('selected-time-cell');
+      cell.style.background = 'transparent';
+    }
+  }
+
+  // Modal open/close and apply hooks
+  const timeModal = document.getElementById('time-filter-modal');
+  const btnOpenTime = document.getElementById('btn-open-time-filter');
+  const btnCloseTime = document.getElementById('btn-close-time-modal');
+  const btnApplyTime = document.getElementById('btn-apply-time-filter');
+
+  if (btnOpenTime && timeModal) {
+    btnOpenTime.addEventListener('click', () => {
+      // Sync grid UI with selectedTimeSlots Set on open
+      const cells = timeModal.querySelectorAll('td[data-day]');
+      cells.forEach(cell => {
+        const key = `${cell.dataset.day}-${cell.dataset.hour}`;
+        if (selectedTimeSlots.has(key)) {
+          cell.classList.add('selected-time-cell');
+          cell.style.background = '#ff1111';
+        } else {
+          cell.classList.remove('selected-time-cell');
+          cell.style.background = 'transparent';
+        }
+      });
+      timeModal.style.display = 'flex';
+    });
+  }
+
+  if (btnCloseTime && timeModal) {
+    btnCloseTime.addEventListener('click', () => {
+      timeModal.style.display = 'none';
+    });
+  }
+
+  if (timeModal) {
+    timeModal.addEventListener('click', (e) => {
+      if (e.target === timeModal) {
+        timeModal.style.display = 'none';
+      }
+    });
+  }
+
+  if (btnApplyTime && timeModal) {
+    btnApplyTime.addEventListener('click', () => {
+      const cells = timeModal.querySelectorAll('td[data-day].selected-time-cell');
+      selectedTimeSlots.clear();
+      cells.forEach(cell => {
+        const key = `${cell.dataset.day}-${cell.dataset.hour}`;
+        selectedTimeSlots.add(key);
+      });
+
+      // Update time filter button appearance based on count
+      const btnLabel = document.getElementById('time-filter-btn-label');
+      if (btnLabel && btnOpenTime) {
+        if (selectedTimeSlots.size === 0) {
+          btnLabel.textContent = "시간선택";
+          btnOpenTime.style.borderColor = 'var(--border-color)';
+          btnOpenTime.style.color = 'var(--text-primary)';
+        } else {
+          btnLabel.textContent = `시간선택 (${selectedTimeSlots.size}칸)`;
+          btnOpenTime.style.borderColor = '#ff1111';
+          btnOpenTime.style.color = '#ff1111';
+        }
+      }
+
+      // Live filter course search results
+      renderCourses(coursesData);
+      timeModal.style.display = 'none';
+    });
+  }
+}
+
 // Event Listeners setup
 function setupEventListeners() {
   // Search input typing filter
@@ -1802,8 +1964,14 @@ function setupEventListeners() {
 
   // Reset advanced search selectors to empty default values to prevent filter locks
   function resetAdvancedSearchFilters() {
-    const checkFriday = document.getElementById('check-friday-free');
-    if (checkFriday) checkFriday.checked = false;
+    selectedTimeSlots.clear();
+    const btnLabel = document.getElementById('time-filter-btn-label');
+    if (btnLabel) btnLabel.textContent = "시간선택";
+    const btnOpenTime = document.getElementById('btn-open-time-filter');
+    if (btnOpenTime) {
+      btnOpenTime.style.borderColor = 'var(--border-color)';
+      btnOpenTime.style.color = 'var(--text-primary)';
+    }
 
     // Reset custom multiselect checkboxes to all checked (default)
     const grid = document.querySelector('#classification-popover .checkbox-grid');
@@ -2008,14 +2176,7 @@ function setupEventListeners() {
 
 
 
-  // (All advanced select dropdowns are now custom multiselect popovers)
 
-  const checkFriday = document.getElementById('check-friday-free');
-  if (checkFriday) {
-    checkFriday.addEventListener('change', () => {
-      renderCourses(coursesData);
-    });
-  }
 
 
 

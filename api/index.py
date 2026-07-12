@@ -347,7 +347,57 @@ def get_courses(
             
         return {"success": False, "error": str(e)}
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mileage_history.db")
+# ─── SQLite DB 경로 및 자동 압축 해제 ──────────────────────────────────────────
+# Vercel 등 서버리스 환경에서는 파일시스템이 읽기 전용이므로, /tmp 폴더에 압축을 해제하여 사용합니다.
+_LOCAL_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mileage_history.db")
+_GZ_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mileage_history.db.gz")
+
+if os.path.exists(_LOCAL_DB_PATH):
+    # 로컬 개발 환경 등 파일이 직접 존재하는 경우
+    DB_PATH = _LOCAL_DB_PATH
+else:
+    # Vercel 서버리스 환경 또는 파일이 분할/압축된 상태인 경우
+    DB_PATH = "/tmp/mileage_history.db"
+    if not os.path.exists(DB_PATH):
+        try:
+            import gzip
+            import shutil
+            import glob
+            
+            # 분할 파일이 있는 디렉토리 경로
+            _ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+            parts = sorted(glob.glob(os.path.join(_ROOT_DIR, "mileage_history_part_*")))
+            
+            if parts:
+                print(f"Assembling {len(parts)} database parts to /tmp/mileage_history.db.gz...")
+                tmp_gz_path = "/tmp/mileage_history.db.gz"
+                # 조각들을 하나의 gz 파일로 병합
+                with open(tmp_gz_path, 'wb') as f_out:
+                    for part in parts:
+                        with open(part, 'rb') as f_in:
+                            f_out.write(f_in.read())
+                
+                # 병합된 gz 파일을 db로 압축 해제
+                print(f"Decompressing {tmp_gz_path} to {DB_PATH}...")
+                with gzip.open(tmp_gz_path, 'rb') as f_in:
+                    with open(DB_PATH, 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                
+                # 임시 gz 파일 제거
+                if os.path.exists(tmp_gz_path):
+                    os.remove(tmp_gz_path)
+                print("Database assembly and decompression completed.")
+            elif os.path.exists(_GZ_DB_PATH):
+                # 백업용으로 단일 gz가 존재하는 경우
+                print(f"Decompressing {_GZ_DB_PATH} to {DB_PATH}...")
+                with gzip.open(_GZ_DB_PATH, 'rb') as f_in:
+                    with open(DB_PATH, 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                print("Decompression completed.")
+        except Exception as decompress_err:
+            print(f"Failed to decompress database: {decompress_err}")
+
+
 
 def calculate_clean_cutoff(conn, code, div, year, semester, fallback_min_mileage) -> float:
     """자의적인 삭제/정원 초과 삭제로 인해 불합격 처리된 고마일리지 아웃라이어를 필터링하고 실제 경쟁 컷오프를 반환합니다."""

@@ -1907,20 +1907,20 @@ function initTimeFilterGrid() {
           cell.style.background = 'transparent';
         }
       });
-      timeModal.style.display = 'flex';
+      timeModal.classList.add('active');
     });
   }
 
   if (btnCloseTime && timeModal) {
     btnCloseTime.addEventListener('click', () => {
-      timeModal.style.display = 'none';
+      timeModal.classList.remove('active');
     });
   }
 
   if (timeModal) {
     timeModal.addEventListener('click', (e) => {
       if (e.target === timeModal) {
-        timeModal.style.display = 'none';
+        timeModal.classList.remove('active');
       }
     });
   }
@@ -1950,7 +1950,7 @@ function initTimeFilterGrid() {
 
       // Live filter course search results
       renderCourses(coursesData);
-      timeModal.style.display = 'none';
+      timeModal.classList.remove('active');
     });
   }
 }

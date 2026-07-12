@@ -1,0 +1,12 @@
+{
+  "major_yy": 0.6000,
+  "major_yn": 0.3000,
+  "applied_credits_ratio": 0.1500,
+  "is_graduating": 0.0450,
+  "is_first_time": 0.0150,
+  "earned_credit_ratio": 0.0045,
+  "enrolled_semester_ratio": 0.0015,
+  "intercept": 0.0,
+  "scale_factor": 0.8160,
+  "description": "Strict lexicographical weights enforcing Yonsei university rules: YY > YN > NN, then applied credits, graduating, first time, earned credit ratio, semester ratio."
+}

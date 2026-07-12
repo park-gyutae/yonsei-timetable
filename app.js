@@ -1921,6 +1921,17 @@ function initTimeFilterGrid() {
     });
   }
 
+  const btnResetTime = document.getElementById('btn-reset-time-filter');
+  if (btnResetTime && timeModal) {
+    btnResetTime.addEventListener('click', () => {
+      const cells = timeModal.querySelectorAll('td[data-day]');
+      cells.forEach(cell => {
+        cell.classList.remove('selected-time-cell');
+        cell.style.background = 'transparent';
+      });
+    });
+  }
+
   if (btnApplyTime && timeModal) {
     btnApplyTime.addEventListener('click', () => {
       const cells = timeModal.querySelectorAll('td[data-day].selected-time-cell');

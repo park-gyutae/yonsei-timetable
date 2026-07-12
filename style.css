@@ -1975,6 +1975,17 @@ body {
   border-radius: 3px;
 }
 
+/* 시간 필터 선택된 셀 스타일 (쨍하지 않은 부드러운 파스텔톤 빨강) */
+#time-filter-grid-table td.selected-time-cell {
+  background-color: rgba(238, 0, 0, 0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(238, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] #time-filter-grid-table td.selected-time-cell {
+  background-color: rgba(238, 0, 0, 0.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(238, 0, 0, 0.55) !important;
+}
+
 
 
 

@@ -1880,10 +1880,8 @@ function initTimeFilterGrid() {
   function toggleCell(cell, select) {
     if (select) {
       cell.classList.add('selected-time-cell');
-      cell.style.background = '#ff1111'; // Red accent color
     } else {
       cell.classList.remove('selected-time-cell');
-      cell.style.background = 'transparent';
     }
   }
 
@@ -1901,10 +1899,8 @@ function initTimeFilterGrid() {
         const key = `${cell.dataset.day}-${cell.dataset.hour}`;
         if (selectedTimeSlots.has(key)) {
           cell.classList.add('selected-time-cell');
-          cell.style.background = '#ff1111';
         } else {
           cell.classList.remove('selected-time-cell');
-          cell.style.background = 'transparent';
         }
       });
       timeModal.classList.add('active');
@@ -1943,8 +1939,8 @@ function initTimeFilterGrid() {
           btnOpenTime.style.color = 'var(--text-primary)';
         } else {
           btnLabel.textContent = `시간선택 (${selectedTimeSlots.size}칸)`;
-          btnOpenTime.style.borderColor = '#ff1111';
-          btnOpenTime.style.color = '#ff1111';
+          btnOpenTime.style.borderColor = 'var(--danger)';
+          btnOpenTime.style.color = 'var(--danger)';
         }
       }
 

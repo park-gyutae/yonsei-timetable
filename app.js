@@ -606,6 +606,332 @@ function isEntirelyOnlineCourse(c) {
   return slots.every(s => isSlotVirtual(c, s));
 }
 
+// ─── 연세대 캠퍼스 건물 좌표 및 경사도 데이터 ───────────────────────────────
+const CAMPUS_MAPS = {
+  // 신촌캠퍼스 건물 좌표 (x, y) 및 고도 가중치 (elev)
+  sinchon: {
+    // 공학관 및 공학원 (낮음)
+    "공A": { x: 2.0, y: 2.5, name: "제1공학관", elev: 1 },
+    "공B": { x: 2.0, y: 2.8, name: "제2공학관", elev: 1.2 },
+    "공C": { x: 2.0, y: 3.1, name: "제3공학관", elev: 1.4 },
+    "공원": { x: 1.5, y: 2.2, name: "연세공학원", elev: 1 },
+    "체": { x: 1.8, y: 4.5, name: "체육관", elev: 1.8 },
+    "백": { x: 3.0, y: 3.2, name: "백양관", elev: 1 },
+    "박": { x: 3.5, y: 2.5, name: "백주년기념관", elev: 1 },
+    "대": { x: 2.5, y: 4.2, name: "대강당", elev: 1.5 },
+    "학회": { x: 3.0, y: 4.5, name: "학생회관", elev: 1.5 },
+    
+    // 도서관 (낮음-중간)
+    "학": { x: 3.2, y: 3.8, name: "연세·삼성학술정보관", elev: 1.2 },
+    "중": { x: 3.0, y: 3.8, name: "중앙도서관", elev: 1.2 },
+    
+    // 과학관 및 서측 언덕 (중간-높음)
+    "과": { x: 2.2, y: 5.2, name: "과학관", elev: 2.0 },
+    "과S": { x: 2.4, y: 5.6, name: "과학원", elev: 2.2 },
+    "교": { x: 1.4, y: 6.2, name: "교육과학관", elev: 2.5 },
+    "삼": { x: 1.2, y: 6.6, name: "삼성관", elev: 2.8 },
+    
+    // 사회과학대 및 중앙 언덕 (중간-높음)
+    "연": { x: 3.2, y: 6.2, name: "연희관", elev: 2.2 },
+    "신": { x: 3.4, y: 5.8, name: "원두우신학관", elev: 2.0 },
+    "경": { x: 3.8, y: 4.8, name: "경영관", elev: 1.8 },
+    "광": { x: 4.0, y: 5.2, name: "광복관", elev: 2.0 },
+    "광별": { x: 4.2, y: 5.2, name: "광복관 별관", elev: 2.0 },
+    
+    // 문과대학 산꼭대기 언덕 (매우 높음)
+    "외": { x: 4.2, y: 6.6, name: "외솔관", elev: 2.8 },
+    "위": { x: 4.4, y: 6.8, name: "위당관", elev: 3.0 },
+    
+    // 대우관 (최악의 산꼭대기, 아주 멂)
+    "상본": { x: 5.0, y: 8.5, name: "대우관 본관", elev: 4.5 },
+    "상별": { x: 5.2, y: 8.7, name: "대우관 별관", elev: 4.5 },
+    
+    // 동측 동선 (중간)
+    "새": { x: 4.6, y: 5.8, name: "새천년관", elev: 2.2 },
+    "국": { x: 5.0, y: 5.4, name: "국제학사", elev: 2.0 },
+    "음A": { x: 5.2, y: 4.8, name: "음악관 A동", elev: 1.8 },
+    "음B": { x: 5.4, y: 4.8, name: "음악관 B동", elev: 1.8 },
+    
+    // 의료원 및 간호대 동선 (매우 격리됨, 동편 낮음)
+    "간": { x: 6.0, y: 3.8, name: "간호대학", elev: 1.5 },
+    "의": { x: 6.2, y: 3.5, name: "의과대학", elev: 1.5 },
+    "치": { x: 6.0, y: 3.2, name: "치과대학", elev: 1.5 },
+    "상남": { x: 4.8, y: 2.8, name: "상남경영관", elev: 1.2 }
+  },
+  
+  // 송도 국제캠퍼스 건물 좌표 (평탄하며 서로 조밀하게 배치되어 있음)
+  songdo: {
+    "자A": { x: 1.0, y: 1.0, name: "자유관 A동" },
+    "자B": { x: 1.3, y: 1.0, name: "자유관 B동" },
+    "진A": { x: 1.0, y: 2.0, name: "진리관 A동" },
+    "진B": { x: 1.2, y: 2.2, name: "진리관 B동" },
+    "진C": { x: 1.4, y: 2.4, name: "진리관 C동" },
+    "진D": { x: 1.6, y: 2.6, name: "진리관 D동" },
+    "종": { x: 2.0, y: 1.5, name: "종합관" },
+    "언기": { x: 1.5, y: 1.5, name: "언더우드기념도서관" }
+  }
+};
+
+// 강의동 약어 및 캠퍼스 구분 추출기
+function parseBuildingAndCampus(roomStr) {
+  if (!roomStr) return null;
+  const clean = roomStr.trim().replace(/^\((.*)\)$/, '$1');
+  
+  // 약어가 긴 순서대로 매칭하여 오인식 방지
+  const keys = [
+    "광별", "공원", "상남", "상본", "상별", "과S", "음A", "음B", "학회", "진A", "진B", "진C", "진D", "자A", "자B", "언기",
+    "공A", "공B", "공C", "새", "국", "학", "중", "체", "대", "박", "위", "외", "경", "연", "과", "광", "삼", "신", "교", "간", "의", "치", "백", "종"
+  ];
+  
+  for (const b of keys) {
+    if (clean.startsWith(b)) {
+      if (CAMPUS_MAPS.songdo[b]) {
+        return { building: b, campus: 'songdo', info: CAMPUS_MAPS.songdo[b], raw: clean };
+      }
+      if (CAMPUS_MAPS.sinchon[b]) {
+        return { building: b, campus: 'sinchon', info: CAMPUS_MAPS.sinchon[b], raw: clean };
+      }
+    }
+  }
+  
+  if (clean.includes("동영상") || clean.includes("콘텐츠") || clean.includes("온라인")) {
+    return { building: "온라인", campus: "online", info: null, raw: clean };
+  }
+  
+  return null;
+}
+
+// 두 강의동 간 도보 이동시간(분) 계산기
+function calculateWalkTime(b1, b2) {
+  if (b1.campus === 'online' || b2.campus === 'online') {
+    return { time: 0, possible: true, msg: "✅ 온라인 콘텐츠 강의이므로 이동에 지장을 주지 않습니다." };
+  }
+  
+  if (b1.campus !== b2.campus) {
+    return { 
+      time: 999, 
+      possible: false, 
+      msg: `❌ 캠퍼스 간 이동 불가 (${b1.campus === 'sinchon' ? '신촌' : '송도'} → ${b2.campus === 'sinchon' ? '신촌' : '송도'}). 셔틀버스로 최소 50분 이상 소요되어 연강 수강이 불가능합니다.` 
+    };
+  }
+  
+  if (b1.building === b2.building) {
+    return { 
+      time: 2, 
+      possible: true, 
+      msg: `✅ 동일 건물 내 이동 (${b1.info.name}). 엘리베이터나 계단으로 층간 이동만 하시면 되므로 10분 내로 충분히 도착 가능합니다.` 
+    };
+  }
+  
+  if (b1.campus === 'songdo') {
+    return { 
+      time: 5, 
+      possible: true, 
+      msg: `✅ 국제캠퍼스 내 이동 (${b1.info.name} → ${b2.info.name}). 평지 구성에 건물이 인접하여 도보로 5분 내외로 원활히 이동 가능합니다.` 
+    };
+  }
+  
+  // 신촌캠퍼스 이동시간 계산 (경사와 거리 가중치 반영)
+  const p1 = b1.info;
+  const p2 = b2.info;
+  
+  const dx = p1.x - p2.x;
+  const dy = p1.y - p2.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  
+  // 기준 도보 이동 속도
+  let time = dist * 2.8;
+  
+  // 고도 차이에 따른 경사 가중치 페널티
+  const elevDiff = Math.abs(p1.elev - p2.elev);
+  time += elevDiff * 2.0;
+  
+  // 대우관(상본/상별) 및 위당/외솔관(위/외) 등 최상위 극악의 언덕 페널티
+  if (p2.elev >= 4.0 || p1.elev >= 4.0) {
+    time += 3.0; // 악명 높은 대우관 헐떡고개 페널티
+  } else if (p2.elev >= 2.8 || p1.elev >= 2.8) {
+    time += 1.5; // 청송대/외솔관 언덕 계단 페널티
+  }
+  
+  time = Math.round(time);
+  
+  if (time > 10) {
+    return {
+      time,
+      possible: false,
+      msg: `❌ 이동 불가 경고 (약 ${time}분 소요 예상). ${p1.name}에서 ${p2.name}까지의 거리가 매우 멀고 오르막길 경사가 심해 쉬는 시간 10분 안에 뛰어가는 것이 사실상 불가능합니다.`
+    };
+  } else if (time > 7) {
+    return {
+      time,
+      possible: true,
+      msg: `⚠️ 동선 매우 촉박 (약 ${time}분 소요 예상). ${p1.name}에서 ${p2.name}까지 경사로를 올라가야 하므로, 수업이 끝나자마자 상당히 서둘러서 이동하셔야 지각을 면할 수 있습니다.`
+    };
+  } else {
+    return {
+      time,
+      possible: true,
+      msg: `✅ 도보 이동 원활 (약 ${time}분 소요 예상). ${p1.name}에서 ${p2.name}까지는 평탄하거나 무난한 거리로, 도보로 여유롭게 이동하실 수 있는 최적의 동선입니다.`
+    };
+  }
+}
+
+// 연강 동선 및 이동 시간 진단 함수
+function checkConsecutiveClassMobility() {
+  const container = document.getElementById('mobility-status-container');
+  if (!container) return;
+
+  if (selectedCourses.length <= 1) {
+    container.innerHTML = `
+      <div style="color: var(--text-muted); font-size: 12.5px; text-align: center; padding: 10px 0;">
+        <i data-lucide="info" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px; opacity: 0.7;"></i>
+        시간표 상에 연달아 수강하는 수업(연강)이 없습니다. 연강 발생 시 동선과 이동 가능 여부를 자동으로 분석해 드립니다.
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  // 1. Group class slots by day
+  const daySchedule = {};
+  selectedCourses.forEach(c => {
+    const slots = parseTimeSlots(c.time).filter(s => !isSlotVirtual(c, s));
+    slots.forEach(s => {
+      if (!daySchedule[s.day]) {
+        daySchedule[s.day] = [];
+      }
+      daySchedule[s.day].push({
+        course: c,
+        period: s.period
+      });
+    });
+  });
+
+  const consecutivePairs = [];
+
+  // 2. Identify consecutive pairs on the same day
+  Object.keys(daySchedule).forEach(day => {
+    const schedule = daySchedule[day];
+    schedule.sort((a, b) => a.period - b.period);
+
+    for (let i = 0; i < schedule.length - 1; i++) {
+      const current = schedule[i];
+      const next = schedule[i+1];
+      
+      if (next.period === current.period + 1 && current.course.code !== next.course.code) {
+        const exists = consecutivePairs.some(p => 
+          p.day === day && 
+          p.c1.code === current.course.code && 
+          p.c2.code === next.course.code
+        );
+
+        if (!exists) {
+          consecutivePairs.push({
+            day,
+            endPeriod: current.period,
+            startPeriod: next.period,
+            c1: current.course,
+            c2: next.course
+          });
+        }
+      }
+    }
+  });
+
+  if (consecutivePairs.length === 0) {
+    container.innerHTML = `
+      <div style="color: var(--text-muted); font-size: 12.5px; text-align: center; padding: 10px 0;">
+        <i data-lucide="info" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 4px; opacity: 0.7;"></i>
+        시간표 상에 연달아 수강하는 수업(연강)이 없습니다. 연강 발생 시 동선과 이동 가능 여부를 자동으로 분석해 드립니다.
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  // 3. Analyze each consecutive pair
+  let html = `<div style="display: flex; flex-direction: column; gap: 12px;">`;
+
+  consecutivePairs.forEach(pair => {
+    const r1 = getRoomForDay(pair.c1.time, pair.c1.room, pair.day);
+    const r2 = getRoomForDay(pair.c2.time, pair.c2.room, pair.day);
+
+    const b1 = parseBuildingAndCampus(r1);
+    const b2 = parseBuildingAndCampus(r2);
+
+    let walkResult;
+    if (!b1 || !b2) {
+      walkResult = {
+        time: 0,
+        possible: true,
+        msg: `ℹ️ 강의실 정보 분석 불가 (${r1 || '강의실 미정'} → ${r2 || '강의실 미정'}). 강의실이 지정되면 동선 분석이 활성화됩니다.`
+      };
+    } else {
+      walkResult = calculateWalkTime(b1, b2);
+    }
+
+    const stateColor = walkResult.possible 
+      ? (walkResult.time > 7 ? 'var(--warning)' : 'var(--success)') 
+      : 'var(--danger)';
+    
+    const badgeBg = walkResult.possible 
+      ? (walkResult.time > 7 ? 'rgba(255, 193, 7, 0.1)' : 'rgba(40, 167, 69, 0.1)') 
+      : 'rgba(220, 53, 69, 0.1)';
+
+    html += `
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <!-- Day / Periods Info Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+          <span style="font-weight: 700; font-size: 12.5px; color: var(--accent-light);">
+            📅 ${pair.day}요일 연강 (${pair.endPeriod}교시 → ${pair.startPeriod}교시)
+          </span>
+          <span style="font-size: 11px; font-weight: 700; color: ${stateColor}; background: ${badgeBg}; padding: 2px 6px; border-radius: 4px; border: 1px solid ${stateColor}40;">
+            ${walkResult.time === 999 ? '이동 불가능' : (walkResult.time === 0 ? '영향 없음' : `약 ${walkResult.time}분 소요`)}
+          </span>
+        </div>
+        
+        <!-- Transition Description -->
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <!-- Previous class -->
+          <div style="display: flex; justify-content: space-between; font-size: 11.5px;">
+            <span style="color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 250px;">
+              ① ${pair.c1.title} (${pair.endPeriod}교시 종료)
+            </span>
+            <span style="font-weight: 600; color: var(--text-primary); min-width: 90px; text-align: right;">
+              📍 ${r1 || '강의실 미정'}
+            </span>
+          </div>
+          
+          <!-- Downward Arrow Icon -->
+          <div style="padding-left: 10px; color: var(--text-muted); font-size: 10px; display: flex; align-items: center;">
+            <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.5; margin-right: 4px;"></i>
+            <span style="opacity: 0.5;">이동 동선</span>
+          </div>
+          
+          <!-- Next class -->
+          <div style="display: flex; justify-content: space-between; font-size: 11.5px;">
+            <span style="color: var(--text-muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 250px;">
+              ② ${pair.c2.title} (${pair.startPeriod}교시 시작)
+            </span>
+            <span style="font-weight: 600; color: var(--text-primary); min-width: 90px; text-align: right;">
+              📍 ${r2 || '강의실 미정'}
+            </span>
+          </div>
+        </div>
+        
+        <!-- Mobility Diagnostic Message -->
+        <div style="font-size: 11px; line-height: 1.4; color: ${walkResult.possible ? 'var(--text-secondary)' : 'var(--danger)'}; background: ${walkResult.possible ? 'transparent' : 'rgba(220, 53, 69, 0.05)'}; padding: 6px; border-radius: 4px; margin-top: 2px;">
+          ${walkResult.msg}
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+  if (window.lucide) window.lucide.createIcons();
+}
+
 // Render blocks on the visual calendar grid
 function renderTimetableGrid() {
   // Re-build the calendar grid dynamically based on selected courses
@@ -780,6 +1106,9 @@ function renderTimetableGrid() {
     }
   }
 
+  // Run consecutive class mobility checks on current timetable!
+  checkConsecutiveClassMobility();
+
   // Always sync mini timetable grid as well
   renderMiniTimetableGrid();
 }
@@ -914,6 +1243,9 @@ function renderMiniTimetableGrid() {
       calendar.appendChild(eventBlock);
     });
   });
+
+  // Run consecutive class mobility checks on current timetable!
+  checkConsecutiveClassMobility();
 }
 
 // Render selected courses list with sliders for mileage allocation

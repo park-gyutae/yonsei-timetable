@@ -529,7 +529,20 @@ if os.path.exists(_LOCAL_DB_PATH):
 else:
     # Vercel 서버리스 환경 또는 파일이 분할/압축된 상태인 경우
     DB_PATH = "/tmp/mileage_history.db"
-    if not os.path.exists(DB_PATH):
+    
+    db_needs_assembly = not os.path.exists(DB_PATH)
+    if not db_needs_assembly:
+        try:
+            import sqlite3
+            conn = sqlite3.connect(DB_PATH)
+            columns = [row[1] for row in conn.execute("PRAGMA table_info(courses)").fetchall()]
+            conn.close()
+            if "room" not in columns:
+                db_needs_assembly = True
+        except Exception:
+            db_needs_assembly = True
+            
+    if db_needs_assembly:
         try:
             import gzip
             import shutil

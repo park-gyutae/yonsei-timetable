@@ -2819,9 +2819,7 @@ async function openMileageAnalysisModal(course) {
     nonmajorCutLabel.textContent = nonmajorCutVal !== 'N/A' ? `${nonmajorCutVal}점` : 'N/A';
     nonmajorAvgLabel.textContent = nonmajorAvgVal !== 'N/A' ? `${nonmajorAvgVal}점` : 'N/A';
 
-    // Toggle Major protection display
-    const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
-    const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
+    // Toggle Major protection display (reusing variables declared above)
     const majorRow = document.getElementById('major-stats-row');
     const majorNotice = document.getElementById('major-stats-notice');
     

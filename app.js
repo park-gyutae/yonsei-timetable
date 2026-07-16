@@ -2708,36 +2708,103 @@ async function openMileageAnalysisModal(course) {
     const globalAvgVal = globalPassBidsAll.length > 0 ? (globalPassBidsAll.reduce((sum, b) => sum + b.mileage, 0) / globalPassBidsAll.length).toFixed(2) : '0';
     globalAvgLabel.textContent = `${globalAvgVal}점`;
 
-    // 2. Populate Year-specific stats (based on user's selected Grade)
+    // 2. Populate Custom Group Stats based on User Situation (Grade & Major Status)
     const userGrade = myProfile.grade;
+    const userMajorStatus = determineMajorStatus(course.code, myProfile);
+    const isMajor = userMajorStatus !== 'N(N)';
+    const userMajorLabel = userMajorStatus === 'Y(Y)' ? '본전공자' : (userMajorStatus === 'Y(N)' ? '복수전공자' : '비전공자');
+    const mySituationLabel = `${userGrade}학년 / ${userMajorLabel}`;
+
     const yq = summary.year_quotas;
     const isYearQuotasActive = yq && (yq['1'] > 0 || yq['2'] > 0 || yq['3'] > 0 || yq['4'] > 0);
     const yearCapacity = isYearQuotasActive ? (yq[userGrade] || 0) : summary.capacity;
-    
-    const yearBids = bids.filter(b => b.grade === userGrade);
-    const yearApplicants = yearBids.length;
-    const yearCompRatio = yearCapacity > 0 ? (yearApplicants / yearCapacity).toFixed(2) : '0';
-    yearRatioLabel.innerHTML = `${yearCapacity} / ${yearApplicants} <small>(${yearCompRatio}:1)</small>`;
 
-    const yearPassBids = yearBids.filter(b => b.success === 'Y' && !b.remark);
-    const yearCutlineVal = yearPassBids.length > 0 ? Math.min(...yearPassBids.map(b => b.mileage)) : 'N/A';
-    yearCutlineLabel.textContent = yearCutlineVal !== 'N/A' ? `${yearCutlineVal}점` : 'N/A';
+    const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
+    const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
+    const mqVal = isMajorQuotaActive ? parseInt(majorQuotaMatch[1]) : 0;
 
-    const yearAvgVal = yearPassBids.length > 0 ? (yearPassBids.reduce((sum, b) => sum + b.mileage, 0) / yearPassBids.length).toFixed(2) : 'N/A';
-    yearAvgLabel.textContent = yearAvgVal !== 'N/A' ? `${yearAvgVal}점` : 'N/A';
+    // Filter bids belonging to the user's specific group
+    let groupBids = bids;
+    let groupCapacityLabel = "정원";
+    let groupCapacityVal = summary.capacity;
+
+    if (isYearQuotasActive && isMajorQuotaActive) {
+      groupBids = bids.filter(b => b.grade === userGrade && (isMajor ? b.major.startsWith('Y') : !b.major.startsWith('Y')));
+      groupCapacityLabel = `${userGrade}학년 정원`;
+      groupCapacityVal = yearCapacity;
+    } else if (isYearQuotasActive) {
+      groupBids = bids.filter(b => b.grade === userGrade);
+      groupCapacityLabel = `${userGrade}학년 정원`;
+      groupCapacityVal = yearCapacity;
+    } else if (isMajorQuotaActive) {
+      groupBids = bids.filter(b => isMajor ? b.major.startsWith('Y') : !b.major.startsWith('Y'));
+      if (isMajor) {
+        groupCapacityLabel = "전공자 정원";
+        groupCapacityVal = mqVal;
+      } else {
+        groupCapacityLabel = "비전공자 정원";
+        groupCapacityVal = Math.max(0, summary.capacity - mqVal);
+      }
+    } else {
+      groupBids = bids;
+      groupCapacityLabel = "전체 정원";
+      groupCapacityVal = summary.capacity;
+    }
+
+    const groupApplicants = groupBids.length;
+    const groupCompRatio = groupCapacityVal > 0 ? (groupApplicants / groupCapacityVal).toFixed(2) : '0';
+    yearRatioLabel.innerHTML = `${groupCapacityVal} / ${groupApplicants} <small>(${groupCompRatio}:1)</small>`;
+
+    const groupPassBids = groupBids.filter(b => b.success === 'Y' && !b.remark);
+    const groupCutlineVal = groupPassBids.length > 0 ? Math.min(...groupPassBids.map(b => b.mileage)) : 'N/A';
+    yearCutlineLabel.textContent = groupCutlineVal !== 'N/A' ? `${groupCutlineVal}점` : 'N/A';
+
+    const groupAvgVal = groupPassBids.length > 0 ? (groupPassBids.reduce((sum, b) => sum + b.mileage, 0) / groupPassBids.length).toFixed(2) : 'N/A';
+    yearAvgLabel.textContent = groupAvgVal !== 'N/A' ? `${groupAvgVal}점` : 'N/A';
 
     // Toggle Grade Quota Section Display
     const yearGrid = document.getElementById('year-stats-grid');
     const yearNotice = document.getElementById('year-stats-notice');
-    if (isYearQuotasActive) {
-      yearStatsTitle.textContent = `나의 학년 지원 현황 (${userGrade}학년 - 학년별 정원 적용됨)`;
-      if (yearGrid) yearGrid.style.display = 'grid';
-      if (yearNotice) yearNotice.style.display = 'none';
-    } else {
-      yearStatsTitle.textContent = `나의 학년 지원 현황 (${userGrade}학년 - 제한 없음)`;
-      if (yearGrid) yearGrid.style.display = 'none';
-      if (yearNotice) yearNotice.style.display = 'flex';
+
+    if (yearGrid) {
+      const statLabels = yearGrid.querySelectorAll('.stat-label');
+      if (statLabels && statLabels.length >= 3) {
+        statLabels[0].textContent = `${groupCapacityLabel} 대비 신청자`;
+        statLabels[1].textContent = "그룹 합격 커트라인";
+        statLabels[2].textContent = "그룹 합격자 평균";
+      }
     }
+
+    let noticeMessage = "";
+    let showGrid = true;
+
+    if (isYearQuotasActive && isMajorQuotaActive) {
+      noticeMessage = `이 과목은 <strong>학년별 정원</strong>과 <strong>전공자 보호제한</strong>이 모두 적용됩니다. 귀하는 <strong>'${userGrade}학년 / ${userMajorLabel}'</strong> 그룹에서 경쟁합니다.`;
+    } else if (isYearQuotasActive) {
+      noticeMessage = `이 과목은 <strong>학년별 정원 제한</strong>이 적용됩니다. 귀하는 <strong>'${userGrade}학년'</strong> 그룹에서 경쟁하며, 전공 여부 차별은 없습니다.`;
+    } else if (isMajorQuotaActive) {
+      noticeMessage = `이 과목은 <strong>전공자 보호제한</strong>이 적용됩니다. 귀하는 <strong>'${userMajorLabel}'</strong> 그룹에서 경쟁하며, 학년 구분은 없습니다.`;
+    } else {
+      noticeMessage = `이 과목은 학년별 정원 및 전공자 보호제한이 없습니다. 모든 학년/전공 구분 없이 전체 정원을 두고 공동 경쟁합니다.`;
+      showGrid = false;
+    }
+
+    yearStatsTitle.textContent = `나의 맞춤형 지원 현황 (${mySituationLabel})`;
+
+    if (showGrid) {
+      if (yearGrid) yearGrid.style.display = 'grid';
+      if (yearNotice) {
+        yearNotice.style.display = 'flex';
+        yearNotice.innerHTML = `<i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i><span>${noticeMessage}</span>`;
+      }
+    } else {
+      if (yearGrid) yearGrid.style.display = 'none';
+      if (yearNotice) {
+        yearNotice.style.display = 'flex';
+        yearNotice.innerHTML = `<i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i><span>${noticeMessage}</span>`;
+      }
+    }
+    lucide.createIcons();
 
     // 3. Populate Major / Non-major stats (for display)
     const majorPass = bids.filter(b => b.major.startsWith('Y') && b.success === 'Y');

@@ -2016,6 +2016,12 @@ function setupEventListeners() {
           content.classList.remove('active');
         }
       });
+
+      // Force Chart.js redraw on tab activation
+      if (targetId === 'mileage-tab-ai' && activeCourseObject) {
+        const sliderVal = parseInt(document.getElementById('predict-score-slider').value) || 12;
+        renderAIProbabilityChart(activeCourseObject, sliderVal);
+      }
     });
   });
 

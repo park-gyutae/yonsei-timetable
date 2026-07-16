@@ -173,6 +173,18 @@ function clearOldCache() {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
+  // Automatic cache invalidation for new database version
+  const CACHE_VERSION = 'v1.2.4';
+  if (localStorage.getItem('ymu_cache_version') !== CACHE_VERSION) {
+    Object.keys(localStorage).forEach(k => {
+      // Keep user preferences / saved data (wishlist, theme)
+      if (k.startsWith('ymu_') && k !== 'ymu_theme' && k !== 'ymu_wishlist') {
+        localStorage.removeItem(k);
+      }
+    });
+    localStorage.setItem('ymu_cache_version', CACHE_VERSION);
+  }
+
   // Restore saved theme configuration or fallback to system preference
   const savedTheme = localStorage.getItem('ymu_theme');
   const isSystemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;

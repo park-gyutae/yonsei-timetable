@@ -283,7 +283,7 @@ def get_courses(
         if 'DB_PATH' in globals() and os.path.exists(DB_PATH):
             try:
                 conn = sqlite3.connect(DB_PATH)
-                query = "SELECT course_code, division, title, credits, grade, classification, professor, time_slot FROM courses WHERE 1=1"
+                query = "SELECT course_code, division, title, credits, grade, classification, professor, time_slot, room, evaluation FROM courses WHERE 1=1"
                 params = []
                 if college:
                     query += " AND college = ?"
@@ -299,11 +299,11 @@ def get_courses(
                 
                 formatted_courses = []
                 for row in rows:
-                    c_code, c_div, c_title, c_credits, c_grade, c_class, c_prof, c_time_slot = row
+                    c_code, c_div, c_title, c_credits, c_grade, c_class, c_prof, c_time_slot, c_room, c_eval = row
                     
                     key = f"{c_code}-{c_div}"
-                    room = _ROOM_CACHE.get(key)
-                    evaluation = _EVAL_CACHE.get(key)
+                    room = c_room or _ROOM_CACHE.get(key)
+                    evaluation = c_eval or _EVAL_CACHE.get(key)
                     
                     if not room:
                         # Determine plausible classroom at Yonsei based on college or course code prefix

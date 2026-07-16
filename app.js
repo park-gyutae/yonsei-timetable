@@ -4031,7 +4031,7 @@ async function initSearchFilters() {
     const res = await fetch('/api/colleges');
     const data = await res.json();
     if (data.success && data.colleges && data.colleges.length > 0) {
-      collegeSelect.innerHTML = '';
+      collegeSelect.innerHTML = '<option value="">전체</option>';
       data.colleges.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.code;
@@ -4046,6 +4046,7 @@ async function initSearchFilters() {
   } catch (err) {
     console.log("Colleges load failed, using fallbacks", err);
     collegeSelect.innerHTML = `
+      <option value="">전체</option>
       <option value="s1103" selected>이과대학</option>
       <option value="s1102">상경대학</option>
       <option value="s1101">문과대학</option>
@@ -4059,13 +4060,19 @@ async function loadDepartments(collegeCode) {
   const deptSelect = document.getElementById('select-dept');
   if (!deptSelect) return;
   
+  if (!collegeCode) {
+    deptSelect.innerHTML = '<option value="">전체</option>';
+    await fetchCourses();
+    return;
+  }
+  
   deptSelect.innerHTML = '<option value="">학과 로드 중...</option>';
   
   try {
     const res = await fetch(`/api/departments?college=${collegeCode}`);
     const data = await res.json();
     if (data.success && data.departments && data.departments.length > 0) {
-      deptSelect.innerHTML = '';
+      deptSelect.innerHTML = '<option value="">전체</option>';
       data.departments.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d.code;
@@ -4080,16 +4087,21 @@ async function loadDepartments(collegeCode) {
     console.log("Departments load failed, using fallbacks", err);
     if (collegeCode === 's1103') {
       deptSelect.innerHTML = `
+        <option value="">전체</option>
         <option value="0301" selected>수학전공</option>
         <option value="0302">물리학전공</option>
         <option value="0303">화학전공</option>
       `;
     } else if (collegeCode === 's1102') {
       deptSelect.innerHTML = `
+        <option value="">전체</option>
         <option value="0203" selected>응용통계학전공</option>
       `;
     } else {
-      deptSelect.innerHTML = '<option value="9999" selected>공통/임의전공</option>';
+      deptSelect.innerHTML = `
+        <option value="">전체</option>
+        <option value="9999" selected>공통/임의전공</option>
+      `;
     }
   }
   

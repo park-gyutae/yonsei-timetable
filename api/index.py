@@ -232,6 +232,56 @@ def get_courses(
     year: str = Query("2026", description="Year"),
     semester: str = Query("20", description="Semester code (10: 1st, 20: 2nd)")
 ):
+    # ─── 대학(College) 또는 학과(Dept)가 "전체" (빈 값)인 경우 SQLite DB에서 쿼리 ──────────────────
+    if not college or not dept:
+        if 'DB_PATH' in globals() and os.path.exists(DB_PATH):
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                query = "SELECT course_code, division, title, credits, grade, classification, professor, time_slot FROM courses WHERE 1=1"
+                params = []
+                if college:
+                    query += " AND college = ?"
+                    params.append(college)
+                if dept:
+                    query += " AND dept = ?"
+                    params.append(dept)
+                
+                rows = conn.execute(query, params).fetchall()
+                formatted_courses = []
+                for row in rows:
+                    c_code, c_div, c_title, c_credits, c_grade, c_class, c_prof, c_time_slot = row
+                    
+                    is_songdo_div = c_div != "01" and (college == "s1160" or "RC" in (c_class or ""))
+                    room = "진B201" if is_songdo_div else "공A201"
+                    
+                    formatted_courses.append({
+                        "code": c_code,
+                        "division": c_div,
+                        "title": c_title,
+                        "credits": int(c_credits or 3),
+                        "grade": c_grade or "1",
+                        "classification": c_class or "",
+                        "professor": c_prof or "미지정",
+                        "time": c_time_slot or "",
+                        "room": room,
+                        "evaluation": "상대평가"
+                    })
+                conn.close()
+
+                if campus:
+                    filtered_courses = []
+                    for c in formatted_courses:
+                        is_songdo = (college == "s1160") or ("RC" in c["classification"]) or (c["division"] != "01" and "0" not in c["division"])
+                        if campus == "G" and is_songdo:
+                            filtered_courses.append(c)
+                        elif campus == "S" and not is_songdo:
+                            filtered_courses.append(c)
+                    formatted_courses = filtered_courses
+
+                return {"success": True, "courses": formatted_courses, "source": "database"}
+            except Exception as e:
+                print(f"[ERROR] Database query for all courses failed: {e}")
+                pass
     cache_key = f"{year}_{semester}_{college}_{dept}_{campus}"
     # L1: 메모리
     if cache_key in MEM_CACHE:

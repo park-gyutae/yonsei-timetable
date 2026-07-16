@@ -2670,8 +2670,6 @@ async function openMileageAnalysisModal(course) {
 
     // 2. Populate Year-specific stats (based on user's selected Grade)
     const userGrade = myProfile.grade;
-    yearStatsTitle.textContent = `나의 학년 지원 현황 (${userGrade}학년)`;
-
     const yq = summary.year_quotas;
     const isYearQuotasActive = yq && (yq['1'] > 0 || yq['2'] > 0 || yq['3'] > 0 || yq['4'] > 0);
     const yearCapacity = isYearQuotasActive ? (yq[userGrade] || 0) : summary.capacity;
@@ -2688,6 +2686,19 @@ async function openMileageAnalysisModal(course) {
     const yearAvgVal = yearPassBids.length > 0 ? (yearPassBids.reduce((sum, b) => sum + b.mileage, 0) / yearPassBids.length).toFixed(2) : 'N/A';
     yearAvgLabel.textContent = yearAvgVal !== 'N/A' ? `${yearAvgVal}점` : 'N/A';
 
+    // Toggle Grade Quota Section Display
+    const yearGrid = document.getElementById('year-stats-grid');
+    const yearNotice = document.getElementById('year-stats-notice');
+    if (isYearQuotasActive) {
+      yearStatsTitle.textContent = `나의 학년 지원 현황 (${userGrade}학년 - 학년별 정원 적용됨)`;
+      if (yearGrid) yearGrid.style.display = 'grid';
+      if (yearNotice) yearNotice.style.display = 'none';
+    } else {
+      yearStatsTitle.textContent = `나의 학년 지원 현황 (${userGrade}학년 - 제한 없음)`;
+      if (yearGrid) yearGrid.style.display = 'none';
+      if (yearNotice) yearNotice.style.display = 'flex';
+    }
+
     // 3. Populate Major / Non-major stats (for display)
     const majorPass = bids.filter(b => b.major.startsWith('Y') && b.success === 'Y');
     const majorCutVal = majorPass.length > 0 ? Math.min(...majorPass.map(b => b.mileage)) : 'N/A';
@@ -2701,10 +2712,23 @@ async function openMileageAnalysisModal(course) {
     nonmajorCutLabel.textContent = nonmajorCutVal !== 'N/A' ? `${nonmajorCutVal}점` : 'N/A';
     nonmajorAvgLabel.textContent = nonmajorAvgVal !== 'N/A' ? `${nonmajorAvgVal}점` : 'N/A';
 
+    // Toggle Major protection display
+    const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
+    const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
+    const majorRow = document.getElementById('major-stats-row');
+    const majorNotice = document.getElementById('major-stats-notice');
+    
+    if (isMajorQuotaActive) {
+      if (majorRow) majorRow.style.display = 'flex';
+      if (majorNotice) majorNotice.style.display = 'none';
+    } else {
+      if (majorRow) majorRow.style.display = 'none';
+      if (majorNotice) majorNotice.style.display = 'flex';
+    }
+
     // 4. Populate Constraints details
     detailMaxMileage.textContent = `${summary.max_allowed_mileage}점`;
 
-    const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
     if (majorQuotaMatch) {
       const mqVal = majorQuotaMatch[1];
       const mqType = majorQuotaMatch[2] === 'Y' ? '본전공/복수전공 모두 적용' : '본전공자만 적용 (복수전공자 제외)';
@@ -2774,6 +2798,8 @@ async function openMileageAnalysisModal(course) {
         </tr>
       `;
     }
+
+    if (window.lucide) window.lucide.createIcons();
 
   } catch (err) {
     chartContainer.innerHTML = `

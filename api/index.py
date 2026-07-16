@@ -307,12 +307,23 @@ def get_courses(
                     
                     if not room:
                         # Determine plausible classroom at Yonsei based on college or course code prefix
-                        room = "백양관 201"
                         c_coll = college or ""
                         c_code_str = c_code or ""
                         c_div_str = c_div or ""
+                        c_time_slot_str = c_time_slot or ""
                         
-                        if c_coll == "s1101":
+                        # Check online/video lectures dynamically
+                        is_online = (
+                            "토" in c_time_slot_str or 
+                            not c_time_slot_str or 
+                            any(okw in (c_title or "") for okw in ["온라인", "동영상", "인터넷", "재택", "콘텐츠"]) or
+                            "동영상" in c_time_slot_str or
+                            "온라인" in c_time_slot_str
+                        )
+                        
+                        if is_online:
+                            room = "동영상콘텐츠"
+                        elif c_coll == "s1101":
                             room = "위당관 312" if "3" in c_div_str else "외솔관 201"
                         elif c_coll == "s1102":
                             room = "대우관본관 201" if "2" in c_div_str else "경영관 B101"

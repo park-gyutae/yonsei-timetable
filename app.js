@@ -2025,6 +2025,40 @@ function setupEventListeners() {
     });
   });
 
+  // Mileage distribution view toggle handler (Chart vs Table)
+  const btnViewChart = document.getElementById('btn-view-chart');
+  const btnViewTable = document.getElementById('btn-view-table');
+  const mileageChartContainer = document.getElementById('mileage-chart-container');
+  const mileageTableContainer = document.getElementById('mileage-table-container');
+
+  if (btnViewChart && btnViewTable) {
+    btnViewChart.addEventListener('click', () => {
+      btnViewChart.classList.add('active');
+      btnViewChart.style.color = 'var(--text-primary)';
+      btnViewChart.style.background = 'var(--canvas-elevated)';
+      
+      btnViewTable.classList.remove('active');
+      btnViewTable.style.color = 'var(--text-muted)';
+      btnViewTable.style.background = 'none';
+
+      if (mileageChartContainer) mileageChartContainer.style.display = 'block';
+      if (mileageTableContainer) mileageTableContainer.style.display = 'none';
+    });
+
+    btnViewTable.addEventListener('click', () => {
+      btnViewTable.classList.add('active');
+      btnViewTable.style.color = 'var(--text-primary)';
+      btnViewTable.style.background = 'var(--canvas-elevated)';
+      
+      btnViewChart.classList.remove('active');
+      btnViewChart.style.color = 'var(--text-muted)';
+      btnViewChart.style.background = 'none';
+
+      if (mileageChartContainer) mileageChartContainer.style.display = 'none';
+      if (mileageTableContainer) mileageTableContainer.style.display = 'block';
+    });
+  }
+
   // Search input typing filter
   document.getElementById('input-search').addEventListener('input', () => {
     renderCourses(coursesData);
@@ -2611,6 +2645,24 @@ async function openMileageAnalysisModal(course) {
     }
   });
 
+  // Reset distribution view toggle to Chart on open
+  const btnViewChart = document.getElementById('btn-view-chart');
+  const btnViewTable = document.getElementById('btn-view-table');
+  const mileageChartContainer = document.getElementById('mileage-chart-container');
+  const mileageTableContainer = document.getElementById('mileage-table-container');
+  if (btnViewChart && btnViewTable) {
+    btnViewChart.classList.add('active');
+    btnViewChart.style.color = 'var(--text-primary)';
+    btnViewChart.style.background = 'var(--canvas-elevated)';
+    
+    btnViewTable.classList.remove('active');
+    btnViewTable.style.color = 'var(--text-muted)';
+    btnViewTable.style.background = 'none';
+
+    if (mileageChartContainer) mileageChartContainer.style.display = 'block';
+    if (mileageTableContainer) mileageTableContainer.style.display = 'none';
+  }
+
   // 0. Populate sibling divisions comparison table
   const compList = document.getElementById('divisions-comparison-list');
   compList.innerHTML = '';
@@ -3097,6 +3149,11 @@ function renderBidsChart(bids, maxMileage) {
   const container = document.getElementById('mileage-chart-container');
   container.innerHTML = '';
 
+  const tableBody = document.getElementById('mileage-distribution-table-body');
+  if (tableBody) {
+    tableBody.innerHTML = '';
+  }
+
   // Group bids by mileage value
   const groups = {};
   bids.forEach(b => {
@@ -3116,6 +3173,9 @@ function renderBidsChart(bids, maxMileage) {
 
   if (sortedKeys.length === 0) {
     container.innerHTML = `<p style="text-align: center; color: var(--text-muted); font-size: 13px;">이력 데이터가 없습니다.</p>`;
+    if (tableBody) {
+      tableBody.innerHTML = `<tr><td colspan="5" style="padding: 12px; color: var(--text-muted);">이력 데이터가 없습니다.</td></tr>`;
+    }
     return;
   }
 
@@ -3128,6 +3188,7 @@ function renderBidsChart(bids, maxMileage) {
     const passPct = (pass / maxCount) * 100;
     const failPct = (fail / maxCount) * 100;
 
+    // Render bar chart row
     const row = document.createElement('div');
     row.className = 'chart-bar-row';
     row.innerHTML = `
@@ -3139,6 +3200,22 @@ function renderBidsChart(bids, maxMileage) {
       <div class="chart-count">${total}명 <small style="color:var(--text-muted)">(${pass}합)</small></div>
     `;
     container.appendChild(row);
+
+    // Render table row
+    if (tableBody) {
+      const passRate = total > 0 ? ((pass / total) * 100).toFixed(1) : '0';
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--hairline)';
+      tr.style.height = '32px';
+      tr.innerHTML = `
+        <td style="padding: 8px; font-weight: 600; color: var(--text-primary);">${val}점</td>
+        <td style="padding: 8px; color: var(--success); font-weight: 500;">${pass}명</td>
+        <td style="padding: 8px; color: var(--text-muted);">${fail}명</td>
+        <td style="padding: 8px; color: var(--text-secondary);">${total}명</td>
+        <td style="padding: 8px; font-weight: 600; color: ${pass > 0 ? 'var(--success)' : 'var(--text-muted)'};">${passRate}%</td>
+      `;
+      tableBody.appendChild(tr);
+    }
   });
 }
 

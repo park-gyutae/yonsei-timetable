@@ -742,9 +742,36 @@
         <div class="mileage-tab-content" id="mileage-tab-history">
           <!-- Bids distribution chart -->
           <div class="distribution-chart-section" style="margin-top: 0; margin-bottom: 24px;">
-            <h3>마일리지 배분 분포도 (최근 개설학기 합격/불합격 비율)</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="margin: 0; font-size: 13px; font-weight: 700; color: var(--text-primary);">마일리지 배분 분포도 (최근 개설학기 합격/불합격 비율)</h3>
+              <!-- Toggle View Buttons -->
+              <div class="view-toggle" style="display: flex; background: var(--hairline-soft); padding: 2px; border-radius: 6px; gap: 2px; border: 1px solid var(--hairline);">
+                <button type="button" class="view-toggle-btn active" id="btn-view-chart" style="background: var(--canvas-elevated); border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-primary); cursor: pointer; transition: all 0.15s;">차트</button>
+                <button type="button" class="view-toggle-btn" id="btn-view-table" style="background: none; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.15s;">표</button>
+              </div>
+            </div>
+
+            <!-- Chart Container -->
             <div class="chart-container" id="mileage-chart-container">
               <!-- Dynamically rendered bars -->
+            </div>
+
+            <!-- Table Container (Hidden by default) -->
+            <div id="mileage-table-container" style="display: none; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow: hidden; margin-top: 10px; max-height: 250px; overflow-y: auto;">
+              <table class="history-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: center;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600; height: 32px;">
+                    <th style="padding: 8px;">마일리지</th>
+                    <th style="padding: 8px; color: var(--success);">합격자수</th>
+                    <th style="padding: 8px;">불합격자수</th>
+                    <th style="padding: 8px;">총 지원자수</th>
+                    <th style="padding: 8px;">합격률</th>
+                  </tr>
+                </thead>
+                <tbody id="mileage-distribution-table-body" style="color: var(--text-secondary);">
+                  <!-- Dynamically populated rows -->
+                </tbody>
+              </table>
             </div>
           </div>
 

@@ -470,7 +470,11 @@ function renderCourses(courses) {
 
   if (!listContainer) return;
   if (countLabel) {
-    countLabel.textContent = `조회된 과목 ${filtered.length}개`;
+    if (filtered.length > 200) {
+      countLabel.textContent = `조회된 과목 ${filtered.length}개 중 상위 200개 표시 (필터나 검색어로 좁혀보세요)`;
+    } else {
+      countLabel.textContent = `조회된 과목 ${filtered.length}개`;
+    }
   }
 
   if (filtered.length === 0) {
@@ -485,7 +489,9 @@ function renderCourses(courses) {
   }
 
   listContainer.innerHTML = '';
-  filtered.forEach(c => {
+  const displayLimit = 200;
+  const toRender = filtered.slice(0, displayLimit);
+  toRender.forEach(c => {
     const isAdded = selectedCourses.some(sel => sel.code === c.code && sel.division === c.division);
     const isStarred = wishlist.some(w => w.code === c.code && w.division === c.division);
     
@@ -4031,12 +4037,11 @@ async function initSearchFilters() {
     const res = await fetch('/api/colleges');
     const data = await res.json();
     if (data.success && data.colleges && data.colleges.length > 0) {
-      collegeSelect.innerHTML = '<option value="">전체</option>';
+      collegeSelect.innerHTML = '<option value="" selected>전체</option>';
       data.colleges.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.code;
         opt.textContent = c.name;
-        if (c.code === 's1103') opt.selected = true; // Default to Science
         collegeSelect.appendChild(opt);
       });
       await loadDepartments(collegeSelect.value);
@@ -4046,8 +4051,8 @@ async function initSearchFilters() {
   } catch (err) {
     console.log("Colleges load failed, using fallbacks", err);
     collegeSelect.innerHTML = `
-      <option value="">전체</option>
-      <option value="s1103" selected>이과대학</option>
+      <option value="" selected>전체</option>
+      <option value="s1103">이과대학</option>
       <option value="s1102">상경대학</option>
       <option value="s1101">문과대학</option>
     `;

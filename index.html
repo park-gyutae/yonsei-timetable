@@ -582,174 +582,197 @@
   <!-- Mileage Analysis Modal -->
   <div class="modal-overlay" id="mileage-modal">
     <div class="modal-content glass-card" style="max-width: 750px;">
-      <div class="modal-header">
+      <div class="modal-header" style="margin-bottom: 12px;">
         <h2 id="mileage-modal-title">[MAT2103-01] 통계학 마일리지 분석</h2>
         <button class="modal-close-btn" id="btn-close-mileage-modal">
           <i data-lucide="x"></i>
         </button>
       </div>
-      <div class="modal-body" style="max-height: 550px; overflow-y: auto; padding-right: 8px;">
-        <!-- Divisions Comparison Card -->
-        <div class="quota-constraints-card" style="margin-bottom: 20px; border-left: 3px solid var(--accent-light);">
-          <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--text-primary);">동일 교과목 분반 통합 비교 (인기 vs 비인기 대조)</h3>
-          <div class="div-comp-list" id="divisions-comparison-list" style="display:flex; flex-direction:column; gap:8px;">
-            <!-- Dynamically populated divisions comparative items -->
-          </div>
-        </div>
 
-        <!-- AI Cutoff Prediction Card (Precomputed curves ML estimates) -->
-        <div class="quota-constraints-card" id="ai-prediction-card" style="margin-bottom: 20px; border-left: 3px solid var(--success); display: none;">
-          <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="brain" style="width: 14px; height: 14px;"></i> AI 머신러닝 컷오프 예측 (전체 이력 학습)
-          </h3>
-          <div class="constraints-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-            <div class="constraint-item" style="text-align: center;">
-              <span class="lbl" style="font-size: 10px; color: var(--text-muted);">안전 마지노선 (Q10)</span>
-              <strong class="val" id="ai-q10" style="font-size: 16px; color: var(--text-secondary);">- 점</strong>
-            </div>
-            <div class="constraint-item" style="text-align: center;">
-              <span class="lbl" style="font-size: 10px; color: var(--text-muted);">중위 컷오프 (Q50)</span>
-              <strong class="val" id="ai-q50" style="font-size: 16px; color: var(--success);">- 점</strong>
-            </div>
-            <div class="constraint-item" style="text-align: center;">
-              <span class="lbl" style="font-size: 10px; color: var(--text-muted);">상위 안정선 (Q90)</span>
-              <strong class="val" id="ai-q90" style="font-size: 16px; color: var(--danger);">- 점</strong>
-            </div>
-          </div>
-          <!-- AI P(m) Probability Curve Chart -->
-          <div class="ai-chart-container" style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px;">
-            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 8px;">📊 AI 머신러닝 합격 확률 곡선 P(m) 그래프</span>
-            <div style="height: 180px; position: relative;">
-              <canvas id="ai-probability-chart"></canvas>
-            </div>
-          </div>
-          
-          <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
-            ※ 본 데이터는 과거 경쟁률 및 수강인원 정원 추이와 요일/시간대, 전공 필수 여부 등의 시계열 피처를 LightGBM Quantile ML 모델로 학습하여 추정한 통계 예측치입니다.
-          </div>
-        </div>
+      <!-- Tabs Header -->
+      <div class="mileage-tabs">
+        <button class="mileage-tab-btn active" data-target="mileage-tab-basic">기본 통계 & 분반</button>
+        <button class="mileage-tab-btn" data-target="mileage-tab-quota">정원 & 규정</button>
+        <button class="mileage-tab-btn" data-target="mileage-tab-ai">AI 모의예측 & 차트</button>
+        <button class="mileage-tab-btn" data-target="mileage-tab-history">과거 이력</button>
+      </div>
 
-        <!-- Summary Stats grid -->
-        <div class="stats-section-title">전체 지원 현황</div>
-        <div class="mileage-stats-grid">
-          <div class="stat-box">
-            <span class="stat-label">총 정원 대비 신청자</span>
-            <span class="stat-val-large" id="global-ratio">- / - <small>(-:1)</small></span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">전체 합격 커트라인</span>
-            <span class="stat-val-large" id="global-cutline" style="color: var(--warning)">-점</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">전체 합격자 평균</span>
-            <span class="stat-val-large" id="global-avg">-점</span>
-          </div>
-        </div>
-
-        <div class="stats-section-title" id="year-stats-title">나의 학년 지원 현황 (3학년)</div>
-        <div id="year-stats-notice" style="display: none; padding: 12px 16px; background: var(--hairline-soft); border-left: 3px solid var(--accent-light); border-radius: var(--border-radius-sm); font-size: 11.5px; color: var(--text-secondary); margin-bottom: 16px; align-items: center; gap: 8px;">
-          <i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i>
-          <span>이 과목은 학년별 정원 제한이 없습니다. 모든 학년이 구분 없이 전체 정원을 두고 공동 경쟁합니다.</span>
-        </div>
-        <div class="mileage-stats-grid" id="year-stats-grid">
-          <div class="stat-box">
-            <span class="stat-label">학년 정원 대비 신청자</span>
-            <span class="stat-val-large" id="year-ratio">- / - <small>(-:1)</small></span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">학년 합격 커트라인</span>
-            <span class="stat-val-large" id="year-cutline" style="color: var(--warning)">-점</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">학년 합격자 평균</span>
-            <span class="stat-val-large" id="year-avg">-점</span>
-          </div>
-        </div>
-
-        <!-- Constraints details -->
-        <div class="quota-constraints-card">
-          <h3>수강신청 제한 및 정원 상세 규정</h3>
-          <div class="constraints-grid">
-            <div class="constraint-item">
-              <span class="lbl">학년별 배정 정원</span>
-              <span class="val" id="detail-year-quotas">1학년: -명 | 2학년: -명 | 3학년: -명 | 4학년: -명</span>
+      <div class="modal-body" style="max-height: 480px; overflow-y: auto; padding-right: 8px;">
+        
+        <!-- Tab 1: 기본 통계 & 분반 -->
+        <div class="mileage-tab-content active" id="mileage-tab-basic">
+          <!-- Divisions Comparison Card -->
+          <div class="quota-constraints-card" style="margin-bottom: 20px; border-left: 3px solid var(--accent-light);">
+            <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--text-primary);">동일 교과목 분반 통합 비교 (인기 vs 비인기 대조)</h3>
+            <div class="div-comp-list" id="divisions-comparison-list" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Dynamically populated divisions comparative items -->
             </div>
-            <div class="constraint-item">
-              <span class="lbl">전공자 보호 정원 (본전공/복수전공 우선선발)</span>
-              <span class="val" id="detail-major-quota">기록 없음</span>
+          </div>
+
+          <!-- Summary Stats grid -->
+          <div class="stats-section-title">전체 지원 현황</div>
+          <div class="mileage-stats-grid" style="margin-bottom: 20px;">
+            <div class="stat-box">
+              <span class="stat-label">총 정원 대비 신청자</span>
+              <span class="stat-val-large" id="global-ratio">- / - <small>(-:1)</small></span>
             </div>
-            <div class="constraint-item">
-              <span class="lbl">최대 입력 가능 마일리지 (Max Mileage)</span>
-              <span class="val" id="detail-max-mileage">-점</span>
+            <div class="stat-box">
+              <span class="stat-label">전체 합격 커트라인</span>
+              <span class="stat-val-large" id="global-cutline" style="color: var(--warning)">-점</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">전체 합격자 평균</span>
+              <span class="stat-val-large" id="global-avg">-점</span>
+            </div>
+          </div>
+
+          <div class="stats-section-title" id="year-stats-title">나의 학년 지원 현황 (3학년)</div>
+          <div id="year-stats-notice" style="display: none; padding: 12px 16px; background: var(--hairline-soft); border-left: 3px solid var(--accent-light); border-radius: var(--border-radius-sm); font-size: 11.5px; color: var(--text-secondary); margin-bottom: 16px; align-items: center; gap: 8px;">
+            <i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i>
+            <span>이 과목은 학년별 정원 제한이 없습니다. 모든 학년이 구분 없이 전체 정원을 두고 공동 경쟁합니다.</span>
+          </div>
+          <div class="mileage-stats-grid" id="year-stats-grid">
+            <div class="stat-box">
+              <span class="stat-label">학년 정원 대비 신청자</span>
+              <span class="stat-val-large" id="year-ratio">- / - <small>(-:1)</small></span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">학년 합격 커트라인</span>
+              <span class="stat-val-large" id="year-cutline" style="color: var(--warning)">-점</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">학년 합격자 평균</span>
+              <span class="stat-val-large" id="year-avg">-점</span>
             </div>
           </div>
         </div>
 
-        <!-- Major vs Non-major stats -->
-        <div id="major-stats-notice" style="display: none; padding: 12px 16px; background: var(--hairline-soft); border-left: 3px solid var(--accent-light); border-radius: var(--border-radius-sm); font-size: 11.5px; color: var(--text-secondary); margin-bottom: 16px; align-items: center; gap: 8px; margin-top: 16px;">
-          <i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i>
-          <span>이 과목은 전공자 보호제한이 없습니다. 전공 여부와 상관없이 마일리지 점수 순으로 동일하게 선발합니다.</span>
-        </div>
-        <div class="quota-analysis-row" id="major-stats-row">
-          <div class="quota-box">
-            <h3>본전공자 합격 기준</h3>
-            <div class="quota-stat"><span class="lbl">커트라인</span><strong id="major-cut">-점</strong></div>
-            <div class="quota-stat"><span class="lbl">합격 평균</span><span id="major-avg">-점</span></div>
-          </div>
-          <div class="quota-box">
-            <h3>비전공자 합격 기준</h3>
-            <div class="quota-stat"><span class="lbl">커트라인</span><strong id="nonmajor-cut">-점</strong></div>
-            <div class="quota-stat"><span class="lbl">합격 평균</span><span id="nonmajor-avg">-점</span></div>
-          </div>
-        </div>
-
-        <!-- Success Predictor Section -->
-        <div class="predictor-section">
-          <h3>나의 합격 확률 예측 (2025-2학기 기준 대조)</h3>
-          <div class="predictor-controls">
-            <div class="predictor-slider-group">
-              <label>테스트 마일리지 점수: <strong id="predict-score-label">12</strong>점</label>
-              <input type="range" id="predict-score-slider" min="0" max="36" value="12">
-            </div>
-            <div class="predict-result-box" id="predict-outcome-box">
-              <div class="predict-status">계산 중...</div>
-              <p class="predict-desc">마일리지 동점자 처리 기준을 대조 중입니다.</p>
+        <!-- Tab 2: 정원 & 규정 -->
+        <div class="mileage-tab-content" id="mileage-tab-quota">
+          <!-- Constraints details -->
+          <div class="quota-constraints-card" style="margin-top: 0; margin-bottom: 20px;">
+            <h3>수강신청 제한 및 정원 상세 규정</h3>
+            <div class="constraints-grid">
+              <div class="constraint-item">
+                <span class="lbl">학년별 배정 정원</span>
+                <span class="val" id="detail-year-quotas">1학년: -명 | 2학년: -명 | 3학년: -명 | 4학년: -명</span>
+              </div>
+              <div class="constraint-item">
+                <span class="lbl">전공자 보호 정원 (본전공/복수전공 우선선발)</span>
+                <span class="val" id="detail-major-quota">기록 없음</span>
+              </div>
+              <div class="constraint-item">
+                <span class="lbl">최대 입력 가능 마일리지 (Max Mileage)</span>
+                <span class="val" id="detail-max-mileage">-점</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Historical Semesters Section -->
-        <div class="historical-semesters-section" style="margin-top: 20px;">
-          <h3>과거 마일리지 선발 이력 (최근 개설 학기 대조)</h3>
-          <div class="history-table-wrapper" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow: hidden; margin-top: 10px;">
-            <table class="history-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: center;">
-              <thead>
-                <tr style="background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600; height: 32px;">
-                  <th style="padding: 8px;">개설 학기</th>
-                  <th style="padding: 8px;">정원 (Capacity)</th>
-                  <th style="padding: 8px;">지원자 (Applicants)</th>
-                  <th style="padding: 8px;">경쟁률</th>
-                  <th style="padding: 8px;">최소 합격 (Cutline)</th>
-                  <th style="padding: 8px;">평균 마일리지</th>
-                </tr>
-              </thead>
-              <tbody id="history-table-body" style="color: var(--text-secondary);">
-                <!-- Dynamically populated rows -->
-                <tr>
-                  <td colspan="6" style="padding: 12px; color: var(--text-muted);">데이터를 불러오는 중...</td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Major vs Non-major stats -->
+          <div id="major-stats-notice" style="display: none; padding: 12px 16px; background: var(--hairline-soft); border-left: 3px solid var(--accent-light); border-radius: var(--border-radius-sm); font-size: 11.5px; color: var(--text-secondary); margin-bottom: 16px; align-items: center; gap: 8px;">
+            <i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i>
+            <span>이 과목은 전공자 보호제한이 없습니다. 전공 여부와 상관없이 마일리지 점수 순으로 동일하게 선발합니다.</span>
+          </div>
+          <div class="quota-analysis-row" id="major-stats-row" style="margin-top: 0;">
+            <div class="quota-box">
+              <h3>본전공자 합격 기준</h3>
+              <div class="quota-stat"><span class="lbl">커트라인</span><strong id="major-cut">-점</strong></div>
+              <div class="quota-stat"><span class="lbl">합격 평균</span><span id="major-avg">-점</span></div>
+            </div>
+            <div class="quota-box">
+              <h3>비전공자 합격 기준</h3>
+              <div class="quota-stat"><span class="lbl">커트라인</span><strong id="nonmajor-cut">-점</strong></div>
+              <div class="quota-stat"><span class="lbl">합격 평균</span><span id="nonmajor-avg">-span></div>
+            </div>
           </div>
         </div>
 
-        <!-- Bids distribution chart -->
-        <div class="distribution-chart-section">
-          <h3>마일리지 배분 분포도 (합격/불합격 비율)</h3>
-          <div class="chart-container" id="mileage-chart-container">
-            <!-- Dynamically rendered bars -->
+        <!-- Tab 3: AI 모의예측 & 차트 -->
+        <div class="mileage-tab-content" id="mileage-tab-ai">
+          <!-- AI Cutoff Prediction Card (Precomputed curves ML estimates) -->
+          <div class="quota-constraints-card" id="ai-prediction-card" style="margin-top: 0; margin-bottom: 20px; border-left: 3px solid var(--success); display: none;">
+            <h3 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--success); display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="brain" style="width: 14px; height: 14px;"></i> AI 머신러닝 컷오프 예측 (전체 이력 학습)
+            </h3>
+            <div class="constraints-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div class="constraint-item" style="text-align: center;">
+                <span class="lbl" style="font-size: 10px; color: var(--text-muted);">안전 마지노선 (Q10)</span>
+                <strong class="val" id="ai-q10" style="font-size: 16px; color: var(--text-secondary);">- 점</strong>
+              </div>
+              <div class="constraint-item" style="text-align: center;">
+                <span class="lbl" style="font-size: 10px; color: var(--text-muted);">중위 컷오프 (Q50)</span>
+                <strong class="val" id="ai-q50" style="font-size: 16px; color: var(--success);">- 점</strong>
+              </div>
+              <div class="constraint-item" style="text-align: center;">
+                <span class="lbl" style="font-size: 10px; color: var(--text-muted);">상위 안정선 (Q90)</span>
+                <strong class="val" id="ai-q90" style="font-size: 16px; color: var(--danger);">- 점</strong>
+              </div>
+            </div>
+            <!-- AI P(m) Probability Curve Chart -->
+            <div class="ai-chart-container" style="margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px;">
+              <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 8px;">📊 AI 머신러닝 합격 확률 곡선 P(m) 그래프</span>
+              <div style="height: 180px; position: relative;">
+                <canvas id="ai-probability-chart"></canvas>
+              </div>
+            </div>
+            
+            <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
+              ※ 본 데이터는 과거 경쟁률 및 수강인원 정원 추이와 요일/시간대, 전공 필수 여부 등의 시계열 피처를 LightGBM Quantile ML 모델로 학습하여 추정한 통계 예측치입니다.
+            </div>
+          </div>
+
+          <!-- Success Predictor Section -->
+          <div class="predictor-section" style="margin-top: 0; margin-bottom: 20px;">
+            <h3>나의 합격 확률 예측 (2025-2학기 기준 대조)</h3>
+            <div class="predictor-controls">
+              <div class="predictor-slider-group">
+                <label>테스트 마일리지 점수: <strong id="predict-score-label">12</strong>점</label>
+                <input type="range" id="predict-score-slider" min="0" max="36" value="12">
+              </div>
+              <div class="predict-result-box" id="predict-outcome-box">
+                <div class="predict-status">계산 중...</div>
+                <p class="predict-desc">마일리지 동점자 처리 기준을 대조 중입니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bids distribution chart -->
+          <div class="distribution-chart-section" style="margin-top: 0;">
+            <h3>마일리지 배분 분포도 (합격/불합격 비율)</h3>
+            <div class="chart-container" id="mileage-chart-container">
+              <!-- Dynamically rendered bars -->
+            </div>
           </div>
         </div>
+
+        <!-- Tab 4: 과거 이력 -->
+        <div class="mileage-tab-content" id="mileage-tab-history">
+          <!-- Historical Semesters Section -->
+          <div class="historical-semesters-section" style="margin-top: 0;">
+            <h3>과거 마일리지 선발 이력 (최근 개설 학기 대조)</h3>
+            <div class="history-table-wrapper" style="background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); overflow: hidden; margin-top: 10px;">
+              <table class="history-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: center;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); border-bottom: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600; height: 32px;">
+                    <th style="padding: 8px;">개설 학기</th>
+                    <th style="padding: 8px;">정원 (Capacity)</th>
+                    <th style="padding: 8px;">지원자 (Applicants)</th>
+                    <th style="padding: 8px;">경쟁률</th>
+                    <th style="padding: 8px;">최소 합격 (Cutline)</th>
+                    <th style="padding: 8px;">평균 마일리지</th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body" style="color: var(--text-secondary);">
+                  <!-- Dynamically populated rows -->
+                  <tr>
+                    <td colspan="6" style="padding: 12px; color: var(--text-muted);">데이터를 불러오는 중...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

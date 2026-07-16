@@ -1987,8 +1987,48 @@ body {
 }
 
 
+/* Mileage modal tabs styling */
+.mileage-tabs {
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 18px;
+  padding: 0 4px;
+}
 
+.mileage-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
 
+.mileage-tab-btn:hover {
+  color: var(--text-primary);
+}
 
+.mileage-tab-btn.active {
+  color: var(--accent-light);
+  border-bottom-color: var(--accent-light);
+}
 
+.mileage-tab-content {
+  display: none;
+  animation: fadeIn 0.22s ease-in-out forwards;
+}
 
+.mileage-tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

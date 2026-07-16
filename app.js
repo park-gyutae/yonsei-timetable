@@ -1999,6 +1999,26 @@ function initTimeFilterGrid() {
 
 // Event Listeners setup
 function setupEventListeners() {
+  // Mileage analysis modal tabs toggle handler
+  document.querySelectorAll('.mileage-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      
+      // Toggle button active classes
+      document.querySelectorAll('.mileage-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Toggle tab content visibility
+      document.querySelectorAll('.mileage-tab-content').forEach(content => {
+        if (content.id === targetId) {
+          content.classList.add('active');
+        } else {
+          content.classList.remove('active');
+        }
+      });
+    });
+  });
+
   // Search input typing filter
   document.getElementById('input-search').addEventListener('input', () => {
     renderCourses(coursesData);
@@ -2570,6 +2590,20 @@ async function openMileageAnalysisModal(course) {
   // Show modal
   title.textContent = `[${course.code}-${course.division}] ${course.title} 마일리지 분석`;
   modal.classList.add('active');
+
+  // Reset tab button states and active tab content to Tab 1 on open
+  document.querySelectorAll('.mileage-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-target') === 'mileage-tab-basic') {
+      btn.classList.add('active');
+    }
+  });
+  document.querySelectorAll('.mileage-tab-content').forEach(content => {
+    content.classList.remove('active');
+    if (content.id === 'mileage-tab-basic') {
+      content.classList.add('active');
+    }
+  });
 
   // 0. Populate sibling divisions comparison table
   const compList = document.getElementById('divisions-comparison-list');

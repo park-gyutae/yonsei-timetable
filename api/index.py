@@ -251,9 +251,7 @@ def get_courses(
                 for row in rows:
                     c_code, c_div, c_title, c_credits, c_grade, c_class, c_prof, c_time_slot = row
                     
-                    is_songdo_div = c_div != "01" and (college == "s1160" or "RC" in (c_class or ""))
-                    room = "진B201" if is_songdo_div else "공A201"
-                    
+                    room = "강의실 미정"
                     formatted_courses.append({
                         "code": c_code,
                         "division": c_div,
@@ -261,10 +259,10 @@ def get_courses(
                         "credits": int(c_credits or 3),
                         "grade": c_grade or "1",
                         "classification": c_class or "",
-                        "professor": c_prof or "미지정",
+                        "professor": c_prof or "담당교수",
                         "time": c_time_slot or "",
                         "room": room,
-                        "evaluation": "상대평가"
+                        "evaluation": "평가 미정"
                     })
                 conn.close()
 

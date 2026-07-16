@@ -224,6 +224,52 @@ def get_departments(
             ]
         return {"success": True, "departments": fallback_depts, "source": "offline_fallback"}
 
+# ─── JSON 캐시 기반 강의실/평가방식 매칭용 메모리 캐시 ──────────────────
+_ROOM_CACHE = {}
+_EVAL_CACHE = {}
+_CACHE_LOADED = False
+
+def _ensure_room_eval_cache():
+    global _CACHE_LOADED
+    if _CACHE_LOADED:
+        return
+    import glob, json
+    cache_dir = os.path.join(os.path.dirname(__file__), "cache")
+    root_dir = os.path.dirname(os.path.dirname(__file__))
+    
+    # 1. api/cache/ 디렉토리 내의 캐시 로드
+    for fpath in glob.glob(os.path.join(cache_dir, "2026_*.json")):
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                courses_list = data.get("data", []) if isinstance(data, dict) else data
+                for c in courses_list:
+                    key = f"{c.get('code')}-{c.get('division')}"
+                    if c.get("room"):
+                        _ROOM_CACHE[key] = c.get("room")
+                    if c.get("evaluation"):
+                        _EVAL_CACHE[key] = c.get("evaluation")
+        except Exception:
+            pass
+            
+    # 2. 루트 디렉토리의 폴백 JSON 캐시 로드
+    for fname in ["math_courses_2026_2.json", "stats_courses_2026_2.json"]:
+        fpath = os.path.join(root_dir, fname)
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, "r", encoding="utf-8") as f:
+                    courses_list = json.load(f)
+                    for c in courses_list:
+                        key = f"{c.get('code')}-{c.get('division')}"
+                        if c.get("room"):
+                            _ROOM_CACHE[key] = c.get("room")
+                        if c.get("evaluation"):
+                            _EVAL_CACHE[key] = c.get("evaluation")
+            except Exception:
+                pass
+                
+    _CACHE_LOADED = True
+
 @app.get("/api/courses")
 def get_courses(
     college: str = Query("s1103", description="College Code (ex: s1103 for Science)"),
@@ -247,56 +293,66 @@ def get_courses(
                     params.append(dept)
                 
                 rows = conn.execute(query, params).fetchall()
+                
+                # 실시간 캐시 로딩 보장
+                _ensure_room_eval_cache()
+                
                 formatted_courses = []
                 for row in rows:
                     c_code, c_div, c_title, c_credits, c_grade, c_class, c_prof, c_time_slot = row
                     
-                    # Determine plausible classroom at Yonsei based on college or course code prefix
-                    room = "백양관 201"
-                    c_coll = college or ""
-                    c_code_str = c_code or ""
-                    c_div_str = c_div or ""
+                    key = f"{c_code}-{c_div}"
+                    room = _ROOM_CACHE.get(key)
+                    evaluation = _EVAL_CACHE.get(key)
                     
-                    if c_coll == "s1101":
-                        room = "위당관 312" if "3" in c_div_str else "외솔관 201"
-                    elif c_coll == "s1102":
-                        room = "대우관본관 201" if "2" in c_div_str else "경영관 B101"
-                    elif c_coll == "s1103":
-                        room = "과학관 111" if "1" in c_div_str else "과학원 225"
-                    elif c_coll == "s1104":
-                        room = "공A321" if "1" in c_div_str else "공B202" if "2" in c_div_str else "공C101"
-                    elif c_coll == "s1105":
-                        room = "생명관 112"
-                    elif c_coll == "s1160":
-                        room = "진A201" if "1" in c_div_str else "자B102"
-                    else:
-                        code_prefix = c_code_str[:3]
-                        if code_prefix == "MAT":
-                            room = "과225"
-                        elif code_prefix == "STA":
-                            room = "대우관본관 311"
-                        elif code_prefix == "PHY":
-                            room = "과학관 111"
-                        elif code_prefix == "CHE":
-                            room = "과학원 201"
-                        elif code_prefix == "BIO":
+                    if not room:
+                        # Determine plausible classroom at Yonsei based on college or course code prefix
+                        room = "백양관 201"
+                        c_coll = college or ""
+                        c_code_str = c_code or ""
+                        c_div_str = c_div or ""
+                        
+                        if c_coll == "s1101":
+                            room = "위당관 312" if "3" in c_div_str else "외솔관 201"
+                        elif c_coll == "s1102":
+                            room = "대우관본관 201" if "2" in c_div_str else "경영관 B101"
+                        elif c_coll == "s1103":
+                            room = "과학관 111" if "1" in c_div_str else "과학원 225"
+                        elif c_coll == "s1104":
+                            room = "공A321" if "1" in c_div_str else "공B202" if "2" in c_div_str else "공C101"
+                        elif c_coll == "s1105":
                             room = "생명관 112"
-                        elif code_prefix == "CSI":
-                            room = "공B202"
-                        elif code_prefix == "ECO":
-                            room = "대우관본관 201"
-                        elif code_prefix == "BIZ":
-                            room = "경영관 B101"
-                        elif c_div_str != "01":
-                            room = "진A201"
+                        elif c_coll == "s1160":
+                            room = "진A201" if "1" in c_div_str else "자B102"
                         else:
-                            room = "백양관 201"
+                            code_prefix = c_code_str[:3]
+                            if code_prefix == "MAT":
+                                room = "과225"
+                            elif code_prefix == "STA":
+                                room = "대우관본관 311"
+                            elif code_prefix == "PHY":
+                                room = "과학관 111"
+                            elif code_prefix == "CHE":
+                                room = "과학원 201"
+                            elif code_prefix == "BIO":
+                                room = "생명관 112"
+                            elif code_prefix == "CSI":
+                                room = "공B202"
+                            elif code_prefix == "ECO":
+                                room = "대우관본관 201"
+                            elif code_prefix == "BIZ":
+                                room = "경영관 B101"
+                            elif c_div_str != "01":
+                                room = "진A201"
+                            else:
+                                room = "백양관 201"
                     
-                    # Determine plausible evaluation method
-                    evaluation = "상대평가"
-                    title = c_title or ""
-                    if any(kw in title for kw in ["채플", "특강", "세미나", "독서", "커리어", "봉사", "멘토링", "인턴십", "어드바이저리"]):
-                        evaluation = "P/NP"
+                    if not evaluation:
+                        # Determine plausible evaluation method
+                        evaluation = "상대평가"
+                        title = c_title or ""
+                        if any(kw in title for kw in ["채플", "특강", "세미나", "독서", "커리어", "봉사", "멘토링", "인턴십", "어드바이저리"]):
+                            evaluation = "P/NP"
 
                     formatted_courses.append({
                         "code": c_code,

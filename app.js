@@ -174,7 +174,7 @@ function clearOldCache() {
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
   // Automatic cache invalidation for new database version
-  const CACHE_VERSION = 'v1.2.5';
+  const CACHE_VERSION = 'v1.2.6';
   if (localStorage.getItem('ymu_cache_version') !== CACHE_VERSION) {
     Object.keys(localStorage).forEach(k => {
       // Keep user preferences / saved data (wishlist, theme)

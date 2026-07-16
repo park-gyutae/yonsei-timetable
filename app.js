@@ -367,6 +367,23 @@ function renderCourses(courses) {
   const countLabel = document.getElementById('results-count');
   
   const query = document.getElementById('input-search').value.toLowerCase().trim();
+  const collegeVal = document.getElementById('select-college')?.value || '';
+  const deptVal = document.getElementById('select-dept')?.value || '';
+
+  if (!listContainer) return;
+
+  // 0. If College, Dept, and Search Query are all empty, show a search guide placeholder instead of loading random courses
+  if (!collegeVal && !deptVal && !query) {
+    listContainer.innerHTML = `
+      <div class="list-placeholder">
+        <i data-lucide="search" style="color: var(--text-muted)"></i>
+        <p>검색어를 입력하거나 대학/학과 필터를 선택하여 과목을 찾아보세요.</p>
+      </div>
+    `;
+    if (countLabel) countLabel.textContent = "조회된 과목 0개";
+    lucide.createIcons();
+    return;
+  }
 
   // Filter courses by search query and advanced options
   const filtered = courses.filter(c => {

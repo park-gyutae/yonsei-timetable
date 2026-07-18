@@ -3482,6 +3482,7 @@ function calculateMileagePrediction(testMileage) {
 
   // Calculate group-specific statistics for accurate user feedback
   const userGrade = myProfile.grade || 4;
+  const yearCapacity = isYearQuotasActive ? (yq[userGrade] || 0) : summary.capacity;
   const userMajorStatus = determineMajorStatus(activeCourseCode, myProfile);
   const userMajorLabel = userMajorStatus === 'Y(Y)' ? '본전공자' : (userMajorStatus === 'Y(N)' ? '복수전공자' : '비전공자');
 

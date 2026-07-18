@@ -5,6 +5,7 @@ let myProfile = {          // Mileage Profile
   firstMajor: 'math',      // math, stats, other
   secondMajor: 'none',     // none, math, stats, other
   grade: '3',              // Grade (1-4)
+  maxTotalMileage: 76,     // 총 마일리지 예산 (72 또는 76)
   coursesCount: 6,
   gradApp: 'N',
   firstTime: 'Y',
@@ -1307,7 +1308,7 @@ function updateMileageLabel() {
   const sum = selectedCourses.reduce((sum, c) => sum + c.mileage, 0);
   const label = document.getElementById('allocated-mileage-label');
   const parentBadge = document.querySelector('.mileage-status');
-  const maxTotal = myProfile.firstMajor === 'stats' ? 72 : 76;
+  const maxTotal = myProfile.maxTotalMileage || (myProfile.firstMajor === 'stats' ? 72 : 76);
   
   label.textContent = `${sum} / ${maxTotal}`;
 
@@ -2144,6 +2145,14 @@ function setupEventListeners() {
 
   // Profile Edit Modal Toggle
   const profileModal = document.getElementById('profile-modal');
+  // Auto-switch budget select value when first major changes
+  document.getElementById('profile-first-major').addEventListener('change', (e) => {
+    const budgetSelect = document.getElementById('profile-max-mileage-budget');
+    if (budgetSelect) {
+      budgetSelect.value = e.target.value === 'stats' ? '72' : '76';
+    }
+  });
+
   document.getElementById('btn-edit-profile').addEventListener('click', () => {
     // Fill form values with state
     document.getElementById('profile-first-major').value = myProfile.firstMajor;
@@ -2159,6 +2168,7 @@ function setupEventListeners() {
     // 7-stage fields
     document.getElementById('profile-applied-credits').value = myProfile.applied_credits || 18;
     document.getElementById('profile-enrolled-semesters').value = myProfile.enrolled_semesters || 5;
+    document.getElementById('profile-max-mileage-budget').value = myProfile.maxTotalMileage || (myProfile.firstMajor === 'stats' ? 72 : 76);
     
     profileModal.classList.add('active');
   });
@@ -2183,6 +2193,7 @@ function setupEventListeners() {
     // 7-stage fields
     myProfile.applied_credits = parseInt(document.getElementById('profile-applied-credits').value) || 18;
     myProfile.enrolled_semesters = parseInt(document.getElementById('profile-enrolled-semesters').value) || 5;
+    myProfile.maxTotalMileage = parseInt(document.getElementById('profile-max-mileage-budget').value) || 76;
     myProfile.is_graduating = (myProfile.gradApp === 'Y');
 
     saveDataToStorage();
@@ -2557,6 +2568,9 @@ function loadDataFromStorage() {
   if (profile) {
     myProfile = JSON.parse(profile);
     // Ensure new 7-stage fields are initialized even if loading older profiles
+    if (myProfile.maxTotalMileage === undefined) {
+      myProfile.maxTotalMileage = myProfile.firstMajor === 'stats' ? 72 : 76;
+    }
     if (myProfile.applied_credits === undefined) myProfile.applied_credits = 18;
     if (myProfile.enrolled_semesters === undefined) myProfile.enrolled_semesters = 5;
     if (myProfile.is_graduating === undefined) myProfile.is_graduating = (myProfile.gradApp === 'Y');
@@ -3965,7 +3979,7 @@ function getAdvisorSuggestionHTML(c) {
     return `<div style="font-weight:600;margin-bottom:4px;">⏳ 데이터 분석 중</div><p style="margin:0;color:var(--text-muted);font-size:11px;">과거 이력 데이터를 실시간 분석하고 있습니다.</p>`;
   }
 
-  const maxTotal = myProfile.firstMajor === 'stats' ? 72 : 76;
+  const maxTotal = myProfile.maxTotalMileage || (myProfile.firstMajor === 'stats' ? 72 : 76);
   const currentSum = selectedCourses.reduce((sum, course) => sum + course.mileage, 0);
   const alloc = c.mileage;
   const limit = c.mileageSummary.max_allowed_mileage;
@@ -4023,7 +4037,7 @@ function getAdvisorSuggestionHTML(c) {
 // Run Strategic Advisor diagnosis rules (Simplified - No list element manipulation)
 function runAdvisorDiagnostic() {
   const budgetText = document.getElementById('allocated-mileage-label'); // Sync direct with top-header budget counter!
-  const maxTotal = myProfile.firstMajor === 'stats' ? 72 : 76;
+  const maxTotal = myProfile.maxTotalMileage || (myProfile.firstMajor === 'stats' ? 72 : 76);
   const currentSum = selectedCourses.reduce((sum, c) => sum + c.mileage, 0);
 
   // Update budget display label
@@ -4057,7 +4071,7 @@ function autoAllocateMileage() {
     return;
   }
 
-  const maxTotal = myProfile.firstMajor === 'stats' ? 72 : 76;
+  const maxTotal = myProfile.maxTotalMileage || (myProfile.firstMajor === 'stats' ? 72 : 76);
   console.log(`[Auto-Allocation] Start. Target budget: ${maxTotal}`);
 
   // Build items array with curves (with index indicating preference rank)

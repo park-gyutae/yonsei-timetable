@@ -1047,10 +1047,10 @@ function renderSelectedCoursesList() {
     // Determine course-specific max allowed mileage limit
     const key = `${c.code}-${c.division}`;
     let maxVal = 36;
-    if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
+    if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
+      maxVal = c.mileageSummary.max_allowed_mileage;
+    } else if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
       maxVal = precomputedCurves.curves[key].max_allowed || 36;
-    } else if (c.mileageSummary) {
-      maxVal = c.mileageSummary.max_allowed_mileage || 36;
     }
 
     const prob = getCourseProbability(c, c.mileage || 0);
@@ -2522,13 +2522,12 @@ function loadDataFromStorage() {
     
     // Sync-clamp values using precomputed curves before rendering to recover from stale states
     selectedCourses.forEach(c => {
-      cleanMileageSummary(c.mileageSummary, c);
       const key = `${c.code}-${c.division}`;
       let maxVal = 36;
-      if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
+      if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
+        maxVal = c.mileageSummary.max_allowed_mileage;
+      } else if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
         maxVal = precomputedCurves.curves[key].max_allowed || 36;
-      } else if (c.mileageSummary) {
-        maxVal = c.mileageSummary.max_allowed_mileage || 36;
       }
       if (c.mileage > maxVal) {
         console.log(`[Storage Load Clamping] Clamped ${c.code}-${c.division} from ${c.mileage} to ${maxVal}`);
@@ -2614,16 +2613,6 @@ function filterCleanBids(bids) {
     const rB = b.rank || 9999;
     return rA - rB;
   });
-}
-
-// Clean database/scraper errors where max_allowed_mileage is incorrectly filled (e.g. 25 instead of 36)
-function cleanMileageSummary(summary, course) {
-  if (!summary) return;
-  let limit = summary.max_allowed_mileage || 36;
-  if (limit !== 12 && limit !== 24 && limit !== 36) {
-    const credits = course ? (course.credits || 3) : 3;
-    summary.max_allowed_mileage = credits * 12;
-  }
 }
 
 // Active mileage stats data cache
@@ -2766,7 +2755,6 @@ async function openMileageAnalysisModal(course) {
     }
 
     activeMileageData = resData.data;
-    cleanMileageSummary(activeMileageData.summary, course);
     const summary = activeMileageData.summary;
     const bids = filterCleanBids(activeMileageData.bids);
 
@@ -3937,7 +3925,6 @@ async function fetchMileageSummaryForAdvisor(selectedCourse) {
   // L0: 브라우저 캐시 확인
   const cached = lsGet(lsKey, 'mileage');
   if (cached) {
-    cleanMileageSummary(cached.summary, selectedCourse);
     selectedCourse.mileageSummary = cached.summary;
     selectedCourse.mileageBids = cached.bids;
     selectedCourse.mileageHistory = cached.history;
@@ -3950,7 +3937,6 @@ async function fetchMileageSummaryForAdvisor(selectedCourse) {
     const res = await fetch(`/api/mileage?code=${selectedCourse.code}&division=${selectedCourse.division}`);
     const data = await res.json();
     if (data.success) {
-      cleanMileageSummary(data.data.summary, selectedCourse);
       selectedCourse.mileageSummary = data.data.summary;
       selectedCourse.mileageBids = data.data.bids;
       selectedCourse.mileageHistory = data.data.history;
@@ -4067,7 +4053,13 @@ function autoAllocateMileage() {
   // Build items array with curves (with index indicating preference rank)
   const items = selectedCourses.map((c, index) => {
     const key = `${c.code}-${c.division}`;
-    let maxAllowed = c.mileageSummary ? c.mileageSummary.max_allowed_mileage : 36;
+    let maxAllowed = 36;
+    if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
+      maxAllowed = c.mileageSummary.max_allowed_mileage;
+    } else if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
+      maxAllowed = precomputedCurves.curves[key].max_allowed || 36;
+    }
+
     let baseCurve = new Array(maxAllowed + 1).fill(0.0);
     let medianVal = 12.0;
 
@@ -4080,12 +4072,11 @@ function autoAllocateMileage() {
       const gradeData = groupData[`grade_${userGrade}`] || groupData.grade_4 || groupData;
       baseCurve = [...gradeData.prob_curve];
       medianVal = gradeData.median;
-      maxAllowed = pData.max_allowed;
-      // Override with current semester's active limit if available!
-      if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
-        maxAllowed = c.mileageSummary.max_allowed_mileage;
-        if (baseCurve.length > maxAllowed + 1) {
-          baseCurve = baseCurve.slice(0, maxAllowed + 1);
+      if (baseCurve.length > maxAllowed + 1) {
+        baseCurve = baseCurve.slice(0, maxAllowed + 1);
+      } else if (baseCurve.length < maxAllowed + 1) {
+        while (baseCurve.length < maxAllowed + 1) {
+          baseCurve.push(baseCurve[baseCurve.length - 1] || 1.0);
         }
       }
     } else {

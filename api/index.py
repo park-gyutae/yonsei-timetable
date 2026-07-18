@@ -14,15 +14,20 @@ import sqlite3
 app = FastAPI()
 
 # ─── Optimizer 경로 등록 ──────────────────────────────────────────────────────
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _CURRENT_DIR not in sys.path:
+    sys.path.insert(0, _CURRENT_DIR)
+
 _ENGINE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "yonsei_mileage_engine")
 if os.path.exists(_ENGINE_PATH):
     sys.path.insert(0, os.path.abspath(_ENGINE_PATH))
+
 try:
     from optimizer import MileageOptimizer
     _OPTIMIZER_AVAILABLE = True
-except ImportError:
+except Exception as e:
     _OPTIMIZER_AVAILABLE = False
-    print("[WARN] yonsei_mileage_engine not found — /api/optimize will use proportional fallback")
+    print(f"[WARN] Optimizer import failed: {e}")
 
 # Enable CORS for local development
 app.add_middleware(

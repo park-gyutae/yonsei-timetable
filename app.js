@@ -2145,13 +2145,6 @@ function setupEventListeners() {
 
   // Profile Edit Modal Toggle
   const profileModal = document.getElementById('profile-modal');
-  // Auto-switch budget select value when first major changes
-  document.getElementById('profile-first-major').addEventListener('change', (e) => {
-    const budgetSelect = document.getElementById('profile-max-mileage-budget');
-    if (budgetSelect) {
-      budgetSelect.value = e.target.value === 'stats' ? '72' : '76';
-    }
-  });
 
   document.getElementById('btn-edit-profile').addEventListener('click', () => {
     // Fill form values with state

@@ -2069,15 +2069,46 @@ body {
   border-radius: 3px;
 }
 
-/* 시간 필터 선택된 셀 스타일 (쨍하지 않은 부드러운 파스텔톤 빨강) */
+/* 시간 필터 선택된 셀 스타일 (부드러운 파란색 테마 매칭) */
 #time-filter-grid-table td.selected-time-cell {
-  background-color: rgba(238, 0, 0, 0.12) !important;
-  box-shadow: inset 0 0 0 1px rgba(238, 0, 0, 0.4) !important;
+  background-color: rgba(0, 112, 243, 0.12) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 112, 243, 0.4) !important;
 }
 
 [data-theme="dark"] #time-filter-grid-table td.selected-time-cell {
-  background-color: rgba(238, 0, 0, 0.22) !important;
-  box-shadow: inset 0 0 0 1px rgba(238, 0, 0, 0.55) !important;
+  background-color: rgba(50, 145, 255, 0.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(50, 145, 255, 0.55) !important;
+}
+
+/* 상세 필터를 모달 팝업으로 변경 */
+.multiselect-popover {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 320px !important;
+  max-width: 90vw !important;
+  background: var(--canvas-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+  padding: 20px !important;
+  z-index: 9999 !important;
+  gap: 12px !important;
+  display: none;
+  flex-direction: column;
+}
+
+[data-theme="dark"] .multiselect-popover {
+  background: rgba(20, 20, 20, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+.multiselect-popover .checkbox-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  margin: 4px 0;
 }
 
 

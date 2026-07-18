@@ -210,16 +210,22 @@
                 </button>
                 
                 <!-- Popover list -->
-                <div class="multiselect-popover" id="classification-popover" style="position: absolute; top: calc(100% + 4px); left: 60px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 280px; gap: 10px;">
+                <div class="multiselect-popover" id="classification-popover">
+                  <div style="margin-bottom: 4px; font-weight: 700; font-size: 13px; color: var(--text-primary);">이수구분 선택</div>
                   <!-- Action Buttons -->
-                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
                     <button type="button" id="btn-class-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
                     <button type="button" id="btn-class-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">전체 취소</button>
                   </div>
                   
                   <!-- Checkbox Grid -->
-                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
+                  <div class="checkbox-grid" style="max-height: 200px; overflow-y: auto; padding-right: 4px;">
                     <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+
+                  <!-- Footer Actions -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button type="button" class="btn-popover-apply" style="background: var(--accent-light); color: #fff; border: none; padding: 6px 20px; font-size: 11px; font-weight: 700; border-radius: 16px; cursor: pointer;">적용</button>
                   </div>
                 </div>
               </div>
@@ -234,16 +240,22 @@
                 </button>
                 
                 <!-- Popover list -->
-                <div class="multiselect-popover" id="credits-popover" style="position: absolute; top: calc(100% + 4px); left: 35px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 220px; gap: 10px;">
+                <div class="multiselect-popover" id="credits-popover">
+                  <div style="margin-bottom: 4px; font-weight: 700; font-size: 13px; color: var(--text-primary);">학점 선택</div>
                   <!-- Action Buttons -->
-                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
                     <button type="button" id="btn-credits-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
                     <button type="button" id="btn-credits-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">전체 취소</button>
                   </div>
                   
                   <!-- Checkbox Grid -->
-                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                  <div class="checkbox-grid" style="max-height: 150px; overflow-y: auto; padding-right: 4px;">
                     <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+
+                  <!-- Footer Actions -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button type="button" class="btn-popover-apply" style="background: var(--accent-light); color: #fff; border: none; padding: 6px 20px; font-size: 11px; font-weight: 700; border-radius: 16px; cursor: pointer;">적용</button>
                   </div>
                 </div>
               </div>
@@ -257,16 +269,22 @@
                 </button>
                 
                 <!-- Popover list -->
-                <div class="multiselect-popover" id="grade-popover" style="position: absolute; top: calc(100% + 4px); left: 35px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 220px; gap: 10px;">
+                <div class="multiselect-popover" id="grade-popover">
+                  <div style="margin-bottom: 4px; font-weight: 700; font-size: 13px; color: var(--text-primary);">대상학년 선택</div>
                   <!-- Action Buttons -->
-                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
                     <button type="button" id="btn-grade-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
                     <button type="button" id="btn-grade-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">전체 취소</button>
                   </div>
                   
                   <!-- Checkbox Grid -->
-                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                  <div class="checkbox-grid" style="max-height: 150px; overflow-y: auto; padding-right: 4px;">
                     <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+
+                  <!-- Footer Actions -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button type="button" class="btn-popover-apply" style="background: var(--accent-light); color: #fff; border: none; padding: 6px 20px; font-size: 11px; font-weight: 700; border-radius: 16px; cursor: pointer;">적용</button>
                   </div>
                 </div>
               </div>
@@ -280,16 +298,22 @@
                 </button>
                 
                 <!-- Popover list -->
-                <div class="multiselect-popover" id="evaluation-popover" style="position: absolute; top: calc(100% + 4px); left: 35px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 220px; gap: 10px;">
+                <div class="multiselect-popover" id="evaluation-popover">
+                  <div style="margin-bottom: 4px; font-weight: 700; font-size: 13px; color: var(--text-primary);">평가방식 선택</div>
                   <!-- Action Buttons -->
-                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
                     <button type="button" id="btn-evaluation-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
                     <button type="button" id="btn-evaluation-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">전체 취소</button>
                   </div>
                   
                   <!-- Checkbox Grid -->
-                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                  <div class="checkbox-grid" style="max-height: 150px; overflow-y: auto; padding-right: 4px;">
                     <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+
+                  <!-- Footer Actions -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button type="button" class="btn-popover-apply" style="background: var(--accent-light); color: #fff; border: none; padding: 6px 20px; font-size: 11px; font-weight: 700; border-radius: 16px; cursor: pointer;">적용</button>
                   </div>
                 </div>
               </div>
@@ -303,16 +327,22 @@
                 </button>
                 
                 <!-- Popover list -->
-                <div class="multiselect-popover" id="room-popover" style="position: absolute; top: calc(100% + 4px); left: 45px; z-index: 100; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); box-shadow: var(--shadow-popup); padding: 12px; display: none; flex-direction: column; width: 320px; gap: 10px;">
+                <div class="multiselect-popover" id="room-popover">
+                  <div style="margin-bottom: 4px; font-weight: 700; font-size: 13px; color: var(--text-primary);">강의실 선택</div>
                   <!-- Action Buttons -->
-                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 8px;">
                     <button type="button" id="btn-room-select-all" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--accent-light); cursor: pointer; padding: 0;">전체 선택</button>
                     <button type="button" id="btn-room-reset" style="background: none; border: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0;">전체 취소</button>
                   </div>
                   
                   <!-- Checkbox Grid -->
-                  <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px;">
+                  <div class="checkbox-grid" style="max-height: 200px; overflow-y: auto; padding-right: 4px;">
                     <!-- Checkboxes will be filled here dynamically -->
+                  </div>
+
+                  <!-- Footer Actions -->
+                  <div style="display: flex; justify-content: flex-end; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button type="button" class="btn-popover-apply" style="background: var(--accent-light); color: #fff; border: none; padding: 6px 20px; font-size: 11px; font-weight: 700; border-radius: 16px; cursor: pointer;">적용</button>
                   </div>
                 </div>
               </div>
@@ -898,12 +928,15 @@
         <button type="button" id="btn-reset-time-filter" style="background: none; border: none; font-size: 11px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 0; transition: color 0.15s ease;">
           전체 취소
         </button>
-        <button type="button" id="btn-apply-time-filter" style="background: var(--danger); color: #fff; border: none; padding: 10px 32px; font-size: 13px; font-weight: 700; border-radius: 24px; cursor: pointer; transition: opacity 0.15s ease; box-shadow: var(--shadow-sm);">
+        <button type="button" id="btn-apply-time-filter" style="background: var(--accent-light); color: #fff; border: none; padding: 10px 32px; font-size: 13px; font-weight: 700; border-radius: 24px; cursor: pointer; transition: opacity 0.15s ease; box-shadow: var(--shadow-sm);">
           적용
         </button>
       </div>
     </div>
   </div>
+
+  <!-- Backdrop overlay for multiselect popups -->
+  <div id="popover-backdrop" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); z-index: 9998; display: none;"></div>
 
   <!-- JavaScript file -->
   <script src="app.js?v=1.2.9"></script>

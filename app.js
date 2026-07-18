@@ -1444,6 +1444,44 @@ function updateMileageLabel() {
   runAdvisorDiagnostic();
 }
 
+// Close all popovers and hide the backdrop overlay
+function closeAllPopovers() {
+  const popovers = document.querySelectorAll('.multiselect-popover');
+  popovers.forEach(p => p.style.display = 'none');
+  const backdrop = document.getElementById('popover-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+}
+
+// Reusable popover modal behavior binder
+function bindPopoverModalEvents(triggerId, popoverId) {
+  const triggerBtn = document.getElementById(triggerId);
+  const popover = document.getElementById(popoverId);
+  const backdrop = document.getElementById('popover-backdrop');
+
+  if (triggerBtn && popover) {
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popover.style.display === 'none' || popover.style.display === '';
+      closeAllPopovers();
+      if (isHidden) {
+        popover.style.display = 'flex';
+        if (backdrop) backdrop.style.display = 'block';
+      }
+    });
+  }
+}
+
+// Global popover event listeners (backdrop and apply buttons)
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('btn-popover-apply')) {
+    closeAllPopovers();
+  }
+  const backdrop = document.getElementById('popover-backdrop');
+  if (e.target === backdrop) {
+    closeAllPopovers();
+  }
+});
+
 // 이수구분 멀티셀렉트(체크박스 팝오버) 초기화 함수
 function initClassificationMultiselect() {
   const grid = document.querySelector('#classification-popover .checkbox-grid');
@@ -1479,23 +1517,7 @@ function initClassificationMultiselect() {
     grid.appendChild(label);
   });
 
-  const triggerBtn = document.getElementById('btn-classification-trigger');
-  const popover = document.getElementById('classification-popover');
-  
-  if (triggerBtn && popover) {
-    triggerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popover.style.display === 'none' || popover.style.display === '';
-      popover.style.display = isHidden ? 'flex' : 'none';
-    });
-    
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
-        popover.style.display = 'none';
-      }
-    });
-  }
+  bindPopoverModalEvents('btn-classification-trigger', 'classification-popover');
 
   document.getElementById('btn-class-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1577,23 +1599,7 @@ function initCreditsMultiselect() {
     grid.appendChild(label);
   });
 
-  const triggerBtn = document.getElementById('btn-credits-trigger');
-  const popover = document.getElementById('credits-popover');
-  
-  if (triggerBtn && popover) {
-    triggerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popover.style.display === 'none' || popover.style.display === '';
-      popover.style.display = isHidden ? 'flex' : 'none';
-    });
-    
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
-        popover.style.display = 'none';
-      }
-    });
-  }
+  bindPopoverModalEvents('btn-credits-trigger', 'credits-popover');
 
   document.getElementById('btn-credits-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1679,23 +1685,7 @@ function initGradeMultiselect() {
     grid.appendChild(label);
   });
 
-  const triggerBtn = document.getElementById('btn-grade-trigger');
-  const popover = document.getElementById('grade-popover');
-  
-  if (triggerBtn && popover) {
-    triggerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popover.style.display === 'none' || popover.style.display === '';
-      popover.style.display = isHidden ? 'flex' : 'none';
-    });
-    
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
-        popover.style.display = 'none';
-      }
-    });
-  }
+  bindPopoverModalEvents('btn-grade-trigger', 'grade-popover');
 
   document.getElementById('btn-grade-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1781,23 +1771,7 @@ function initEvaluationMultiselect() {
     grid.appendChild(label);
   });
 
-  const triggerBtn = document.getElementById('btn-evaluation-trigger');
-  const popover = document.getElementById('evaluation-popover');
-  
-  if (triggerBtn && popover) {
-    triggerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popover.style.display === 'none' || popover.style.display === '';
-      popover.style.display = isHidden ? 'flex' : 'none';
-    });
-    
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
-        popover.style.display = 'none';
-      }
-    });
-  }
+  bindPopoverModalEvents('btn-evaluation-trigger', 'evaluation-popover');
 
   document.getElementById('btn-evaluation-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1883,23 +1857,7 @@ function initRoomMultiselect() {
     grid.appendChild(label);
   });
 
-  const triggerBtn = document.getElementById('btn-room-trigger');
-  const popover = document.getElementById('room-popover');
-  
-  if (triggerBtn && popover) {
-    triggerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popover.style.display === 'none' || popover.style.display === '';
-      popover.style.display = isHidden ? 'flex' : 'none';
-    });
-    
-    // Click outside to close
-    document.addEventListener('click', (e) => {
-      if (!popover.contains(e.target) && e.target !== triggerBtn && !triggerBtn.contains(e.target)) {
-        popover.style.display = 'none';
-      }
-    });
-  }
+  bindPopoverModalEvents('btn-room-trigger', 'room-popover');
 
   document.getElementById('btn-room-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();

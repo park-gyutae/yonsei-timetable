@@ -1461,18 +1461,21 @@ function initSelectModals() {
 
   function syncLabels() {
     if (selectCampus && labelCampus) {
-      const activeOpt = selectCampus.options[selectCampus.selectedIndex];
-      labelCampus.textContent = activeOpt ? activeOpt.textContent : '전체';
+      const opt = selectCampus.querySelector('option:checked') || selectCampus.options[0];
+      labelCampus.textContent = opt ? opt.textContent : '전체';
     }
     if (selectCollege && labelCollege) {
-      const activeOpt = selectCollege.options[selectCollege.selectedIndex];
-      labelCollege.textContent = activeOpt ? activeOpt.textContent : '전체';
+      const opt = selectCollege.querySelector('option:checked') || selectCollege.options[0];
+      labelCollege.textContent = opt ? opt.textContent : '전체';
     }
     if (selectDept && labelDept) {
-      const activeOpt = selectDept.options[selectDept.selectedIndex];
-      labelDept.textContent = activeOpt ? activeOpt.textContent : '전체';
+      const opt = selectDept.querySelector('option:checked') || selectDept.options[0];
+      labelDept.textContent = opt ? opt.textContent : '전체';
     }
   }
+
+  // Expose globally so loaders can trigger label updates
+  window.syncSelectModalLabels = syncLabels;
 
   bindModalEvents('btn-campus-trigger', 'campus-modal');
   bindModalEvents('btn-college-trigger', 'college-modal');
@@ -2403,7 +2406,7 @@ function setupEventListeners() {
         type: 'classification',
         label: `이수구분 (${selectedClassifications.length})`,
         clear: () => {
-          const grid = document.querySelector('#classification-popover .checkbox-grid');
+          const grid = document.querySelector('#classification-modal .checkbox-grid');
           if (grid) {
             const cbs = grid.querySelectorAll('input[type="checkbox"]');
             cbs.forEach(cb => cb.checked = true);
@@ -2422,7 +2425,7 @@ function setupEventListeners() {
         type: 'credits',
         label: `학점 (${selectedCredits.length})`,
         clear: () => {
-          const grid = document.querySelector('#credits-popover .checkbox-grid');
+          const grid = document.querySelector('#credits-modal .checkbox-grid');
           if (grid) {
             const cbs = grid.querySelectorAll('input[type="checkbox"]');
             cbs.forEach(cb => cb.checked = true);
@@ -2441,7 +2444,7 @@ function setupEventListeners() {
         type: 'grades',
         label: `대상학년 (${selectedGrades.length})`,
         clear: () => {
-          const grid = document.querySelector('#grade-popover .checkbox-grid');
+          const grid = document.querySelector('#grade-modal .checkbox-grid');
           if (grid) {
             const cbs = grid.querySelectorAll('input[type="checkbox"]');
             cbs.forEach(cb => cb.checked = true);
@@ -2532,7 +2535,7 @@ function setupEventListeners() {
     }
 
     // Reset custom multiselect checkboxes to all checked (default)
-    const grid = document.querySelector('#classification-popover .checkbox-grid');
+    const grid = document.querySelector('#classification-modal .checkbox-grid');
     if (grid) {
       const cbs = grid.querySelectorAll('input[type="checkbox"]');
       cbs.forEach(cb => cb.checked = true);
@@ -2542,7 +2545,7 @@ function setupEventListeners() {
     if (labelSpan) labelSpan.textContent = "전체";
 
     // Reset credits multiselect checkboxes to all checked (default)
-    const credGrid = document.querySelector('#credits-popover .checkbox-grid');
+    const credGrid = document.querySelector('#credits-modal .checkbox-grid');
     if (credGrid) {
       const cbs = credGrid.querySelectorAll('input[type="checkbox"]');
       cbs.forEach(cb => cb.checked = true);
@@ -2552,7 +2555,7 @@ function setupEventListeners() {
     if (credLabelSpan) credLabelSpan.textContent = "전체";
 
     // Reset grade multiselect checkboxes to all checked (default)
-    const gradeGrid = document.querySelector('#grade-popover .checkbox-grid');
+    const gradeGrid = document.querySelector('#grade-modal .checkbox-grid');
     if (gradeGrid) {
       const cbs = gradeGrid.querySelectorAll('input[type="checkbox"]');
       cbs.forEach(cb => cb.checked = true);
@@ -2562,7 +2565,7 @@ function setupEventListeners() {
     if (gradeLabelSpan) gradeLabelSpan.textContent = "전체";
 
     // Reset evaluation multiselect checkboxes to all checked (default)
-    const evalGrid = document.querySelector('#evaluation-popover .checkbox-grid');
+    const evalGrid = document.querySelector('#evaluation-modal .checkbox-grid');
     if (evalGrid) {
       const cbs = evalGrid.querySelectorAll('input[type="checkbox"]');
       cbs.forEach(cb => cb.checked = true);
@@ -2572,7 +2575,7 @@ function setupEventListeners() {
     if (evalLabelSpan) evalLabelSpan.textContent = "전체";
 
     // Reset room multiselect checkboxes to all checked (default)
-    const roomGrid = document.querySelector('#room-popover .checkbox-grid');
+    const roomGrid = document.querySelector('#room-modal .checkbox-grid');
     if (roomGrid) {
       const cbs = roomGrid.querySelectorAll('input[type="checkbox"]');
       cbs.forEach(cb => cb.checked = true);
@@ -5500,6 +5503,7 @@ async function initSearchFilters() {
     `;
     await loadDepartments(collegeSelect.value);
   }
+  if (window.syncSelectModalLabels) window.syncSelectModalLabels();
 }
 
 // Dynamically load departments for a college and populate search filter
@@ -5554,6 +5558,7 @@ async function loadDepartments(collegeCode) {
   
   // Fetch courses after dept select is populated
   await fetchCourses();
+  if (window.syncSelectModalLabels) window.syncSelectModalLabels();
 }
 
 // Mark Monte Carlo dashboard as outdated (blur it and change button to indicate action is needed)

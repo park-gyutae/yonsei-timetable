@@ -2072,3 +2072,16 @@ body {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Hover switch effect for added timetable buttons */
+.btn-added-toggle:hover .btn-add-text-normal {
+  display: none !important;
+}
+.btn-added-toggle:hover .btn-add-text-hover {
+  display: inline !important;
+}
+.btn-added-toggle:hover {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+  color: #ffffff !important;
+}

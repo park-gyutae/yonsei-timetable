@@ -577,15 +577,20 @@ function renderCourses(courses) {
         <span><i data-lucide="award"></i> ${c.credits}학점 (${c.evaluation})</span>
       </div>
       ${aiInsightHtml}
-      <button class="btn ${isAdded ? 'btn-secondary' : 'btn-primary'} btn-add btn-full" ${isAdded ? 'disabled' : ''}>
+      <button class="btn ${isAdded ? 'btn-secondary btn-added-toggle' : 'btn-primary'} btn-add btn-full">
         <i data-lucide="${isAdded ? 'check' : 'plus'}"></i>
-        ${isAdded ? '시간표 추가됨' : '시간표에 추가'}
+        <span class="btn-add-text-normal">${isAdded ? '시간표 추가됨' : '시간표에 추가'}</span>
+        ${isAdded ? '<span class="btn-add-text-hover" style="display: none;">시간표에서 제거</span>' : ''}
       </button>
     `;
 
-    // Click handler for add button
+    // Click handler for add/remove button
     div.querySelector('.btn-add').addEventListener('click', () => {
-      addCourseToTimetable(c);
+      if (isAdded) {
+        removeCourse(c.code, c.division);
+      } else {
+        addCourseToTimetable(c);
+      }
     });
 
     // Click handler for wishlist button

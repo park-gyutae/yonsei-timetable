@@ -620,6 +620,19 @@ function renderCourses(courses) {
   toRender.forEach(c => {
     const isAdded = selectedCourses.some(sel => sel.code === c.code && sel.division === c.division);
     const isStarred = wishlist.some(w => w.code === c.code && w.division === c.division);
+
+    // Calculate syllabus URL for direct target="_blank" navigation (bypasses popup blockers in KakaoTalk/Safari)
+    const year = c.year || '2026';
+    const semester = c.semester || '20';
+    const paramsObj = {
+      sysinstDivCd: "H1",
+      syy: year,
+      smtDivCd: semester,
+      subjtnb: c.code,
+      corseDvclsNo: c.division
+    };
+    const base64Params = btoa(JSON.stringify(paramsObj));
+    const syllabusUrl = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
     
     // Look up ML precomputed curves for AI insights
     const lookupKey = `${c.code}-${c.division}`;
@@ -658,9 +671,9 @@ function renderCourses(courses) {
       <div class="course-title-row">
         <h3>${c.title}</h3>
         <div style="display: flex; gap: 6px; align-items: center;">
-          <button class="btn-chart-view btn-view-syllabus" title="강의계획서 조회" style="padding: 4px; display: inline-flex; align-items: center; justify-content: center;">
+          <a href="${syllabusUrl}" target="_blank" class="btn-chart-view btn-view-syllabus" title="강의계획서 조회" style="padding: 4px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: inherit;">
             <i data-lucide="book-open"></i>
-          </button>
+          </a>
           <button class="btn-chart-view btn-view-analysis" title="마일리지 과거 결과 분석">
             <i data-lucide="bar-chart-2"></i>
           </button>
@@ -695,10 +708,9 @@ function renderCourses(courses) {
       toggleWishlist(c);
     });
 
-    // Click handler for syllabus button
+    // Stop propagation on syllabus link click to prevent parent event trigger
     div.querySelector('.btn-view-syllabus').addEventListener('click', (e) => {
       e.stopPropagation();
-      openSyllabusModal(c);
     });
 
     // Click handler for analysis button
@@ -1168,6 +1180,19 @@ function renderSelectedCoursesList() {
     const rankColor = index === 0 ? 'var(--danger)' : index === 1 ? 'var(--warning)' : index === 2 ? 'var(--accent-light)' : 'var(--text-secondary)';
     const rankLabel = `${index + 1}순번`;
 
+    // Calculate syllabus URL for direct target="_blank" navigation
+    const year = c.year || '2026';
+    const semester = c.semester || '20';
+    const paramsObj = {
+      sysinstDivCd: "H1",
+      syy: year,
+      smtDivCd: semester,
+      subjtnb: c.code,
+      corseDvclsNo: c.division
+    };
+    const base64Params = btoa(JSON.stringify(paramsObj));
+    const syllabusUrl = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
+
     const item = document.createElement('div');
     item.className = 'allocation-item';
     item.draggable = false; // Prevent default drag clashes with input range controls
@@ -1216,9 +1241,9 @@ function renderSelectedCoursesList() {
           </div>
         </span>
       </div>
-      <button class="btn-selected-syllabus" title="강의계획서 조회">
+      <a href="${syllabusUrl}" target="_blank" class="btn-selected-syllabus" title="강의계획서 조회" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center;">
         <i data-lucide="book-open"></i>
-      </button>
+      </a>
       <button class="btn-analyze" title="상세 마일리지 통계 분석" style="margin-left: 4px;">
         <i data-lucide="bar-chart-3"></i>
       </button>
@@ -1234,11 +1259,7 @@ function renderSelectedCoursesList() {
     const removeBtn = item.querySelector('.btn-remove');
     const retakeCheckbox = item.querySelector('.retake-checkbox');
 
-    if (syllabusBtn) {
-      syllabusBtn.addEventListener('click', () => {
-        openSyllabusModal(c);
-      });
-    }
+    // Click handler for syllabus link is handled natively by the anchor tag
 
     // 헬퍼: 확률 뱃지 및 조언 툴팁 실시간 드래그 동적 업데이트
     function updateProbBadge(val) {
@@ -4950,6 +4971,19 @@ function openCourseActionModal(course) {
   const glow = prob >= 0.8 ? 'var(--success-glow)' : prob >= 0.5 ? 'var(--warning-glow)' : 'var(--danger-glow)';
   const maxVal = course.mileageSummary ? (course.mileageSummary.max_allowed_mileage || 36) : 36;
 
+  // Calculate syllabus URL for direct target="_blank" navigation
+  const year = course.year || '2026';
+  const semester = course.semester || '20';
+  const paramsObj = {
+    sysinstDivCd: "H1",
+    syy: year,
+    smtDivCd: semester,
+    subjtnb: course.code,
+    corseDvclsNo: course.division
+  };
+  const base64Params = btoa(JSON.stringify(paramsObj));
+  const syllabusUrl = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
+
   // Render the exact same allocation-item card structure inside the modal!
   container.innerHTML = `
     <div class="allocation-item" data-key="${key}" style="margin-bottom: 0; box-shadow: none; border-color: transparent; background: transparent;">
@@ -4985,9 +5019,9 @@ function openCourseActionModal(course) {
           </div>
         </span>
       </div>
-      <button class="btn-selected-syllabus modal-btn-syllabus" title="강의계획서 조회">
+      <a href="${syllabusUrl}" target="_blank" class="btn-selected-syllabus modal-btn-syllabus" title="강의계획서 조회" style="text-decoration: none; color: inherit;">
         <i data-lucide="book-open"></i>
-      </button>
+      </a>
       <button class="btn-analyze modal-btn-analyze" title="상세 마일리지 통계 분석" style="margin-left: 4px;">
         <i data-lucide="bar-chart-3"></i>
       </button>
@@ -5087,11 +5121,10 @@ function openCourseActionModal(course) {
     });
   }
 
-  // Bind Syllabus Button
+  // Bind Syllabus Button (closes modal when native link opens new tab)
   if (syllabusBtn) {
     syllabusBtn.addEventListener('click', () => {
       modal.classList.remove('active');
-      openSyllabusModal(course);
     });
   }
 

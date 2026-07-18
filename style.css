@@ -1410,6 +1410,18 @@ body {
   transition: all var(--transition-fast);
 }
 
+.btn-chart-view:focus,
+.btn-wishlist:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.btn-chart-view:focus-visible,
+.btn-wishlist:focus-visible {
+  outline: 2px solid var(--accent-light) !important;
+  outline-offset: 1px;
+}
+
 .btn-chart-view:hover {
   color: var(--accent-light);
   background: rgba(255, 255, 255, 0.05);

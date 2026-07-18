@@ -2760,7 +2760,7 @@ async function openMileageAnalysisModal(course) {
     // 1. Populate Global stats
 
     const globalCompRatio = (summary.applicants / summary.capacity).toFixed(2);
-    globalRatioLabel.innerHTML = `${summary.capacity} / ${summary.applicants} <small>(${globalCompRatio}:1)</small>`;
+    globalRatioLabel.innerHTML = `${summary.applicants} / ${summary.capacity} <small>(${globalCompRatio}:1)</small>`;
     
     // Find general cutline (excluding special remarks like '*' exchange/disabled)
     const generalPassBids = bids.filter(b => b.success === 'Y' && !b.remark);
@@ -2826,7 +2826,7 @@ async function openMileageAnalysisModal(course) {
 
     const groupApplicants = groupBids.length;
     const groupCompRatio = groupCapacityVal > 0 ? (groupApplicants / groupCapacityVal).toFixed(2) : '0';
-    yearRatioLabel.innerHTML = `${groupCapacityVal} / ${groupApplicants} <small>(${groupCompRatio}:1)</small>`;
+    yearRatioLabel.innerHTML = `${groupApplicants} / ${groupCapacityVal} <small>(${groupCompRatio}:1)</small>`;
 
     const groupPassBids = groupBids.filter(b => b.success === 'Y' && !b.remark);
     const groupCutlineVal = groupPassBids.length > 0 ? Math.min(...groupPassBids.map(b => b.mileage)) : 'N/A';

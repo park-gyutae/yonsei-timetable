@@ -2507,8 +2507,17 @@ function renderProfileSummary() {
 }
 
 
+// Sync dynamically computed profile metrics (coursesCount, applied_credits) with selectedCourses in timetable
+function syncProfileWithTimetable() {
+  myProfile.coursesCount = selectedCourses.length > 0 ? selectedCourses.length : 6;
+  myProfile.applied_credits = selectedCourses.length > 0 
+    ? selectedCourses.reduce((sum, c) => sum + (c.credits || 3), 0)
+    : 18;
+}
+
 // LocalStorage Persistence
 function saveDataToStorage() {
+  syncProfileWithTimetable();
   localStorage.setItem('yonsei_timetable_selected', JSON.stringify(selectedCourses));
   localStorage.setItem('yonsei_timetable_profile', JSON.stringify(myProfile));
 }
@@ -2569,6 +2578,7 @@ function loadDataFromStorage() {
       targetProbLabel.textContent = `${Math.round(myProfile.targetProb * 100)}%`;
     }
 
+    syncProfileWithTimetable();
     renderProfileSummary();
   }
 }

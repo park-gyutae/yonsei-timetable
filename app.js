@@ -3454,6 +3454,8 @@ function calculateMileagePrediction(testMileage) {
   const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
   const globalMajorQuota = majorQuotaMatch ? parseInt(majorQuotaMatch[1]) : 0;
   const includesDoubleMajor = majorQuotaMatch ? majorQuotaMatch[2] === 'Y' : false;
+  const isMajorQuotaActive = globalMajorQuota > 0;
+  const mqVal = globalMajorQuota;
 
   if (isYearQuotasActive) {
     // 1. Year Partitioning: Select only applicants matching user's Year (grade)

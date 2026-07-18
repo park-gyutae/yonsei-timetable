@@ -2816,6 +2816,22 @@ async function openMileageAnalysisModal(course) {
     const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
     const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
     const mqVal = isMajorQuotaActive ? parseInt(majorQuotaMatch[1]) : 0;
+    const includesDoubleMajor = majorQuotaMatch && majorQuotaMatch[2] === 'Y';
+
+    // Helper to determine if a bid is protected under the major quota
+    const isBidProtected = (b) => {
+      return b.major.startsWith('Y(Y)') || (includesDoubleMajor && b.major.startsWith('Y(N)'));
+    };
+
+    // Determine if the user belongs to the protected major group
+    let userBelongsToProtectedGroup = false;
+    if (userMajorStatus === 'Y(Y)') {
+      userBelongsToProtectedGroup = true;
+    } else if (userMajorStatus === 'Y(N)') {
+      userBelongsToProtectedGroup = includesDoubleMajor;
+    } else {
+      userBelongsToProtectedGroup = false;
+    }
 
     // Filter bids belonging to the user's specific group
     let groupBids = bids;
@@ -2823,7 +2839,12 @@ async function openMileageAnalysisModal(course) {
     let groupCapacityVal = summary.capacity;
 
     if (isYearQuotasActive && isMajorQuotaActive) {
-      groupBids = bids.filter(b => b.grade === userGrade && (isMajor ? b.major.startsWith('Y') : !b.major.startsWith('Y')));
+      groupBids = bids.filter(b => {
+        const inGrade = b.grade === userGrade;
+        if (!inGrade) return false;
+        const protectedBid = isBidProtected(b);
+        return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+      });
       groupCapacityLabel = `${userGrade}학년 정원`;
       groupCapacityVal = yearCapacity;
     } else if (isYearQuotasActive) {
@@ -2831,8 +2852,11 @@ async function openMileageAnalysisModal(course) {
       groupCapacityLabel = `${userGrade}학년 정원`;
       groupCapacityVal = yearCapacity;
     } else if (isMajorQuotaActive) {
-      groupBids = bids.filter(b => isMajor ? b.major.startsWith('Y') : !b.major.startsWith('Y'));
-      if (isMajor) {
+      groupBids = bids.filter(b => {
+        const protectedBid = isBidProtected(b);
+        return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+      });
+      if (userBelongsToProtectedGroup) {
         groupCapacityLabel = "전공자 정원";
         groupCapacityVal = mqVal;
       } else {
@@ -2925,14 +2949,14 @@ async function openMileageAnalysisModal(course) {
         // Case A: Both active (6 groups: Grades 2, 3, 4 x Major, Non-major)
         const activeGrades = ['2', '3', '4'];
         activeGrades.forEach(g => {
-          // Major Group for Grade g
-          const mPass = bids.filter(b => b.grade === g && b.major.startsWith('Y') && b.success === 'Y');
+          // Major Group for Grade g (Protected)
+          const mPass = bids.filter(b => b.grade === g && isBidProtected(b) && b.success === 'Y');
           const mCut = mPass.length > 0 ? Math.min(...mPass.map(b => b.mileage)) : 'N/A';
           const mAvg = mPass.length > 0 ? (mPass.reduce((sum, b) => sum + b.mileage, 0) / mPass.length).toFixed(1) : 'N/A';
           cardsData.push({ title: `${g}학년 본전공자`, cut: mCut, avg: mAvg, isMajor: true });
 
-          // Non-major Group for Grade g
-          const nmPass = bids.filter(b => b.grade === g && !b.major.startsWith('Y') && b.success === 'Y');
+          // Non-major Group for Grade g (Unprotected)
+          const nmPass = bids.filter(b => b.grade === g && !isBidProtected(b) && b.success === 'Y');
           const nmCut = nmPass.length > 0 ? Math.min(...nmPass.map(b => b.mileage)) : 'N/A';
           const nmAvg = nmPass.length > 0 ? (nmPass.reduce((sum, b) => sum + b.mileage, 0) / nmPass.length).toFixed(1) : 'N/A';
           cardsData.push({ title: `${g}학년 비전공자`, cut: nmCut, avg: nmAvg, isMajor: false });
@@ -2950,12 +2974,12 @@ async function openMileageAnalysisModal(course) {
         });
       } else if (isMajorQuotaActive) {
         // Case C: Major Protection only (2 groups: Major, Non-major)
-        const mPass = bids.filter(b => b.major.startsWith('Y') && b.success === 'Y');
+        const mPass = bids.filter(b => isBidProtected(b) && b.success === 'Y');
         const mCut = mPass.length > 0 ? Math.min(...mPass.map(b => b.mileage)) : 'N/A';
         const mAvg = mPass.length > 0 ? (mPass.reduce((sum, b) => sum + b.mileage, 0) / mPass.length).toFixed(1) : 'N/A';
         cardsData.push({ title: '본전공자 합격 기준', cut: mCut, avg: mAvg, isMajor: true });
 
-        const nmPass = bids.filter(b => !b.major.startsWith('Y') && b.success === 'Y');
+        const nmPass = bids.filter(b => !isBidProtected(b) && b.success === 'Y');
         const nmCut = nmPass.length > 0 ? Math.min(...nmPass.map(b => b.mileage)) : 'N/A';
         const nmAvg = nmPass.length > 0 ? (nmPass.reduce((sum, b) => sum + b.mileage, 0) / nmPass.length).toFixed(1) : 'N/A';
         cardsData.push({ title: '비전공자 합격 기준', cut: nmCut, avg: nmAvg, isMajor: false });

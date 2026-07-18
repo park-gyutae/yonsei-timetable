@@ -118,15 +118,14 @@
             </div>
           </div>
           
-          <div class="search-tabs-nav" style="display: grid; grid-template-columns: repeat(2, 1fr); width: 100%;">
-            <button type="button" class="search-tab-btn active" id="btn-search-tab-general">일반 검색</button>
-            <button type="button" class="search-tab-btn" id="btn-search-tab-wishlist">장바구니</button>
-          </div>
-          
           <!-- Sub-Tab 1: General Search -->
           <div class="search-tab-content active" id="search-general">
             <div id="sidebar-filters-placeholder">
               <div class="search-filters" id="search-filters-container">
+                <div class="search-tabs-nav" style="display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; grid-column: 1 / -1; margin-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+                  <button type="button" class="search-tab-btn active" id="btn-search-tab-general">일반 검색</button>
+                  <button type="button" class="search-tab-btn" id="btn-search-tab-wishlist">장바구니</button>
+                </div>
                 <div class="filter-group">
                   <label for="btn-campus-trigger">캠퍼스</label>
                   <button type="button" class="multiselect-trigger" id="btn-campus-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">

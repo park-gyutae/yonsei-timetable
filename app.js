@@ -699,7 +699,7 @@ function renderCourses(courses) {
     // Click handler for wishlist button
     div.querySelector('.btn-wishlist').addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleWishlist(c);
+      toggleWishlist(c, e.currentTarget);
     });
 
     // Stop propagation on syllabus link click to prevent parent event trigger
@@ -5633,21 +5633,35 @@ function saveWishlistToStorage() {
   }
 }
 
-function toggleWishlist(course) {
+function toggleWishlist(course, btnEl) {
   const idx = wishlist.findIndex(w => w.code === course.code && w.division === course.division);
+  let isStarred = false;
   if (idx > -1) {
     wishlist.splice(idx, 1);
   } else {
     wishlist.push(course);
+    isStarred = true;
   }
   saveWishlistToStorage();
   
-  // Refresh current search result view or wishlist tab dynamically
+  // Update specific button UI in place if element reference is provided
+  if (btnEl) {
+    btnEl.classList.toggle('starred-active', isStarred);
+    const starIcon = btnEl.querySelector('i');
+    if (starIcon) {
+      if (isStarred) {
+        starIcon.style.fill = '#ffcc00';
+        starIcon.style.stroke = '#ffcc00';
+      } else {
+        starIcon.style.fill = '';
+        starIcon.style.stroke = '';
+      }
+    }
+  }
+  
+  // Refresh current search result view only if we are inside the wishlist tab
   if (activeSearchTab === 'search-wishlist') {
     renderWishlist();
-  } else {
-    // Re-render matching current tab dataset
-    fetchCourses();
   }
 }
 

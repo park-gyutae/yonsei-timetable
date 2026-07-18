@@ -2277,3 +2277,36 @@ body {
   background: var(--border-color);
   color: var(--text-primary);
 }
+
+/* 캠퍼스/대학/학과 단일선택 리스트 아이템 스타일 */
+.select-modal-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 12px;
+  background: var(--canvas-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.select-modal-item:hover {
+  background: var(--canvas-soft);
+  border-color: var(--accent-light);
+}
+
+.select-modal-item.active {
+  background: rgba(0, 112, 243, 0.08) !important;
+  border-color: var(--accent-light) !important;
+  color: var(--accent-light) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .select-modal-item.active {
+  background: rgba(50, 145, 255, 0.15) !important;
+}

@@ -308,6 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadPrecomputedCurves(); // Load static precomputed curves first
   await initSearchFilters(); // Dynamically load colleges/departments first
+  initSelectModals(); // Initialize campus/college/dept modals and sync labels
   setupEventListeners();
   initMiniTimetableCalendar();
   switchTab('tab-timetable');
@@ -1442,6 +1443,153 @@ function updateMileageLabel() {
 
   // Update advisor card diagnostics
   runAdvisorDiagnostic();
+}
+
+// Sync and bind events for Campus, College, and Dept modals
+function initSelectModals() {
+  const selectCampus = document.getElementById('select-campus');
+  const selectCollege = document.getElementById('select-college');
+  const selectDept = document.getElementById('select-dept');
+
+  const btnCampus = document.getElementById('btn-campus-trigger');
+  const btnCollege = document.getElementById('btn-college-trigger');
+  const btnDept = document.getElementById('btn-dept-trigger');
+
+  const labelCampus = document.getElementById('label-campus-selected');
+  const labelCollege = document.getElementById('label-college-selected');
+  const labelDept = document.getElementById('label-dept-selected');
+
+  function syncLabels() {
+    if (selectCampus && labelCampus) {
+      const activeOpt = selectCampus.options[selectCampus.selectedIndex];
+      labelCampus.textContent = activeOpt ? activeOpt.textContent : '전체';
+    }
+    if (selectCollege && labelCollege) {
+      const activeOpt = selectCollege.options[selectCollege.selectedIndex];
+      labelCollege.textContent = activeOpt ? activeOpt.textContent : '전체';
+    }
+    if (selectDept && labelDept) {
+      const activeOpt = selectDept.options[selectDept.selectedIndex];
+      labelDept.textContent = activeOpt ? activeOpt.textContent : '전체';
+    }
+  }
+
+  bindModalEvents('btn-campus-trigger', 'campus-modal');
+  bindModalEvents('btn-college-trigger', 'college-modal');
+  bindModalEvents('btn-dept-trigger', 'dept-modal');
+
+  const campusModal = document.getElementById('campus-modal');
+  if (campusModal && btnCampus && selectCampus) {
+    btnCampus.addEventListener('click', () => {
+      const container = document.getElementById('campus-modal-options');
+      if (!container) return;
+      container.innerHTML = '';
+
+      Array.from(selectCampus.options).forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'select-modal-item';
+        if (opt.value === selectCampus.value) btn.classList.add('active');
+        btn.textContent = opt.textContent;
+        
+        btn.addEventListener('click', () => {
+          selectCampus.value = opt.value;
+          selectCampus.dispatchEvent(new Event('change'));
+          syncLabels();
+          campusModal.classList.remove('active');
+        });
+        container.appendChild(btn);
+      });
+    });
+  }
+
+  const collegeModal = document.getElementById('college-modal');
+  const inputCollegeSearch = document.getElementById('input-college-modal-search');
+  if (collegeModal && btnCollege && selectCollege) {
+    btnCollege.addEventListener('click', () => {
+      if (inputCollegeSearch) inputCollegeSearch.value = '';
+      renderCollegesList('');
+    });
+
+    if (inputCollegeSearch) {
+      inputCollegeSearch.addEventListener('input', (e) => {
+        renderCollegesList(e.target.value);
+      });
+    }
+
+    function renderCollegesList(searchQuery) {
+      const container = document.getElementById('college-modal-options');
+      if (!container) return;
+      container.innerHTML = '';
+      const query = searchQuery.toLowerCase().trim();
+
+      Array.from(selectCollege.options).forEach(opt => {
+        const text = opt.textContent;
+        if (query && !text.toLowerCase().includes(query)) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'select-modal-item';
+        if (opt.value === selectCollege.value) btn.classList.add('active');
+        btn.textContent = text;
+
+        btn.addEventListener('click', () => {
+          selectCollege.value = opt.value;
+          selectCollege.dispatchEvent(new Event('change'));
+          syncLabels();
+          collegeModal.classList.remove('active');
+        });
+        container.appendChild(btn);
+      });
+    }
+  }
+
+  const deptModal = document.getElementById('dept-modal');
+  const inputDeptSearch = document.getElementById('input-dept-modal-search');
+  if (deptModal && btnDept && selectDept) {
+    btnDept.addEventListener('click', () => {
+      if (inputDeptSearch) inputDeptSearch.value = '';
+      renderDeptsList('');
+    });
+
+    if (inputDeptSearch) {
+      inputDeptSearch.addEventListener('input', (e) => {
+        renderDeptsList(e.target.value);
+      });
+    }
+
+    function renderDeptsList(searchQuery) {
+      const container = document.getElementById('dept-modal-options');
+      if (!container) return;
+      container.innerHTML = '';
+      const query = searchQuery.toLowerCase().trim();
+
+      Array.from(selectDept.options).forEach(opt => {
+        const text = opt.textContent;
+        if (query && !text.toLowerCase().includes(query)) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'select-modal-item';
+        if (opt.value === selectDept.value) btn.classList.add('active');
+        btn.textContent = text;
+
+        btn.addEventListener('click', () => {
+          selectDept.value = opt.value;
+          selectDept.dispatchEvent(new Event('change'));
+          syncLabels();
+          deptModal.classList.remove('active');
+        });
+        container.appendChild(btn);
+      });
+    }
+  }
+
+  selectCampus?.addEventListener('change', syncLabels);
+  selectCollege?.addEventListener('change', syncLabels);
+  selectDept?.addEventListener('change', syncLabels);
+
+  syncLabels();
 }
 
 // Reusable modal popup behavior binder (supports backdrop clicks and close buttons)

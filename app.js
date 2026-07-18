@@ -481,65 +481,9 @@ function renderCourses(courses) {
 
   if (!listContainer) return;
 
-  // 0. If College, Dept, and Search Query are all empty, show the premium search dashboard
+  // Update filter chips status
   if (window.updateActiveFilterChips) {
     window.updateActiveFilterChips();
-  }
-
-  if (!collegeVal && !deptVal && !query) {
-    listContainer.innerHTML = `
-      <div class="search-dashboard" style="padding: 32px 18px; display: flex; flex-direction: column; gap: 24px; max-width: 600px; margin: 0 auto; color: var(--text-primary);">
-        <div style="text-align: center; margin-bottom: 8px;">
-          <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 6px; background: linear-gradient(135deg, var(--accent-light), #00d2ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">연세대 수강신청 AI 시뮬레이터</h4>
-          <p style="font-size: 12px; color: var(--text-secondary);">지능형 검색 및 실시간 경쟁률/합격 확률 마일리지 분석</p>
-        </div>
-
-        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 16px; backdrop-filter: blur(10px);">
-          <h5 style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="sparkles" style="width: 13.5px; height: 13.5px; color: #ffd700;"></i> 나의 추천 검색어
-          </h5>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            <button class="dash-tag-btn" onclick="applyQuickSearch('인공지능')">🤖 인공지능</button>
-            <button class="dash-tag-btn" onclick="applyQuickSearch('기계학습')">🧠 기계학습</button>
-            <button class="dash-tag-btn" onclick="applyQuickSearch('데이터')">📊 데이터</button>
-            <button class="dash-tag-btn" onclick="applyQuickSearch('알고리즘')">💻 알고리즘</button>
-            <button class="dash-tag-btn" onclick="applyQuickSearch('심리')">🧠 심리학</button>
-            <button class="dash-tag-btn" onclick="applyQuickSearch('경제')">📈 경제학</button>
-            <button class="dash-tag-btn" onclick="applyQuickSearch('통계')">🔢 통계학</button>
-          </div>
-        </div>
-
-        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 16px; backdrop-filter: blur(10px);">
-          <h5 style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="library" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 주요 학과 바로가기
-          </h5>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1103', '0301')">수학전공</button>
-            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1103', '0302')">물리학전공</button>
-            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1102', '0203')">응용통계학전공</button>
-            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1102', '0201')">경제학부</button>
-            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1102', '0202')">경영학과</button>
-          </div>
-        </div>
-
-        <div style="text-align: center; font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>단축키: </span>
-          <kbd style="background: var(--canvas-elevated); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 5px; font-size: 9.5px; font-family: monospace;">/</kbd>
-          <span>키를 누르면 검색창으로 이동합니다.</span>
-        </div>
-      </div>
-    `;
-    if (countLabel) countLabel.textContent = "조회된 과목 0개";
-    
-    // Hide active filter chips container when showing empty state
-    const chipsContainer = document.getElementById('active-filter-chips');
-    if (chipsContainer) {
-      chipsContainer.innerHTML = '';
-      chipsContainer.style.display = 'none';
-    }
-    
-    lucide.createIcons();
-    return;
   }
 
   // Filter courses by search query and advanced options

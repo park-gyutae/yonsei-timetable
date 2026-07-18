@@ -3256,12 +3256,6 @@ function renderAIProbabilityChart(course, currentBid) {
   const ctx = document.getElementById('ai-probability-chart');
   if (!ctx) return;
 
-  // Destroy previous instance to avoid canvas redraw glitch
-  if (aiChartInstance) {
-    aiChartInstance.destroy();
-    aiChartInstance = null;
-  }
-
   const lookupKey = `${course.code}-${course.division}`;
   if (!precomputedCurves || !precomputedCurves.curves || !precomputedCurves.curves[lookupKey]) {
     // Hide the chart container if curves are not computed for this course
@@ -3270,13 +3264,49 @@ function renderAIProbabilityChart(course, currentBid) {
   }
 
   document.querySelector('.ai-chart-container').style.display = 'block';
+
+  // 1. If chart already exists for the same course, update the slider indicator line and the highlight point without recreation (buttery smooth update)
+  if (aiChartInstance && aiChartInstance.lookupKey === lookupKey) {
+    if (aiChartInstance.options.plugins && aiChartInstance.options.plugins.verticalLine) {
+      aiChartInstance.options.plugins.verticalLine.xValue = currentBid;
+    }
+    
+    // Highlight the point for current bid in the line dataset (dataset index 2)
+    const probDataset = aiChartInstance.data.datasets[2];
+    if (probDataset) {
+      const pointRadii = probDataset.pointRadius;
+      const pointBgColors = probDataset.pointBackgroundColor;
+      const pointBorderColors = probDataset.pointBorderColor;
+
+      pointRadii.fill(0);
+      pointBgColors.fill('rgba(0,0,0,0)');
+      pointBorderColors.fill('rgba(0,0,0,0)');
+
+      const bidIdx = Math.round(currentBid);
+      if (bidIdx >= 0 && bidIdx < pointRadii.length) {
+        pointRadii[bidIdx] = 6;
+        pointBgColors[bidIdx] = '#0070f3';
+        pointBorderColors[bidIdx] = '#ffffff';
+      }
+    }
+
+    aiChartInstance.update('none');
+    return;
+  }
+
+  // Destroy previous instance to avoid canvas redraw glitch
+  if (aiChartInstance) {
+    aiChartInstance.destroy();
+    aiChartInstance = null;
+  }
+
   const pred = precomputedCurves.curves[lookupKey];
   const userMajor = determineMajorStatus(course.code, myProfile);
   const isMajor = userMajor !== 'N(N)';
   const groupPred = isMajor ? pred.major : pred.non_major;
   const userGrade = myProfile.grade || 4;
   const gradePred = groupPred[`grade_${userGrade}`] || groupPred.grade_4 || groupPred;
-  const maxAllowed = pred.max_allowed;
+  const maxAllowed = pred.max_allowed || 36;
   const rawCurve = gradePred.prob_curve;
 
   // Make sure we slice or pad rawCurve according to maxAllowed
@@ -3289,9 +3319,7 @@ function renderAIProbabilityChart(course, currentBid) {
     }
   }
 
-  // 1. Fix for Under-Enrolled (미달) Groups!
-  // If the user's specific competition group is under-enrolled (applicants <= capacity),
-  // bidding 1 point guarantees a pass. Otherwise, if it's over-enrolled, they must compete.
+  // Calculate under-enrolled state
   let isGroupUnderEnrolled = false;
   let groupBids = [];
   if (activeMileageData && activeMileageData.summary) {
@@ -3386,6 +3414,31 @@ function renderAIProbabilityChart(course, currentBid) {
     calibratedCurve.push(p);
   }
 
+  // 2. Group past bids by mileage values to calculate pass/fail counts
+  const groups = {};
+  if (activeMileageData && activeMileageData.bids) {
+    const bids = filterCleanBids(activeMileageData.bids);
+    bids.forEach(b => {
+      const val = b.mileage;
+      if (!groups[val]) {
+        groups[val] = { pass: 0, fail: 0 };
+      }
+      if (b.success === 'Y') {
+        groups[val].pass++;
+      } else {
+        groups[val].fail++;
+      }
+    });
+  }
+
+  const passCounts = [];
+  const failCounts = [];
+  for (let i = 0; i <= maxAllowed; i++) {
+    const group = groups[i] || { pass: 0, fail: 0 };
+    passCounts.push(group.pass);
+    failCounts.push(group.fail);
+  }
+
   const labels = Array.from({ length: maxAllowed + 1 }, (_, i) => `${i}점`);
   const dataPoints = calibratedCurve.map(p => Math.round(p * 100)); // Convert to %
 
@@ -3399,64 +3452,136 @@ function renderAIProbabilityChart(course, currentBid) {
   const bidIdx = Math.round(currentBid);
   if (bidIdx >= 0 && bidIdx < labels.length) {
     pointRadii[bidIdx] = 6;
-    pointBgColors[bidIdx] = '#00e5ff';
+    pointBgColors[bidIdx] = '#0070f3';
     pointBorderColors[bidIdx] = '#ffffff';
   }
 
-  // Chart.js configuration
+  // Custom vertical line plugin for slider synchronization
+  const verticalLinePlugin = {
+    id: 'verticalLine',
+    afterDraw: (chart) => {
+      const activeVal = chart.config.options.plugins?.verticalLine?.xValue;
+      if (activeVal !== undefined && activeVal !== null) {
+        const xAxis = chart.scales.x;
+        const xPixel = xAxis.getPixelForValue(activeVal);
+        if (xPixel === undefined || isNaN(xPixel)) return;
+        
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(xPixel, chart.chartArea.top);
+        ctx.lineTo(xPixel, chart.chartArea.bottom);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(0, 112, 243, 0.85)';
+        ctx.setLineDash([5, 4]); // Dashed line
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  };
+
+  // Chart.js mixed chart configuration (Bars for past bids, Line for AI probability)
   aiChartInstance = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
+    plugins: [verticalLinePlugin],
     data: {
       labels: labels,
-      datasets: [{
-        label: '합격 확률',
-        data: dataPoints,
-        borderColor: '#00e5ff',
-        borderWidth: 2,
-        pointRadius: pointRadii,
-        pointHoverRadius: pointHoverRadii,
-        pointBackgroundColor: pointBgColors,
-        pointBorderColor: pointBorderColors,
-        pointBorderWidth: 1.5,
-        fill: true,
-        backgroundColor: function(context) {
-          const chart = context.chart;
-          const {ctx, chartArea} = chart;
-          if (!chartArea) return null;
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(0, 229, 255, 0.15)');
-          gradient.addColorStop(1, 'rgba(0, 229, 255, 0.0)');
-          return gradient;
+      datasets: [
+        {
+          type: 'bar',
+          label: '과거 합격자',
+          data: passCounts,
+          backgroundColor: 'rgba(0, 112, 243, 0.25)', // Vercel blue with opacity
+          borderColor: 'rgba(0, 112, 243, 0.7)',
+          borderWidth: 1,
+          stack: 'bidsStack',
+          yAxisID: 'y',
+          order: 2
         },
-        tension: 0.3
-      }]
+        {
+          type: 'bar',
+          label: '과거 불합격자',
+          data: failCounts,
+          backgroundColor: 'rgba(238, 0, 0, 0.25)', // Danger red with opacity
+          borderColor: 'rgba(238, 0, 0, 0.7)',
+          borderWidth: 1,
+          stack: 'bidsStack',
+          yAxisID: 'y',
+          order: 3
+        },
+        {
+          type: 'line',
+          label: '합격 예측 확률',
+          data: dataPoints,
+          borderColor: '#0070f3',
+          borderWidth: 2,
+          pointRadius: pointRadii,
+          pointHoverRadius: pointHoverRadii,
+          pointBackgroundColor: pointBgColors,
+          pointBorderColor: pointBorderColors,
+          pointBorderWidth: 1.5,
+          fill: true,
+          backgroundColor: function(context) {
+            const chart = context.chart;
+            const {ctx, chartArea} = chart;
+            if (!chartArea) return null;
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, 'rgba(0, 112, 243, 0.12)');
+            gradient.addColorStop(1, 'rgba(0, 112, 243, 0.0)');
+            return gradient;
+          },
+          tension: 0.3,
+          yAxisID: 'yProbability',
+          order: 1
+        }
+      ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            boxWidth: 10,
+            font: { size: 10, weight: '500' },
+            color: 'rgba(23, 23, 23, 0.7)'
+          }
+        },
+        verticalLine: {
+          xValue: currentBid
+        },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.85)',
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
           titleColor: '#ffffff',
-          bodyColor: '#00e5ff',
+          bodyColor: '#e2e8f0',
           borderColor: 'rgba(255, 255, 255, 0.1)',
           borderWidth: 1,
           padding: 8,
           cornerRadius: 6,
-          displayColors: false,
           callbacks: {
             label: function(context) {
-              return `확률: ${context.parsed.y}%`;
+              const label = context.dataset.label || '';
+              const val = context.parsed.y;
+              if (context.datasetIndex === 2) {
+                return `${label}: ${val}%`;
+              }
+              return `${label}: ${val}명`;
             }
           }
         }
       },
       scales: {
         x: {
-          grid: { color: 'rgba(255, 255, 255, 0.04)' },
+          stacked: true,
+          grid: { color: 'rgba(0, 0, 0, 0.03)' },
           ticks: {
-            color: 'rgba(255, 255, 255, 0.5)',
+            color: 'rgba(23, 23, 23, 0.6)',
             font: { size: 9 },
             maxRotation: 0,
             autoSkip: true,
@@ -3464,11 +3589,41 @@ function renderAIProbabilityChart(course, currentBid) {
           }
         },
         y: {
+          stacked: true,
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: '지원자 수 (명)',
+            color: 'rgba(23, 23, 23, 0.6)',
+            font: { size: 9, weight: '600' }
+          },
+          grid: { color: 'rgba(0, 0, 0, 0.03)' },
+          ticks: {
+            color: 'rgba(23, 23, 23, 0.6)',
+            font: { size: 9 },
+            stepSize: 1,
+            precision: 0
+          }
+        },
+        yProbability: {
+          type: 'linear',
+          display: true,
+          position: 'right',
           min: 0,
           max: 100,
-          grid: { color: 'rgba(255, 255, 255, 0.04)' },
+          title: {
+            display: true,
+            text: '합격 확률 (%)',
+            color: '#0070f3',
+            font: { size: 9, weight: '600' }
+          },
+          grid: {
+            drawOnChartArea: false
+          },
           ticks: {
-            color: 'rgba(255, 255, 255, 0.5)',
+            color: 'rgba(23, 23, 23, 0.6)',
             font: { size: 9 },
             stepSize: 25,
             callback: function(value) { return value + '%'; }
@@ -3477,6 +3632,8 @@ function renderAIProbabilityChart(course, currentBid) {
       }
     }
   });
+
+  aiChartInstance.lookupKey = lookupKey;
 }
 
 // Render HTML chart bars grouped by mileage bids

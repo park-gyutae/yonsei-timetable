@@ -2435,6 +2435,12 @@ function setupEventListeners() {
 
       // Dynamic rebuild calendar grid block colors instantly
       renderTimetableGrid();
+
+      // Redraw AI probability chart with new theme colors if active
+      if (aiChartInstance && activeCourseObject) {
+        const val = parseInt(document.getElementById('predict-score-slider').value) || 12;
+        renderAIProbabilityChart(activeCourseObject, val);
+      }
     });
   }
 
@@ -3265,8 +3271,17 @@ function renderAIProbabilityChart(course, currentBid) {
 
   document.querySelector('.ai-chart-container').style.display = 'block';
 
-  // 1. If chart already exists for the same course, update the slider indicator line and the highlight point without recreation (buttery smooth update)
-  if (aiChartInstance && aiChartInstance.lookupKey === lookupKey) {
+  const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark' || 
+                     (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.getAttribute('data-theme'));
+  const currentThemeTag = isDarkMode ? 'dark' : 'light';
+
+  const accentColor = isDarkMode ? '#3291ff' : '#0070f3';
+  const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(23, 23, 23, 0.6)';
+  const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.03)';
+  const legendColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(23, 23, 23, 0.7)';
+
+  // 1. If chart already exists for the same course and theme, update the slider indicator line and the highlight point without recreation (buttery smooth update)
+  if (aiChartInstance && aiChartInstance.lookupKey === lookupKey && aiChartInstance.themeTag === currentThemeTag) {
     if (aiChartInstance.options.plugins && aiChartInstance.options.plugins.verticalLine) {
       aiChartInstance.options.plugins.verticalLine.xValue = currentBid;
     }
@@ -3285,7 +3300,7 @@ function renderAIProbabilityChart(course, currentBid) {
       const bidIdx = Math.round(currentBid);
       if (bidIdx >= 0 && bidIdx < pointRadii.length) {
         pointRadii[bidIdx] = 6;
-        pointBgColors[bidIdx] = '#0070f3';
+        pointBgColors[bidIdx] = accentColor;
         pointBorderColors[bidIdx] = '#ffffff';
       }
     }
@@ -3452,7 +3467,7 @@ function renderAIProbabilityChart(course, currentBid) {
   const bidIdx = Math.round(currentBid);
   if (bidIdx >= 0 && bidIdx < labels.length) {
     pointRadii[bidIdx] = 6;
-    pointBgColors[bidIdx] = '#0070f3';
+    pointBgColors[bidIdx] = accentColor;
     pointBorderColors[bidIdx] = '#ffffff';
   }
 
@@ -3472,7 +3487,7 @@ function renderAIProbabilityChart(course, currentBid) {
         ctx.moveTo(xPixel, chart.chartArea.top);
         ctx.lineTo(xPixel, chart.chartArea.bottom);
         ctx.lineWidth = 1.5;
-        ctx.strokeStyle = 'rgba(0, 112, 243, 0.85)';
+        ctx.strokeStyle = isDarkMode ? 'rgba(50, 145, 255, 0.85)' : 'rgba(0, 112, 243, 0.85)';
         ctx.setLineDash([5, 4]); // Dashed line
         ctx.stroke();
         ctx.restore();
@@ -3491,8 +3506,8 @@ function renderAIProbabilityChart(course, currentBid) {
           type: 'bar',
           label: '과거 합격자',
           data: passCounts,
-          backgroundColor: 'rgba(0, 112, 243, 0.25)', // Vercel blue with opacity
-          borderColor: 'rgba(0, 112, 243, 0.7)',
+          backgroundColor: isDarkMode ? 'rgba(50, 145, 255, 0.25)' : 'rgba(0, 112, 243, 0.25)', // theme pass color
+          borderColor: isDarkMode ? 'rgba(50, 145, 255, 0.7)' : 'rgba(0, 112, 243, 0.7)',
           borderWidth: 1,
           stack: 'bidsStack',
           yAxisID: 'y',
@@ -3502,8 +3517,8 @@ function renderAIProbabilityChart(course, currentBid) {
           type: 'bar',
           label: '과거 불합격자',
           data: failCounts,
-          backgroundColor: 'rgba(238, 0, 0, 0.25)', // Danger red with opacity
-          borderColor: 'rgba(238, 0, 0, 0.7)',
+          backgroundColor: isDarkMode ? 'rgba(255, 69, 58, 0.25)' : 'rgba(238, 0, 0, 0.25)', // theme fail color
+          borderColor: isDarkMode ? 'rgba(255, 69, 58, 0.7)' : 'rgba(238, 0, 0, 0.7)',
           borderWidth: 1,
           stack: 'bidsStack',
           yAxisID: 'y',
@@ -3513,7 +3528,7 @@ function renderAIProbabilityChart(course, currentBid) {
           type: 'line',
           label: '합격 예측 확률',
           data: dataPoints,
-          borderColor: '#0070f3',
+          borderColor: accentColor,
           borderWidth: 2,
           pointRadius: pointRadii,
           pointHoverRadius: pointHoverRadii,
@@ -3526,8 +3541,8 @@ function renderAIProbabilityChart(course, currentBid) {
             const {ctx, chartArea} = chart;
             if (!chartArea) return null;
             const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradient.addColorStop(0, 'rgba(0, 112, 243, 0.12)');
-            gradient.addColorStop(1, 'rgba(0, 112, 243, 0.0)');
+            gradient.addColorStop(0, isDarkMode ? 'rgba(50, 145, 255, 0.12)' : 'rgba(0, 112, 243, 0.12)');
+            gradient.addColorStop(1, isDarkMode ? 'rgba(50, 145, 255, 0.0)' : 'rgba(0, 112, 243, 0.0)');
             return gradient;
           },
           tension: 0.3,
@@ -3550,7 +3565,7 @@ function renderAIProbabilityChart(course, currentBid) {
           labels: {
             boxWidth: 10,
             font: { size: 10, weight: '500' },
-            color: 'rgba(23, 23, 23, 0.7)'
+            color: legendColor
           }
         },
         verticalLine: {
@@ -3579,9 +3594,9 @@ function renderAIProbabilityChart(course, currentBid) {
       scales: {
         x: {
           stacked: true,
-          grid: { color: 'rgba(0, 0, 0, 0.03)' },
+          grid: { color: gridColor },
           ticks: {
-            color: 'rgba(23, 23, 23, 0.6)',
+            color: textColor,
             font: { size: 9 },
             maxRotation: 0,
             autoSkip: true,
@@ -3596,12 +3611,12 @@ function renderAIProbabilityChart(course, currentBid) {
           title: {
             display: true,
             text: '지원자 수 (명)',
-            color: 'rgba(23, 23, 23, 0.6)',
+            color: textColor,
             font: { size: 9, weight: '600' }
           },
-          grid: { color: 'rgba(0, 0, 0, 0.03)' },
+          grid: { color: gridColor },
           ticks: {
-            color: 'rgba(23, 23, 23, 0.6)',
+            color: textColor,
             font: { size: 9 },
             stepSize: 1,
             precision: 0
@@ -3616,14 +3631,14 @@ function renderAIProbabilityChart(course, currentBid) {
           title: {
             display: true,
             text: '합격 확률 (%)',
-            color: '#0070f3',
+            color: accentColor,
             font: { size: 9, weight: '600' }
           },
           grid: {
             drawOnChartArea: false
           },
           ticks: {
-            color: 'rgba(23, 23, 23, 0.6)',
+            color: textColor,
             font: { size: 9 },
             stepSize: 25,
             callback: function(value) { return value + '%'; }
@@ -3634,6 +3649,7 @@ function renderAIProbabilityChart(course, currentBid) {
   });
 
   aiChartInstance.lookupKey = lookupKey;
+  aiChartInstance.themeTag = currentThemeTag;
 }
 
 // Render HTML chart bars grouped by mileage bids

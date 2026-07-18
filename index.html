@@ -123,22 +123,34 @@
             <div id="sidebar-filters-placeholder">
               <div class="search-filters" id="search-filters-container">
                 <div class="filter-group">
-                  <label for="select-campus">캠퍼스</label>
-                  <select id="select-campus">
+                  <label for="btn-campus-trigger">캠퍼스</label>
+                  <button type="button" class="multiselect-trigger" id="btn-campus-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
+                    <span id="label-campus-selected">신촌캠퍼스</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                  <select id="select-campus" style="display: none;">
                     <option value="">전체</option>
                     <option value="S" selected>신촌캠퍼스</option>
                     <option value="G">국제캠퍼스(송도)</option>
                   </select>
                 </div>
                 <div class="filter-group">
-                  <label for="select-college">대학(원)</label>
-                  <select id="select-college">
+                  <label for="btn-college-trigger">대학(원)</label>
+                  <button type="button" class="multiselect-trigger" id="btn-college-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
+                    <span id="label-college-selected">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                  <select id="select-college" style="display: none;">
                     <!-- Dynamically loaded -->
                   </select>
                 </div>
                 <div class="filter-group">
-                  <label for="select-dept">개설학과</label>
-                  <select id="select-dept">
+                  <label for="btn-dept-trigger">개설학과</label>
+                  <button type="button" class="multiselect-trigger" id="btn-dept-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
+                    <span id="label-dept-selected">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                  <select id="select-dept" style="display: none;">
                     <!-- Dynamically loaded -->
                   </select>
                 </div>

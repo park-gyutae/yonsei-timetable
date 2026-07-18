@@ -1411,13 +1411,18 @@ body {
 }
 
 .btn-chart-view:focus,
-.btn-wishlist:focus {
+.btn-wishlist:focus,
+.course-item a:focus,
+.course-item button:focus,
+.btn-view-syllabus:focus {
   outline: none !important;
   box-shadow: none !important;
 }
 
 .btn-chart-view:focus-visible,
-.btn-wishlist:focus-visible {
+.btn-wishlist:focus-visible,
+.course-item a:focus-visible,
+.course-item button:focus-visible {
   outline: 2px solid var(--accent-light) !important;
   outline-offset: 1px;
 }

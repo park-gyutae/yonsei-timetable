@@ -802,6 +802,67 @@
     </div>
   </div>
 
+  <!-- 캠퍼스 선택 모달 -->
+  <div class="modal-overlay" id="campus-modal">
+    <div class="modal-content glass-card" style="width: 360px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-primary);">캠퍼스 선택</h2>
+        <button class="modal-close-btn" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%;">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 12px; margin: 0;">캠퍼스를 선택해 주세요.</p>
+      
+      <div id="campus-modal-options" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 대학(원) 선택 모달 -->
+  <div class="modal-overlay" id="college-modal">
+    <div class="modal-content glass-card" style="width: 420px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-primary);">대학(원) 선택</h2>
+        <button class="modal-close-btn" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%;">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      
+      <!-- Search Input inside modal -->
+      <div style="position: relative;">
+        <input type="text" id="input-college-modal-search" placeholder="대학 이름으로 검색..." style="width: 100%; padding: 8px 12px; padding-left: 32px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--canvas-soft); color: var(--text-primary);">
+        <i data-lucide="search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted);"></i>
+      </div>
+      
+      <div id="college-modal-options" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding-right: 4px;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 개설학과 선택 모달 -->
+  <div class="modal-overlay" id="dept-modal">
+    <div class="modal-content glass-card" style="width: 420px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--text-primary);">개설학과 선택</h2>
+        <button class="modal-close-btn" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%;">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      
+      <!-- Search Input inside modal -->
+      <div style="position: relative;">
+        <input type="text" id="input-dept-modal-search" placeholder="학과 이름으로 검색..." style="width: 100%; padding: 8px 12px; padding-left: 32px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--canvas-soft); color: var(--text-primary);">
+        <i data-lucide="search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-muted);"></i>
+      </div>
+      
+      <div id="dept-modal-options" style="display: flex; flex-direction: column; gap: 6px; max-height: 350px; overflow-y: auto; padding-right: 4px;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- 이수구분 모달 -->
   <div class="modal-overlay" id="classification-modal">
     <div class="modal-content glass-card" style="width: 400px; max-width: 95vw; padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); position: relative;">

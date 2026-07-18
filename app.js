@@ -87,6 +87,7 @@ let precomputedCurves = null; // Precalculated curves for all course-sections
 let aiChartInstance = null;   // Chart.js instance for AI probability curve
 let wishlist = [];            // Starred courses (Wishlist sandbox)
 let activeSearchTab = 'search-general'; // Tracks active search sub-tab
+let filterNoConflict = false;  // 공강만 필터: 시간표 충돌 없는 과목만 표시
 
 // DJB2 문자열 해싱 헬퍼 (글자 한 자만 달라져도 색조가 겹치지 않고 완전히 분산되도록 보장)
 function getHashCode(str) {
@@ -583,6 +584,18 @@ function renderCourses(courses) {
         return selectedTimeSlots.has(key);
       });
       if (!matches) return false;
+    }
+
+    // 7. No-conflict filter (공강만: 현재 시간표와 충돌 없는 과목)
+    if (filterNoConflict && selectedCourses.length > 0) {
+      const courseSlots = parseTimeSlots(c.time).filter(s => !isSlotVirtual(c, s));
+      const hasConflict = selectedCourses.some(sel => {
+        const selSlots = parseTimeSlots(sel.time).filter(s => !isSlotVirtual(sel, s));
+        return selSlots.some(s1 =>
+          courseSlots.some(s2 => s1.day === s2.day && s1.period === s2.period)
+        );
+      });
+      if (hasConflict) return false;
     }
 
     return true;
@@ -2898,6 +2911,27 @@ function switchTab(tabId) {
       content.style.display = 'block';
     }
   });
+
+  // ── 공강만 필터 토글 버튼 이벤트 바인딩 ────────────────
+  const btnNoConflict = document.getElementById('btn-toggle-no-conflict');
+  if (btnNoConflict) {
+    btnNoConflict.addEventListener('click', () => {
+      filterNoConflict = !filterNoConflict;
+      const label = document.getElementById('no-conflict-btn-label');
+      if (filterNoConflict) {
+        btnNoConflict.style.background = 'var(--accent-light)';
+        btnNoConflict.style.color = '#fff';
+        btnNoConflict.style.borderColor = 'var(--accent-light)';
+        if (label) label.textContent = '공강만 ✓';
+      } else {
+        btnNoConflict.style.background = 'var(--canvas-card)';
+        btnNoConflict.style.color = 'var(--text-primary)';
+        btnNoConflict.style.borderColor = 'var(--border-color)';
+        if (label) label.textContent = '공강만';
+      }
+      fetchCourses();
+    });
+  }
 
   // ── Dynamic relocation of search filters container ────────────────
   const filtersContainer = document.getElementById('search-filters-container');

@@ -2597,6 +2597,17 @@ let activeMileageData = null;
 
 // Open mileage analysis modal and populate data
 async function openMileageAnalysisModal(course) {
+  // Local helper to calculate percentile values (q10, q50, q90)
+  function calculatePercentileValue(mileages, percentile) {
+    if (!mileages || mileages.length === 0) return 'N/A';
+    const sorted = [...mileages].sort((a, b) => a - b);
+    const index = (percentile / 100) * (sorted.length - 1);
+    const low = Math.floor(index);
+    const high = Math.ceil(index);
+    if (low === high) return sorted[low].toFixed(1);
+    return (sorted[low] + (sorted[high] - sorted[low]) * (index - low)).toFixed(1);
+  }
+
   activeCourseCode = course.code; // Store the active course code globally
   activeCourseObject = course;    // Store the full active course object globally
   const modal = document.getElementById('mileage-modal');
@@ -2760,6 +2771,16 @@ async function openMileageAnalysisModal(course) {
     const globalAvgVal = globalPassBidsAll.length > 0 ? (globalPassBidsAll.reduce((sum, b) => sum + b.mileage, 0) / globalPassBidsAll.length).toFixed(2) : '0';
     globalAvgLabel.textContent = `${globalAvgVal}점`;
 
+    // Global Percentiles (q10, q50, q90)
+    const globalPassMileages = globalPassBidsAll.map(b => b.mileage);
+    const g10 = calculatePercentileValue(globalPassMileages, 10);
+    const g50 = calculatePercentileValue(globalPassMileages, 50);
+    const g90 = calculatePercentileValue(globalPassMileages, 90);
+    const globalPercentilesEl = document.getElementById('global-percentiles');
+    if (globalPercentilesEl) {
+      globalPercentilesEl.textContent = g10 !== 'N/A' ? `${g10} / ${g50} / ${g90}점` : 'N/A';
+    }
+
     // 2. Populate Custom Group Stats based on User Situation (Grade & Major Status)
     const userGrade = myProfile.grade;
     const userMajorStatus = determineMajorStatus(course.code, myProfile);
@@ -2814,18 +2835,30 @@ async function openMileageAnalysisModal(course) {
     const groupAvgVal = groupPassBids.length > 0 ? (groupPassBids.reduce((sum, b) => sum + b.mileage, 0) / groupPassBids.length).toFixed(2) : 'N/A';
     yearAvgLabel.textContent = groupAvgVal !== 'N/A' ? `${groupAvgVal}점` : 'N/A';
 
+    // Group Percentiles (q10, q50, q90)
+    const groupPassMileages = groupPassBids.map(b => b.mileage);
+    const gr10 = calculatePercentileValue(groupPassMileages, 10);
+    const gr50 = calculatePercentileValue(groupPassMileages, 50);
+    const gr90 = calculatePercentileValue(groupPassMileages, 90);
+    const yearPercentilesEl = document.getElementById('year-percentiles');
+    if (yearPercentilesEl) {
+      yearPercentilesEl.textContent = gr10 !== 'N/A' ? `${gr10} / ${gr50} / ${gr90}점` : 'N/A';
+    }
+
     // Toggle Grade Quota Section Display
     const yearGrid = document.getElementById('year-stats-grid');
     const yearNotice = document.getElementById('year-stats-notice');
 
-    if (yearGrid) {
-      const statLabels = yearGrid.querySelectorAll('.stat-label');
-      if (statLabels && statLabels.length >= 3) {
-        statLabels[0].textContent = `${groupCapacityLabel} 대비 신청자`;
-        statLabels[1].textContent = "그룹 합격 커트라인";
-        statLabels[2].textContent = "그룹 합격자 평균";
-      }
-    }
+    // Update labels via IDs for safety
+    const yearRatioLabelEl = document.getElementById('year-ratio-label');
+    const yearCutlineLabelEl = document.getElementById('year-cutline-label');
+    const yearAvgLabelEl = document.getElementById('year-avg-label');
+    const yearPercentilesLabelEl = document.getElementById('year-percentiles-label');
+
+    if (yearRatioLabelEl) yearRatioLabelEl.textContent = `${groupCapacityLabel} 대비 신청자`;
+    if (yearCutlineLabelEl) yearCutlineLabelEl.textContent = "그룹 합격 커트라인";
+    if (yearAvgLabelEl) yearAvgLabelEl.textContent = "그룹 합격자 평균";
+    if (yearPercentilesLabelEl) yearPercentilesLabelEl.textContent = "그룹 분위수 (q10/q50/q90)";
 
     let noticeMessage = "";
     let showGrid = true;

@@ -742,11 +742,13 @@ body {
 .status-val.warning-state {
   background: var(--link);
   border-color: var(--link);
+  color: #ffffff !important;
 }
 
 .status-val.danger-state {
   background: var(--danger);
   border-color: var(--danger);
+  color: #ffffff !important;
 }
 
 /* Selected Courses for Mileage Allocation - Compact view */

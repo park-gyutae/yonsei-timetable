@@ -2522,10 +2522,13 @@ function loadDataFromStorage() {
     
     // Sync-clamp values using precomputed curves before rendering to recover from stale states
     selectedCourses.forEach(c => {
+      cleanMileageSummary(c.mileageSummary, c);
       const key = `${c.code}-${c.division}`;
       let maxVal = 36;
       if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
         maxVal = precomputedCurves.curves[key].max_allowed || 36;
+      } else if (c.mileageSummary) {
+        maxVal = c.mileageSummary.max_allowed_mileage || 36;
       }
       if (c.mileage > maxVal) {
         console.log(`[Storage Load Clamping] Clamped ${c.code}-${c.division} from ${c.mileage} to ${maxVal}`);
@@ -2611,6 +2614,16 @@ function filterCleanBids(bids) {
     const rB = b.rank || 9999;
     return rA - rB;
   });
+}
+
+// Clean database/scraper errors where max_allowed_mileage is incorrectly filled (e.g. 25 instead of 36)
+function cleanMileageSummary(summary, course) {
+  if (!summary) return;
+  let limit = summary.max_allowed_mileage || 36;
+  if (limit !== 12 && limit !== 24 && limit !== 36) {
+    const credits = course ? (course.credits || 3) : 3;
+    summary.max_allowed_mileage = credits * 12;
+  }
 }
 
 // Active mileage stats data cache
@@ -2753,6 +2766,7 @@ async function openMileageAnalysisModal(course) {
     }
 
     activeMileageData = resData.data;
+    cleanMileageSummary(activeMileageData.summary, course);
     const summary = activeMileageData.summary;
     const bids = filterCleanBids(activeMileageData.bids);
 
@@ -3923,6 +3937,7 @@ async function fetchMileageSummaryForAdvisor(selectedCourse) {
   // L0: 브라우저 캐시 확인
   const cached = lsGet(lsKey, 'mileage');
   if (cached) {
+    cleanMileageSummary(cached.summary, selectedCourse);
     selectedCourse.mileageSummary = cached.summary;
     selectedCourse.mileageBids = cached.bids;
     selectedCourse.mileageHistory = cached.history;
@@ -3935,6 +3950,7 @@ async function fetchMileageSummaryForAdvisor(selectedCourse) {
     const res = await fetch(`/api/mileage?code=${selectedCourse.code}&division=${selectedCourse.division}`);
     const data = await res.json();
     if (data.success) {
+      cleanMileageSummary(data.data.summary, selectedCourse);
       selectedCourse.mileageSummary = data.data.summary;
       selectedCourse.mileageBids = data.data.bids;
       selectedCourse.mileageHistory = data.data.history;
@@ -4017,7 +4033,8 @@ function runAdvisorDiagnostic() {
   // Update budget display label
   if (budgetText) {
     budgetText.textContent = `${currentSum} / ${maxTotal}`;
-    budgetText.style.color = currentSum > maxTotal ? 'var(--danger)' : currentSum === maxTotal ? 'var(--success)' : 'var(--accent-light)';
+    // Clear inline color override for warning/danger states so CSS styles can take over correctly!
+    budgetText.style.color = (currentSum > maxTotal || currentSum === maxTotal) ? '#ffffff' : '';
   }
 
   // Live update tooltips content for all selected items

@@ -3477,11 +3477,62 @@ function calculateMileagePrediction(testMileage) {
 
   // Find user's virtual rank and check success
   const isSuccess = selectedApplicants.some(b => b.is_user);
-  
-  // Calculate relative rank within the year pool for user display
-  const sortedPool = [...pool].sort(compareBids);
-  const userIndex = sortedPool.findIndex(b => b.is_user);
-  const userRank = userIndex + 1;
+
+  // Calculate group-specific statistics for accurate user feedback
+  const userGrade = myProfile.grade || 4;
+  const userMajorStatus = determineMajorStatus(activeCourseCode, myProfile);
+  const userMajorLabel = userMajorStatus === 'Y(Y)' ? '본전공자' : (userMajorStatus === 'Y(N)' ? '복수전공자' : '비전공자');
+
+  const isBidProtected = (b) => {
+    return b.major.startsWith('Y(Y)') || (includesDoubleMajor && b.major.startsWith('Y(N)'));
+  };
+
+  let userBelongsToProtectedGroup = false;
+  if (userMajorStatus === 'Y(Y)') {
+    userBelongsToProtectedGroup = true;
+  } else if (userMajorStatus === 'Y(N)') {
+    userBelongsToProtectedGroup = includesDoubleMajor;
+  } else {
+    userBelongsToProtectedGroup = false;
+  }
+
+  // Filter bids belonging to the user's specific group (excluding user marker)
+  let groupBids = bids.filter(b => !b.is_user);
+  let groupCapacityVal = summary.capacity;
+  let groupLabel = "전체 정원";
+
+  if (isYearQuotasActive && isMajorQuotaActive) {
+    groupBids = groupBids.filter(b => {
+      const inGrade = b.grade === userGrade;
+      if (!inGrade) return false;
+      const protectedBid = isBidProtected(b);
+      return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+    });
+    groupCapacityVal = yearCapacity;
+    groupLabel = `${userGrade}학년 ${userBelongsToProtectedGroup ? '전공자' : '비전공자'} 정원`;
+  } else if (isYearQuotasActive) {
+    groupBids = groupBids.filter(b => b.grade === userGrade);
+    groupCapacityVal = yearCapacity;
+    groupLabel = `${userGrade}학년 정원`;
+  } else if (isMajorQuotaActive) {
+    groupBids = groupBids.filter(b => {
+      const protectedBid = isBidProtected(b);
+      return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+    });
+    if (userBelongsToProtectedGroup) {
+      groupCapacityVal = mqVal;
+      groupLabel = "전공자 정원";
+    } else {
+      groupCapacityVal = Math.max(0, summary.capacity - mqVal);
+      groupLabel = "비전공자 정원";
+    }
+  }
+
+  // Construct the group pool including the virtual user applicant
+  const groupPool = [...groupBids, virtualApplicant];
+  const sortedGroupPool = [...groupPool].sort(compareBids);
+  const groupUserIndex = sortedGroupPool.findIndex(b => b.is_user);
+  const groupUserRank = groupUserIndex + 1;
 
   outcomeBox.className = `predict-result-box ${isSuccess ? 'pass' : 'fail'}`;
   
@@ -3489,20 +3540,20 @@ function calculateMileagePrediction(testMileage) {
     outcomeBox.innerHTML = `
       <div class="predict-status"><i data-lucide="check-circle" style="display:inline-block;vertical-align:middle;margin-right:6px;"></i> 합격 안전권 (예측)</div>
       <p class="predict-desc">
-        이전 학기 기준 대조 시 <strong>합격 정원 (${capacity}명)</strong> 내에 안착합니다.<br>
-        예상 석차: <strong>${userRank}위 / ${capacity}명 (정원)</strong> [총 ${pool.length}명 신청]
-        ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${capacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
+        이전 학기 기준 대조 시 <strong>${groupLabel} (${groupCapacityVal}명)</strong> 내에 안착합니다.<br>
+        예상 석차: <strong>${groupUserRank}위 / ${groupCapacityVal}명</strong> [그룹 내 총 ${groupPool.length}명 신청]
+        ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${yearCapacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
       </p>
     `;
   } else {
     // Find how many ranks the user is missing to pass
-    const difference = userRank - capacity;
+    const difference = groupUserRank - groupCapacityVal;
     outcomeBox.innerHTML = `
       <div class="predict-status"><i data-lucide="x-circle" style="display:inline-block;vertical-align:middle;margin-right:6px;"></i> 합격 불확실 / 대기 (예측)</div>
       <p class="predict-desc">
         정원 외 대기 순번으로 밀려날 가능성이 큽니다.<br>
-        예상 석차: <strong>${userRank}위 / ${capacity}명 (정원)</strong> [총 ${pool.length}명 신청] (정원 대비 <strong>${difference}명 초과</strong>)
-        ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${capacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
+        예상 석차: <strong>${groupUserRank}위 / ${groupCapacityVal}명</strong> [그룹 내 총 ${groupPool.length}명 신청] (정원 대비 <strong>${difference}명 초과</strong>)
+        ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${yearCapacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
       </p>
     `;
   }
@@ -3519,6 +3570,7 @@ function calculateMileagePrediction(testMileage) {
   const simGlobalCut = globalPass.length > 0 ? Math.min(...globalPass.map(b => b.mileage)) : summary.min_mileage;
   
   const pressureFactor = (simGlobalCut > 0) ? (simGradeCut / simGlobalCut) : 1.0;
+  const hasUnprotectedCap = isMajorQuotaActive && !userBelongsToProtectedGroup;
   
   let totalScore = 0;
   history.forEach(h => {
@@ -3526,7 +3578,16 @@ function calculateMileagePrediction(testMileage) {
     const estMin = h.min_mileage * pressureFactor;
     const estAvg = h.average_mileage * pressureFactor;
     const threshold = (estMin + estAvg) / 2;
-    if (h.applicants <= h.capacity) {
+
+    // Check under-enrollment: Unprotected groups don't get the global free pass
+    let isUnderEnrolledSemester = false;
+    if (hasUnprotectedCap) {
+      isUnderEnrolledSemester = false;
+    } else {
+      isUnderEnrolledSemester = (h.applicants <= h.capacity);
+    }
+
+    if (isUnderEnrolledSemester) {
       // 해당 학기가 미달이었던 경우: 1점 이상만 넣으면 무조건 합격이므로 안전(1.0) 처리
       if (testMileage >= 1) {
         totalScore += 1.0;

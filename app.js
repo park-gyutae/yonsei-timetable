@@ -4049,30 +4049,6 @@ function calculateMileagePrediction(testMileage) {
   const groupUserIndex = sortedGroupPool.findIndex(b => b.is_user);
   const groupUserRank = groupUserIndex + 1;
 
-  outcomeBox.className = `predict-result-box ${isSuccess ? 'pass' : 'fail'}`;
-  
-  if (isSuccess) {
-    outcomeBox.innerHTML = `
-      <div class="predict-status"><i data-lucide="check-circle" style="display:inline-block;vertical-align:middle;margin-right:6px;"></i> 합격 안전권 (예측)</div>
-      <p class="predict-desc">
-        이전 학기 기준 대조 시 <strong>${groupLabel} (${groupCapacityVal}명)</strong> 내에 안착합니다.<br>
-        예상 석차: <strong>${groupUserRank}위 / ${groupCapacityVal}명</strong> [그룹 내 총 ${groupPool.length}명 신청]
-        ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${yearCapacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
-      </p>
-    `;
-  } else {
-    // Find how many ranks the user is missing to pass
-    const difference = groupUserRank - groupCapacityVal;
-    outcomeBox.innerHTML = `
-      <div class="predict-status"><i data-lucide="x-circle" style="display:inline-block;vertical-align:middle;margin-right:6px;"></i> 합격 불확실 / 대기 (예측)</div>
-      <p class="predict-desc">
-        정원 외 대기 순번으로 밀려날 가능성이 큽니다.<br>
-        예상 석차: <strong>${groupUserRank}위 / ${groupCapacityVal}명</strong> [그룹 내 총 ${groupPool.length}명 신청] (정원 대비 <strong>${difference}명 초과</strong>)
-        ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${yearCapacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
-      </p>
-    `;
-  }
-
   // 5. Calculate Multi-Semester Safety Index based on historical cutlines
   const history = activeMileageData.history || [];
   
@@ -4137,23 +4113,74 @@ function calculateMileagePrediction(testMileage) {
   });
   
   const safetyPct = history.length > 0 ? Math.round((totalScore / history.length) * 100) : 0;
+
+  // Group-based success outcome styling
+  let glowClass = 'glow-danger';
+  let badgeHTML = '<span class="risk-badge badge-danger">🔴 위험</span>';
+  let safetyText = '불합격 위험';
+  let safetyColor = 'var(--danger)';
   
-  // Append safety index display to outcomeBox
-  const safetyRow = document.createElement('div');
-  safetyRow.className = 'safety-index-row';
-  safetyRow.style.cssText = 'margin-top: 10px; font-size: 11.5px; color: var(--text-secondary); border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; display: flex; align-items: center; justify-content: space-between;';
+  if (safetyPct >= 80) {
+    glowClass = 'glow-safe';
+    badgeHTML = '<span class="risk-badge badge-safe">🟢 안전</span>';
+    safetyText = '안전';
+    safetyColor = 'var(--success)';
+  } else if (safetyPct >= 40) {
+    glowClass = 'glow-warning';
+    badgeHTML = '<span class="risk-badge badge-warning">🟡 소신</span>';
+    safetyText = '경계/대기';
+    safetyColor = 'var(--warning)';
+  }
   
-  const safetyColor = safetyPct >= 80 ? 'var(--success)' : safetyPct >= 50 ? 'var(--warning)' : 'var(--danger)';
-  const safetyText = safetyPct >= 80 ? '안전' : safetyPct >= 50 ? '경계/대기' : '불합격 위험';
-  
-  safetyRow.innerHTML = `
-    <span>다학기 종합 안전도 (${safetyText}):</span>
-    <div>
-      <strong style="color: ${safetyColor}; font-size: 13px;">${safetyPct}%</strong>
-      <small style="color: var(--text-muted); margin-left: 4px;">(${history.length}개 학기 기준 대조)</small>
+  outcomeBox.className = `predict-result-box ${glowClass}`;
+
+  const statusHTML = isSuccess 
+    ? `<span class="predict-status-title"><i data-lucide="check-circle" style="display:inline-block;vertical-align:middle;margin-right:6px;"></i> 합격 안전권 (예측)</span>`
+    : `<span class="predict-status-title"><i data-lucide="x-circle" style="display:inline-block;vertical-align:middle;margin-right:6px;"></i> 합격 불확실 / 대기 (예측)</span>`;
+
+  // Read previous safety value if safety-percentage-val exists for smooth transition
+  const existingSafetyEl = document.getElementById('safety-percentage-val');
+  const startVal = existingSafetyEl ? (parseInt(existingSafetyEl.textContent) || 0) : 0;
+
+  outcomeBox.innerHTML = `
+    <div class="predict-status">
+      ${statusHTML}
+      ${badgeHTML}
+    </div>
+    <p class="predict-desc" style="margin: 0; padding-top: 4px;">
+      이전 학기 기준 대조 시 <strong>${groupLabel} (${groupCapacityVal}명)</strong> 내에 안착합니다.<br>
+      예상 석차: <strong>${groupUserRank}위 / ${groupCapacityVal}명</strong> [그룹 내 총 ${groupPool.length}명 신청]
+      ${!isSuccess ? ` (정원 대비 <strong>${groupUserRank - groupCapacityVal}명 초과</strong>)` : ''}
+      ${isYearQuotasActive ? `<br><small style="color:var(--text-muted)">* ${myProfile.grade}학년 정원 제한 (${yearCapacity}명) 기준 시뮬레이션 적용됨</small>` : ''}
+    </p>
+    <div class="safety-index-row" style="margin-top: 10px; font-size: 11.5px; color: var(--text-secondary); border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px; display: flex; align-items: center; justify-content: space-between;">
+      <span>다학기 종합 안전도 (${safetyText}):</span>
+      <div>
+        <strong id="safety-percentage-val" style="color: ${safetyColor}; font-size: 13.5px; text-shadow: 0 0 10px ${safetyColor}33;">${startVal}%</strong>
+        <small style="color: var(--text-muted); margin-left: 4px;">(${history.length}개 학기 기준 대조)</small>
+      </div>
     </div>
   `;
-  outcomeBox.appendChild(safetyRow);
+
+  // Start count-up animation
+  const safetyLabelEl = document.getElementById('safety-percentage-val');
+  if (safetyLabelEl) {
+    const endVal = safetyPct;
+    const duration = 250; // ms
+    const startTime = performance.now();
+    
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = progress * (2 - progress); // Quadratic easing out
+      const currentVal = Math.round(startVal + (endVal - startVal) * ease);
+      safetyLabelEl.textContent = `${currentVal}%`;
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    }
+    requestAnimationFrame(animate);
+  }
 
   lucide.createIcons();
 }

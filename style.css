@@ -1243,32 +1243,56 @@ body {
 
 .predict-result-box {
   padding: 16px;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-md);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-.predict-result-box.pass {
-  background: rgba(46, 184, 114, 0.1);
-  border: 1px solid var(--success);
+[data-theme="dark"] .predict-result-box {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-.predict-result-box.fail {
-  background: rgba(231, 76, 60, 0.1);
-  border: 1px solid var(--danger);
+/* Dynamic glow states based on probability badges */
+.predict-result-box.glow-safe {
+  border-color: rgba(46, 184, 114, 0.4) !important;
+  box-shadow: 0 0 20px rgba(46, 184, 114, 0.15), inset 0 0 12px rgba(46, 184, 114, 0.04) !important;
+}
+.predict-result-box.glow-warning {
+  border-color: rgba(243, 156, 18, 0.4) !important;
+  box-shadow: 0 0 20px rgba(243, 156, 18, 0.15), inset 0 0 12px rgba(243, 156, 18, 0.04) !important;
+}
+.predict-result-box.glow-danger {
+  border-color: rgba(231, 76, 60, 0.4) !important;
+  box-shadow: 0 0 20px rgba(231, 76, 60, 0.15), inset 0 0 12px rgba(231, 76, 60, 0.04) !important;
 }
 
 .predict-result-box .predict-status {
   font-size: 15px;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.predict-result-box.pass .predict-status {
+.predict-result-box.glow-safe .predict-status-title {
   color: var(--success);
 }
 
-.predict-result-box.fail .predict-status {
+.predict-result-box.glow-warning .predict-status-title {
+  color: var(--warning);
+}
+
+.predict-result-box.glow-danger .predict-status-title {
   color: var(--danger);
 }
 
@@ -1276,6 +1300,36 @@ body {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* Premium dynamic risk badge style */
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  user-select: none;
+}
+.risk-badge.badge-safe {
+  background: rgba(46, 184, 114, 0.15);
+  color: #2eb872;
+  border: 1px solid rgba(46, 184, 114, 0.3);
+}
+.risk-badge.badge-warning {
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  border: 1px solid rgba(243, 156, 18, 0.3);
+}
+.risk-badge.badge-danger {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
 }
 
 /* Distribution Chart */

@@ -3207,39 +3207,37 @@ function renderAIProbabilityChart(course, currentBid) {
   }
 
   let isUnderEnrolled = isGroupUnderEnrolled || (pred.median <= 1.5);
-  
-  if (isUnderEnrolled) {
-    probCurve = probCurve.map((p, m) => {
-      if (m >= 1) return Math.max(p, 0.98); // 1점 이상 입찰 시 98% (미달 프리패스)
-      return p; // 0점은 실질적 베팅 포기이므로 ML 원본 확률 유지 (또는 매우 낮음)
-    });
-  }
-
-  // 2. Calculate dynamic group-specific probability curve based on user Grade & Major!
-  // To show a hyper-personalized probability curve, we calibrate the base curve
-  // using the exact same group-specific cutoff (median) dynamically!
   const medianVal = calculateGroupSpecificCutoff(course, myProfile);
-  const privilegeScore = computePrivilegeScore(myProfile, course.code);
-  const window = 3;
-  const maxAdjustment = 0.25;
-  const steepness = 5.0;
   
-  // Calibrate the entire curve for this personalized visualization!
-  const rawCalibrated = probCurve.map((p, m) => {
-    if (m < medianVal) return p; // Return base probability p instead of forcing 0.0
-    const dist = Math.abs(m - medianVal);
-    if (dist > window) return p;
-    const rho = Math.max(0, 1 - dist / window);
-    const adjustment = rho * privilegeScore * maxAdjustment * sigmoid(steepness * privilegeScore);
-    return Math.min(1.0, Math.max(0.0, p + adjustment));
-  });
+  // Calculate tie-breaker probability at the cutoff dynamically
+  let tieBreakerProb = 0.5; // Default fallback
+  if (activeMileageData && activeMileageData.bids) {
+    const bidsAtCutoff = groupBids.filter(b => b.mileage === medianVal);
+    if (bidsAtCutoff.length > 0) {
+      const passedAtCutoff = bidsAtCutoff.filter(b => b.success === 'Y');
+      tieBreakerProb = passedAtCutoff.length / bidsAtCutoff.length;
+    }
+  }
+  tieBreakerProb = Math.min(0.9, Math.max(0.1, tieBreakerProb));
 
-  // Enforce monotonic non-decreasing (CDF property)
   const calibratedCurve = [];
-  let currentMax = 0.0;
-  for (let m = 0; m < rawCalibrated.length; m++) {
-    currentMax = Math.max(currentMax, rawCalibrated[m]);
-    calibratedCurve.push(currentMax);
+  for (let m = 0; m <= maxAllowed; m++) {
+    let p = 0.0;
+    if (isUnderEnrolled) {
+      p = (m >= 1) ? 0.98 : 0.0;
+    } else {
+      if (m < medianVal) {
+        const dist = m - medianVal;
+        p = 1 / (1 + Math.exp(-2.0 * dist)); // Smooth logistic curve centered at medianVal
+        if (p < 0.01) p = 0.0;
+      } else if (m === medianVal) {
+        p = tieBreakerProb;
+      } else {
+        const dist = m - medianVal;
+        p = tieBreakerProb + (1.0 - tieBreakerProb) * (1 - Math.exp(-1.5 * dist));
+      }
+    }
+    calibratedCurve.push(p);
   }
 
   const labels = Array.from({ length: maxAllowed + 1 }, (_, i) => `${i}점`);

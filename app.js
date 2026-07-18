@@ -3463,7 +3463,13 @@ function getCalibratedProbabilityCurve(course) {
         const protectedBid = isBidProtected(b);
         return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
       });
-      groupCapacityVal = yearCapacity;
+      // Calculate grade-specific major quota capacity
+      const gradeMajorQuota = mqVal > 0 ? Math.round(yearCapacity * (mqVal / summary.capacity)) : 0;
+      if (userBelongsToProtectedGroup) {
+        groupCapacityVal = gradeMajorQuota;
+      } else {
+        groupCapacityVal = Math.max(0, yearCapacity - gradeMajorQuota);
+      }
     } else if (isYearQuotasActive) {
       groupBids = bids.filter(b => b.grade === userGrade);
       groupCapacityVal = yearCapacity;
@@ -3484,19 +3490,8 @@ function getCalibratedProbabilityCurve(course) {
     }
   }
 
-  let isUnderEnrolled = isGroupUnderEnrolled || (pred.median <= 1.5);
-  const medianVal = calculateGroupSpecificCutoff(course, myProfile);
-  
-  // Calculate tie-breaker probability at the cutoff dynamically
-  let tieBreakerProb = 0.5; // Default fallback
-  if (activeMileageData && activeMileageData.bids) {
-    const bidsAtCutoff = groupBids.filter(b => b.mileage === medianVal);
-    if (bidsAtCutoff.length > 0) {
-      const passedAtCutoff = bidsAtCutoff.filter(b => b.success === 'Y');
-      tieBreakerProb = passedAtCutoff.length / bidsAtCutoff.length;
-    }
-  }
-  tieBreakerProb = Math.min(0.9, Math.max(0.1, tieBreakerProb));
+  // Detect under-enrollment based on active data OR historical precomputed median
+  let isUnderEnrolled = isGroupUnderEnrolled || (gradePred.median <= 1.5);
 
   const calibratedCurve = [];
   for (let m = 0; m <= maxAllowed; m++) {
@@ -3504,16 +3499,8 @@ function getCalibratedProbabilityCurve(course) {
     if (isUnderEnrolled) {
       p = (m >= 1) ? 0.98 : 0.0;
     } else {
-      if (m < medianVal) {
-        const dist = m - medianVal;
-        p = 1 / (1 + Math.exp(-2.0 * dist)); // Smooth logistic curve centered at medianVal
-        if (p < 0.01) p = 0.0;
-      } else if (m === medianVal) {
-        p = tieBreakerProb;
-      } else {
-        const dist = m - medianVal;
-        p = tieBreakerProb + (1.0 - tieBreakerProb) * (1 - Math.exp(-1.5 * dist));
-      }
+      // Use the precomputed machine learning curve directly for realistic, smooth probabilities!
+      p = probCurve[m] !== undefined ? probCurve[m] : 1.0;
     }
     calibratedCurve.push(p);
   }
@@ -4908,16 +4895,26 @@ function getCourseProbability(c, bid) {
     }
   }
 
+  const isMajor = determineMajorStatus(c.code, myProfile) !== 'N(N)';
+  const pred = precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key] ? precomputedCurves.curves[key] : { median: 12.0 };
+  const groupData = pred.major ? (isMajor ? pred.major : pred.non_major) : pred;
+  const gradePred = groupData[`grade_${userGrade}`] || groupData.grade_4 || groupData;
+
   let isGroupUnderEnrolled = false;
   if (groupCapacityVal > 0 && groupBids.length <= groupCapacityVal) {
     isGroupUnderEnrolled = true;
   }
 
-  const pred = precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key] ? precomputedCurves.curves[key] : { median: 12.0 };
-  let isUnderEnrolled = isGroupUnderEnrolled || (pred.median <= 1.5);
+  let isUnderEnrolled = isGroupUnderEnrolled || (gradePred.median <= 1.5);
 
   if (isUnderEnrolled) {
     return (bid >= 1) ? 0.98 : 0.0;
+  }
+
+  // If not under-enrolled, return the precomputed ML curve probability directly for consistency!
+  if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
+    const baseCurve = [...gradePred.prob_curve];
+    return baseCurve[Math.min(bid, baseCurve.length - 1)] || 0.0;
   }
 
   const medianVal = calculateGroupSpecificCutoff(c, myProfile);

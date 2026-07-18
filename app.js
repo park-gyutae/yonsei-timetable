@@ -1444,47 +1444,43 @@ function updateMileageLabel() {
   runAdvisorDiagnostic();
 }
 
-// Close all popovers and hide the backdrop overlay
-function closeAllPopovers() {
-  const popovers = document.querySelectorAll('.multiselect-popover');
-  popovers.forEach(p => p.style.display = 'none');
-  const backdrop = document.getElementById('popover-backdrop');
-  if (backdrop) backdrop.style.display = 'none';
-}
+// Reusable modal popup behavior binder (supports backdrop clicks and close buttons)
+function bindModalEvents(triggerId, modalId) {
+  const trigger = document.getElementById(triggerId);
+  const modal = document.getElementById(modalId);
+  if (!trigger || !modal) return;
 
-// Reusable popover modal behavior binder
-function bindPopoverModalEvents(triggerId, popoverId) {
-  const triggerBtn = document.getElementById(triggerId);
-  const popover = document.getElementById(popoverId);
-  const backdrop = document.getElementById('popover-backdrop');
+  trigger.addEventListener('click', () => {
+    modal.classList.add('active');
+  });
 
-  if (triggerBtn && popover) {
-    triggerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popover.style.display === 'none' || popover.style.display === '';
-      closeAllPopovers();
-      if (isHidden) {
-        popover.style.display = 'flex';
-        if (backdrop) backdrop.style.display = 'block';
-      }
+  // Close when close button inside modal is clicked
+  const closeBtn = modal.querySelector('.modal-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
     });
   }
-}
 
-// Global popover event listeners (backdrop and apply buttons)
-document.addEventListener('click', (e) => {
-  if (e.target.classList.contains('btn-popover-apply')) {
-    closeAllPopovers();
+  // Close when applying
+  const applyBtn = modal.querySelector('.btn-modal-apply');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
   }
-  const backdrop = document.getElementById('popover-backdrop');
-  if (e.target === backdrop) {
-    closeAllPopovers();
-  }
-});
+
+  // Close when clicking overlay backdrop
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('active');
+    }
+  });
+}
 
 // 이수구분 멀티셀렉트(체크박스 팝오버) 초기화 함수
 function initClassificationMultiselect() {
-  const grid = document.querySelector('#classification-popover .checkbox-grid');
+  const grid = document.querySelector('#classification-modal .checkbox-grid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -1517,7 +1513,7 @@ function initClassificationMultiselect() {
     grid.appendChild(label);
   });
 
-  bindPopoverModalEvents('btn-classification-trigger', 'classification-popover');
+  bindModalEvents('btn-classification-trigger', 'classification-modal');
 
   document.getElementById('btn-class-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1535,7 +1531,7 @@ function initClassificationMultiselect() {
 }
 
 function updateClassificationSelection() {
-  const grid = document.querySelector('#classification-popover .checkbox-grid');
+  const grid = document.querySelector('#classification-modal .checkbox-grid');
   if (!grid) return;
   
   const cbs = grid.querySelectorAll('input[type="checkbox"]');
@@ -1566,7 +1562,7 @@ function updateClassificationSelection() {
 
 // 학점 멀티셀렉트(체크박스 팝오버) 초기화 함수
 function initCreditsMultiselect() {
-  const grid = document.querySelector('#credits-popover .checkbox-grid');
+  const grid = document.querySelector('#credits-modal .checkbox-grid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -1599,7 +1595,7 @@ function initCreditsMultiselect() {
     grid.appendChild(label);
   });
 
-  bindPopoverModalEvents('btn-credits-trigger', 'credits-popover');
+  bindModalEvents('btn-credits-trigger', 'credits-modal');
 
   document.getElementById('btn-credits-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1617,7 +1613,7 @@ function initCreditsMultiselect() {
 }
 
 function updateCreditsSelection() {
-  const grid = document.querySelector('#credits-popover .checkbox-grid');
+  const grid = document.querySelector('#credits-modal .checkbox-grid');
   if (!grid) return;
   
   const cbs = grid.querySelectorAll('input[type="checkbox"]');
@@ -1652,7 +1648,7 @@ function updateCreditsSelection() {
 
 // 학년 멀티셀렉트(체크박스 팝오버) 초기화 함수
 function initGradeMultiselect() {
-  const grid = document.querySelector('#grade-popover .checkbox-grid');
+  const grid = document.querySelector('#grade-modal .checkbox-grid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -1685,7 +1681,7 @@ function initGradeMultiselect() {
     grid.appendChild(label);
   });
 
-  bindPopoverModalEvents('btn-grade-trigger', 'grade-popover');
+  bindModalEvents('btn-grade-trigger', 'grade-modal');
 
   document.getElementById('btn-grade-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1703,7 +1699,7 @@ function initGradeMultiselect() {
 }
 
 function updateGradeSelection() {
-  const grid = document.querySelector('#grade-popover .checkbox-grid');
+  const grid = document.querySelector('#grade-modal .checkbox-grid');
   if (!grid) return;
   
   const cbs = grid.querySelectorAll('input[type="checkbox"]');
@@ -1738,7 +1734,7 @@ function updateGradeSelection() {
 
 // 평가 멀티셀렉트(체크박스 팝오버) 초기화 함수
 function initEvaluationMultiselect() {
-  const grid = document.querySelector('#evaluation-popover .checkbox-grid');
+  const grid = document.querySelector('#evaluation-modal .checkbox-grid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -1771,7 +1767,7 @@ function initEvaluationMultiselect() {
     grid.appendChild(label);
   });
 
-  bindPopoverModalEvents('btn-evaluation-trigger', 'evaluation-popover');
+  bindModalEvents('btn-evaluation-trigger', 'evaluation-modal');
 
   document.getElementById('btn-evaluation-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1789,7 +1785,7 @@ function initEvaluationMultiselect() {
 }
 
 function updateEvaluationSelection() {
-  const grid = document.querySelector('#evaluation-popover .checkbox-grid');
+  const grid = document.querySelector('#evaluation-modal .checkbox-grid');
   if (!grid) return;
   
   const cbs = grid.querySelectorAll('input[type="checkbox"]');
@@ -1824,7 +1820,7 @@ function updateEvaluationSelection() {
 
 // 강의실 멀티셀렉트(체크박스 팝오버) 초기화 함수
 function initRoomMultiselect() {
-  const grid = document.querySelector('#room-popover .checkbox-grid');
+  const grid = document.querySelector('#room-modal .checkbox-grid');
   if (!grid) return;
 
   grid.innerHTML = '';
@@ -1857,7 +1853,7 @@ function initRoomMultiselect() {
     grid.appendChild(label);
   });
 
-  bindPopoverModalEvents('btn-room-trigger', 'room-popover');
+  bindModalEvents('btn-room-trigger', 'room-modal');
 
   document.getElementById('btn-room-select-all')?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1875,7 +1871,7 @@ function initRoomMultiselect() {
 }
 
 function updateRoomSelection() {
-  const grid = document.querySelector('#room-popover .checkbox-grid');
+  const grid = document.querySelector('#room-modal .checkbox-grid');
   if (!grid) return;
   
   const cbs = grid.querySelectorAll('input[type="checkbox"]');

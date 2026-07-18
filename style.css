@@ -2085,3 +2085,69 @@ body {
   border-color: var(--danger) !important;
   color: #ffffff !important;
 }
+
+/* Mileage Modal Adjust Buttons and Chips */
+.slider-adjust-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: var(--canvas-elevated);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.slider-adjust-btn:hover {
+  background: var(--hairline-soft);
+  border-color: var(--text-muted);
+}
+.slider-adjust-btn:active {
+  transform: scale(0.92);
+}
+
+.quick-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  background: var(--canvas-soft);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.quick-chip:hover {
+  background: var(--hairline-soft);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+.quick-chip:active {
+  transform: scale(0.95);
+}
+
+/* Demographic / Group-based Stat Highlights */
+.stats-group-highlight {
+  border: 1.5px solid var(--accent-bright) !important;
+  background: rgba(0, 112, 243, 0.035) !important;
+  box-shadow: 0 0 14px rgba(0, 112, 243, 0.1) !important;
+  transition: all 0.25s ease !important;
+}
+[data-theme="dark"] .stats-group-highlight {
+  background: rgba(50, 145, 255, 0.05) !important;
+  box-shadow: 0 0 14px rgba(50, 145, 255, 0.18) !important;
+}
+
+.stats-group-muted {
+  opacity: 0.55 !important;
+  transition: all 0.22s ease !important;
+}
+.stats-group-muted:hover {
+  opacity: 0.95 !important;
+}

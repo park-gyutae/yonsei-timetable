@@ -2323,7 +2323,8 @@ function setupEventListeners() {
   });
 
   // Mileage analysis slider handler
-  document.getElementById('predict-score-slider').addEventListener('input', (e) => {
+  const sliderEl = document.getElementById('predict-score-slider');
+  sliderEl.addEventListener('input', (e) => {
     const val = parseInt(e.target.value);
     document.getElementById('predict-score-label').textContent = val;
     calculateMileagePrediction(val);
@@ -2331,6 +2332,39 @@ function setupEventListeners() {
       renderAIProbabilityChart(activeCourseObject, val);
     }
   });
+
+  // Slider decrement/increment adjustment buttons
+  const btnDec = document.getElementById('btn-predict-decrement');
+  const btnInc = document.getElementById('btn-predict-increment');
+  if (btnDec && btnInc && sliderEl) {
+    btnDec.addEventListener('click', () => {
+      const currentVal = parseInt(sliderEl.value) || 0;
+      const minVal = parseInt(sliderEl.min) || 0;
+      if (currentVal > minVal) {
+        const newVal = currentVal - 1;
+        sliderEl.value = newVal;
+        document.getElementById('predict-score-label').textContent = newVal;
+        calculateMileagePrediction(newVal);
+        if (activeCourseObject) {
+          renderAIProbabilityChart(activeCourseObject, newVal);
+        }
+      }
+    });
+
+    btnInc.addEventListener('click', () => {
+      const currentVal = parseInt(sliderEl.value) || 0;
+      const maxVal = parseInt(sliderEl.max) || 36;
+      if (currentVal < maxVal) {
+        const newVal = currentVal + 1;
+        sliderEl.value = newVal;
+        document.getElementById('predict-score-label').textContent = newVal;
+        calculateMileagePrediction(newVal);
+        if (activeCourseObject) {
+          renderAIProbabilityChart(activeCourseObject, newVal);
+        }
+      }
+    });
+  }
 
   // Auto Allocate button click handler
   document.getElementById('btn-auto-allocate').addEventListener('click', autoAllocateMileage);
@@ -3241,6 +3275,89 @@ async function openMileageAnalysisModal(course) {
           <td colspan="6" style="padding: 12px; color: var(--text-muted);">이 과목의 과거 마일리지 선발 기록이 존재하지 않습니다.</td>
         </tr>
       `;
+    }
+
+    // 6. Dynamic Quick Chips Population (최소 1점 / AI 예측컷 / 직전 학기컷 / 최대 점수)
+    let aiPredictCut = null;
+    if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[lookupKey]) {
+      const pred = precomputedCurves.curves[lookupKey];
+      const userMajor = determineMajorStatus(course.code, myProfile);
+      const isMajor = userMajor !== 'N(N)';
+      const groupPred = isMajor ? pred.major : pred.non_major;
+      const userGrade = myProfile.grade || 4;
+      const gradePred = groupPred[`grade_${userGrade}`] || groupPred.grade_4 || groupPred;
+      aiPredictCut = Math.round(gradePred.median);
+    }
+
+    let lastActualCut = null;
+    if (resData.data.history && resData.data.history.length > 0) {
+      lastActualCut = resData.data.history[0].min_mileage;
+    }
+
+    const chipContainer = document.getElementById('quick-chip-container');
+    if (chipContainer) {
+      chipContainer.innerHTML = '';
+      
+      const chips = [
+        { label: '최소 1점', val: 1 }
+      ];
+      
+      if (aiPredictCut !== null && aiPredictCut > 0) {
+        chips.push({ label: `AI 예측컷 (${aiPredictCut}점)`, val: aiPredictCut });
+      }
+      if (lastActualCut !== null && lastActualCut > 0 && lastActualCut !== aiPredictCut) {
+        chips.push({ label: `직전 학기컷 (${lastActualCut}점)`, val: lastActualCut });
+      }
+      
+      chips.push({ label: `최대 ${summary.max_allowed_mileage}점`, val: summary.max_allowed_mileage });
+      
+      chips.forEach(chip => {
+        const chipBtn = document.createElement('button');
+        chipBtn.type = 'button';
+        chipBtn.className = 'quick-chip';
+        chipBtn.textContent = chip.label;
+        chipBtn.addEventListener('click', () => {
+          predictSlider.value = chip.val;
+          predictLabel.textContent = chip.val;
+          calculateMileagePrediction(chip.val);
+          renderAIProbabilityChart(course, chip.val);
+        });
+        chipContainer.appendChild(chipBtn);
+      });
+    }
+
+    // 7. Profile-based demographic cards highlighting & muting
+    {
+      const globalGrid = document.getElementById('global-stats-grid');
+      const yrGrid = document.getElementById('year-stats-grid');
+      if (globalGrid && yrGrid) {
+        globalGrid.classList.remove('stats-group-highlight');
+        globalGrid.classList.add('stats-group-muted');
+        
+        yrGrid.classList.remove('stats-group-muted');
+        yrGrid.classList.add('stats-group-highlight');
+      }
+
+      const majorBox = document.getElementById('major-stats-box');
+      const nonMajorBox = document.getElementById('nonmajor-stats-box');
+      if (majorBox && nonMajorBox) {
+        const userMajorStatus = determineMajorStatus(course.code, myProfile);
+        const isMajor = userMajorStatus !== 'N(N)';
+        
+        if (isMajor) {
+          majorBox.classList.remove('stats-group-muted');
+          majorBox.classList.add('stats-group-highlight');
+          
+          nonMajorBox.classList.remove('stats-group-highlight');
+          nonMajorBox.classList.add('stats-group-muted');
+        } else {
+          nonMajorBox.classList.remove('stats-group-muted');
+          nonMajorBox.classList.add('stats-group-highlight');
+          
+          majorBox.classList.remove('stats-group-highlight');
+          majorBox.classList.add('stats-group-muted');
+        }
+      }
     }
 
     if (window.lucide) window.lucide.createIcons();

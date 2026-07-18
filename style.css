@@ -2205,3 +2205,73 @@ body {
 .stats-group-muted:hover {
   opacity: 0.95 !important;
 }
+
+/* Dashboard Quick Buttons Styling */
+.dash-tag-btn, .dash-dept-btn {
+  background: var(--canvas-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dash-tag-btn:hover, .dash-dept-btn:hover {
+  background: rgba(0, 112, 243, 0.08);
+  border-color: rgba(0, 112, 243, 0.4);
+  color: var(--accent-light);
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 112, 243, 0.15);
+}
+
+.dash-tag-btn:active, .dash-dept-btn:active {
+  transform: translateY(0);
+}
+
+/* Active Filter Chips Styling */
+.filter-chip {
+  background: rgba(0, 112, 243, 0.08);
+  border: 1px solid rgba(0, 112, 243, 0.2);
+  border-radius: 12px;
+  color: var(--accent-light);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+  background: rgba(255, 69, 58, 0.08);
+  border-color: rgba(255, 69, 58, 0.2);
+  color: var(--danger);
+}
+
+.filter-chip-reset {
+  background: var(--canvas-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-chip-reset:hover {
+  background: var(--border-color);
+  color: var(--text-primary);
+}

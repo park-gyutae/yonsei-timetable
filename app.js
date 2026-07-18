@@ -481,15 +481,63 @@ function renderCourses(courses) {
 
   if (!listContainer) return;
 
-  // 0. If College, Dept, and Search Query are all empty, show a search guide placeholder instead of loading random courses
+  // 0. If College, Dept, and Search Query are all empty, show the premium search dashboard
+  if (window.updateActiveFilterChips) {
+    window.updateActiveFilterChips();
+  }
+
   if (!collegeVal && !deptVal && !query) {
     listContainer.innerHTML = `
-      <div class="list-placeholder">
-        <i data-lucide="search" style="color: var(--text-muted)"></i>
-        <p>검색어를 입력하거나 대학/학과 필터를 선택하여 과목을 찾아보세요.</p>
+      <div class="search-dashboard" style="padding: 32px 18px; display: flex; flex-direction: column; gap: 24px; max-width: 600px; margin: 0 auto; color: var(--text-primary);">
+        <div style="text-align: center; margin-bottom: 8px;">
+          <h4 style="font-size: 16px; font-weight: 700; margin-bottom: 6px; background: linear-gradient(135deg, var(--accent-light), #00d2ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">연세대 수강신청 AI 시뮬레이터</h4>
+          <p style="font-size: 12px; color: var(--text-secondary);">지능형 검색 및 실시간 경쟁률/합격 확률 마일리지 분석</p>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 16px; backdrop-filter: blur(10px);">
+          <h5 style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="sparkles" style="width: 13.5px; height: 13.5px; color: #ffd700;"></i> 나의 추천 검색어
+          </h5>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button class="dash-tag-btn" onclick="applyQuickSearch('인공지능')">🤖 인공지능</button>
+            <button class="dash-tag-btn" onclick="applyQuickSearch('기계학습')">🧠 기계학습</button>
+            <button class="dash-tag-btn" onclick="applyQuickSearch('데이터')">📊 데이터</button>
+            <button class="dash-tag-btn" onclick="applyQuickSearch('알고리즘')">💻 알고리즘</button>
+            <button class="dash-tag-btn" onclick="applyQuickSearch('심리')">🧠 심리학</button>
+            <button class="dash-tag-btn" onclick="applyQuickSearch('경제')">📈 경제학</button>
+            <button class="dash-tag-btn" onclick="applyQuickSearch('통계')">🔢 통계학</button>
+          </div>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 16px; backdrop-filter: blur(10px);">
+          <h5 style="font-size: 11.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="library" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 주요 학과 바로가기
+          </h5>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1103', '0301')">수학전공</button>
+            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1103', '0302')">물리학전공</button>
+            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1102', '0203')">응용통계학전공</button>
+            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1102', '0201')">경제학부</button>
+            <button class="dash-dept-btn" onclick="applyDeptQuickSearch('s1102', '0202')">경영학과</button>
+          </div>
+        </div>
+
+        <div style="text-align: center; font-size: 10.5px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>단축키: </span>
+          <kbd style="background: var(--canvas-elevated); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 5px; font-size: 9.5px; font-family: monospace;">/</kbd>
+          <span>키를 누르면 검색창으로 이동합니다.</span>
+        </div>
       </div>
     `;
     if (countLabel) countLabel.textContent = "조회된 과목 0개";
+    
+    // Hide active filter chips container when showing empty state
+    const chipsContainer = document.getElementById('active-filter-chips');
+    if (chipsContainer) {
+      chipsContainer.innerHTML = '';
+      chipsContainer.style.display = 'none';
+    }
+    
     lucide.createIcons();
     return;
   }
@@ -2182,10 +2230,249 @@ function setupEventListeners() {
     });
   }
 
-  // Search input typing filter
-  document.getElementById('input-search').addEventListener('input', () => {
-    renderCourses(coursesData);
+  // Search input clear button and typing filter
+  const searchInput = document.getElementById('input-search');
+  const clearSearchBtn = document.getElementById('btn-clear-search');
+
+  if (searchInput && clearSearchBtn) {
+    const toggleClearBtn = () => {
+      clearSearchBtn.style.display = searchInput.value ? 'flex' : 'none';
+    };
+
+    searchInput.addEventListener('input', () => {
+      toggleClearBtn();
+      renderCourses(coursesData);
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      toggleClearBtn();
+      searchInput.focus();
+      renderCourses(coursesData);
+    });
+  } else if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      renderCourses(coursesData);
+    });
+  }
+
+  // Keyboard shortcut: pressing '/' focuses the search bar
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== searchInput && 
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      
+      // Switch tab to search if not already
+      const searchTabBtn = document.getElementById('btn-tab-search');
+      if (searchTabBtn) searchTabBtn.click();
+      
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+    if (e.key === 'Escape' && document.activeElement === searchInput) {
+      if (searchInput) {
+        searchInput.blur();
+      }
+    }
   });
+
+  // Global Quick search tags logic
+  window.applyQuickSearch = function(keyword) {
+    if (searchInput) {
+      searchInput.value = keyword;
+      searchInput.dispatchEvent(new Event('input'));
+    }
+  };
+
+  window.applyDeptQuickSearch = async function(collegeCode, deptCode) {
+    const collegeSelect = document.getElementById('select-college');
+    if (collegeSelect) {
+      collegeSelect.value = collegeCode;
+      await loadDepartments(collegeCode);
+      const deptSelect = document.getElementById('select-dept');
+      if (deptSelect) {
+        deptSelect.value = deptCode;
+        await fetchCourses();
+      }
+    }
+  };
+
+  // Dynamically update active filter tags/chips
+  window.updateActiveFilterChips = function() {
+    const chipsContainer = document.getElementById('active-filter-chips');
+    if (!chipsContainer) return;
+
+    const query = document.getElementById('input-search').value.toLowerCase().trim();
+    const collegeSelect = document.getElementById('select-college');
+    const deptSelect = document.getElementById('select-dept');
+    
+    const collegeVal = collegeSelect?.value || '';
+    const deptVal = deptSelect?.value || '';
+
+    const activeFilters = [];
+
+    // College/Dept
+    if (collegeVal) {
+      const text = collegeSelect.options[collegeSelect.selectedIndex]?.textContent || '대학';
+      activeFilters.push({
+        type: 'college',
+        label: `대학: ${text}`,
+        clear: () => {
+          collegeSelect.value = '';
+          collegeSelect.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+    if (deptVal) {
+      const text = deptSelect.options[deptSelect.selectedIndex]?.textContent || '학과';
+      activeFilters.push({
+        type: 'dept',
+        label: `학과: ${text}`,
+        clear: () => {
+          deptSelect.value = '';
+          deptSelect.dispatchEvent(new Event('change'));
+        }
+      });
+    }
+
+    // Text query
+    if (query) {
+      activeFilters.push({
+        type: 'query',
+        label: `검색어: "${query}"`,
+        clear: () => {
+          if (searchInput) {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+          }
+        }
+      });
+    }
+
+    // Classification (이수구분)
+    if (selectedClassifications.length < YONSEI_CLASSIFICATIONS.length && selectedClassifications.length > 0) {
+      activeFilters.push({
+        type: 'classification',
+        label: `이수구분 (${selectedClassifications.length})`,
+        clear: () => {
+          const grid = document.querySelector('#classification-popover .checkbox-grid');
+          if (grid) {
+            const cbs = grid.querySelectorAll('input[type="checkbox"]');
+            cbs.forEach(cb => cb.checked = true);
+          }
+          selectedClassifications = [...YONSEI_CLASSIFICATIONS];
+          const labelSpan = document.querySelector('#btn-classification-trigger .trigger-label');
+          if (labelSpan) labelSpan.textContent = "전체";
+          renderCourses(coursesData);
+        }
+      });
+    }
+
+    // Credits (학점수)
+    if (selectedCredits.length < CREDIT_OPTIONS.length && selectedCredits.length > 0) {
+      activeFilters.push({
+        type: 'credits',
+        label: `학점 (${selectedCredits.length})`,
+        clear: () => {
+          const grid = document.querySelector('#credits-popover .checkbox-grid');
+          if (grid) {
+            const cbs = grid.querySelectorAll('input[type="checkbox"]');
+            cbs.forEach(cb => cb.checked = true);
+          }
+          selectedCredits = CREDIT_OPTIONS.map(opt => opt.value);
+          const labelSpan = document.querySelector('#btn-credits-trigger .trigger-label');
+          if (labelSpan) labelSpan.textContent = "전체";
+          renderCourses(coursesData);
+        }
+      });
+    }
+
+    // Target Grade (대상학년)
+    if (selectedGrades.length < GRADE_OPTIONS.length && selectedGrades.length > 0) {
+      activeFilters.push({
+        type: 'grades',
+        label: `대상학년 (${selectedGrades.length})`,
+        clear: () => {
+          const grid = document.querySelector('#grade-popover .checkbox-grid');
+          if (grid) {
+            const cbs = grid.querySelectorAll('input[type="checkbox"]');
+            cbs.forEach(cb => cb.checked = true);
+          }
+          selectedGrades = GRADE_OPTIONS.map(opt => opt.value);
+          const labelSpan = document.querySelector('#btn-grade-trigger .trigger-label');
+          if (labelSpan) labelSpan.textContent = "전체";
+          renderCourses(coursesData);
+        }
+      });
+    }
+
+    // Time slots
+    if (selectedTimeSlots.size > 0) {
+      activeFilters.push({
+        type: 'time',
+        label: `시간선택 (${selectedTimeSlots.size})`,
+        clear: () => {
+          selectedTimeSlots.clear();
+          const btnLabel = document.getElementById('time-filter-btn-label');
+          if (btnLabel) btnLabel.textContent = "시간선택";
+          const btnOpenTime = document.getElementById('btn-open-time-filter');
+          if (btnOpenTime) {
+            btnOpenTime.style.borderColor = 'var(--border-color)';
+            btnOpenTime.style.color = 'var(--text-primary)';
+          }
+          const grid = document.getElementById('time-filter-grid');
+          if (grid) {
+            const blocks = grid.querySelectorAll('.time-block');
+            blocks.forEach(b => b.classList.remove('selected'));
+          }
+          renderCourses(coursesData);
+        }
+      });
+    }
+
+    // Render chips
+    if (activeFilters.length === 0) {
+      chipsContainer.innerHTML = '';
+      chipsContainer.style.display = 'none';
+      return;
+    }
+
+    chipsContainer.style.display = 'flex';
+    chipsContainer.innerHTML = '';
+
+    // Render reset all button if > 1 filters active
+    if (activeFilters.length > 1) {
+      const resetAllBtn = document.createElement('button');
+      resetAllBtn.className = 'filter-chip-reset';
+      resetAllBtn.type = 'button';
+      resetAllBtn.innerHTML = `<i data-lucide="rotate-ccw" style="width: 11px; height: 11px;"></i> 전체 초기화`;
+      resetAllBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (collegeSelect) collegeSelect.value = '';
+        resetAdvancedSearchFilters();
+        if (collegeSelect) collegeSelect.dispatchEvent(new Event('change'));
+      });
+      chipsContainer.appendChild(resetAllBtn);
+    }
+
+    activeFilters.forEach(filter => {
+      const chip = document.createElement('div');
+      chip.className = 'filter-chip';
+      chip.innerHTML = `
+        <span>${filter.label}</span>
+        <i data-lucide="x" style="width: 10px; height: 10px; opacity: 0.8;"></i>
+      `;
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        filter.clear();
+      });
+      chipsContainer.appendChild(chip);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  };
 
   // Reset advanced search selectors to empty default values to prevent filter locks
   function resetAdvancedSearchFilters() {

@@ -110,12 +110,17 @@
         </div>
 
         <!-- 2. Search Courses Card - Geist Multi-Tabs -->
-        <div class="card search-card">
-          <div class="card-header">
+        <div class="card search-card" style="padding: 0; overflow: hidden;">
+          <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding: 12px 16px;">
             <div class="flex-align">
               <i data-lucide="search" class="header-icon"></i>
               <h2>개설과목 조건 지정</h2>
             </div>
+          </div>
+          
+          <div class="search-tabs-nav" style="display: grid; grid-template-columns: repeat(2, 1fr); width: 100%;">
+            <button type="button" class="search-tab-btn active" id="btn-search-tab-general">일반 검색</button>
+            <button type="button" class="search-tab-btn" id="btn-search-tab-wishlist">장바구니</button>
           </div>
           
           <!-- Sub-Tab 1: General Search -->

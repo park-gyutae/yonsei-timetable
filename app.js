@@ -86,6 +86,7 @@ let activeCourseObject = null; // Global cache of the full course object current
 let precomputedCurves = null; // Precalculated curves for all course-sections
 let aiChartInstance = null;   // Chart.js instance for AI probability curve
 let wishlist = [];            // Starred courses (Wishlist sandbox)
+let activeSearchTab = 'search-general'; // Tracks active search sub-tab
 
 // DJB2 문자열 해싱 헬퍼 (글자 한 자만 달라져도 색조가 겹치지 않고 완전히 분산되도록 보장)
 function getHashCode(str) {
@@ -2326,6 +2327,29 @@ function setupEventListeners() {
       }
     }
   });
+
+  // Search sub-tabs switcher (General vs Wishlist)
+  const btnSearchGeneral = document.getElementById('btn-search-tab-general');
+  const btnSearchWishlist = document.getElementById('btn-search-tab-wishlist');
+  const searchGeneralContent = document.getElementById('search-general');
+
+  if (btnSearchGeneral && btnSearchWishlist) {
+    btnSearchGeneral.addEventListener('click', () => {
+      activeSearchTab = 'search-general';
+      btnSearchGeneral.classList.add('active');
+      btnSearchWishlist.classList.remove('active');
+      if (searchGeneralContent) searchGeneralContent.style.display = 'block';
+      fetchCourses();
+    });
+
+    btnSearchWishlist.addEventListener('click', () => {
+      activeSearchTab = 'search-wishlist';
+      btnSearchWishlist.classList.add('active');
+      btnSearchGeneral.classList.remove('active');
+      if (searchGeneralContent) searchGeneralContent.style.display = 'none';
+      renderWishlist();
+    });
+  }
 
   // Global Quick search tags logic
   window.applyQuickSearch = function(keyword) {

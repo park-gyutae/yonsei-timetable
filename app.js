@@ -3331,11 +3331,20 @@ async function openMileageAnalysisModal(course) {
       const globalGrid = document.getElementById('global-stats-grid');
       const yrGrid = document.getElementById('year-stats-grid');
       if (globalGrid && yrGrid) {
-        globalGrid.classList.remove('stats-group-highlight');
-        globalGrid.classList.add('stats-group-muted');
-        
-        yrGrid.classList.remove('stats-group-muted');
-        yrGrid.classList.add('stats-group-highlight');
+        if (showGrid) {
+          // 학년별/전공자 정원 제한이 있어 개별 경쟁 그룹 그리드가 노출되는 경우
+          globalGrid.classList.remove('stats-group-highlight');
+          globalGrid.classList.add('stats-group-muted');
+          
+          yrGrid.classList.remove('stats-group-muted');
+          yrGrid.classList.add('stats-group-highlight');
+        } else {
+          // 공동 경쟁으로 인해 학년별 맞춤 그리드가 숨겨진 경우, 전체 지원 현황을 강조하고 뮤트하지 않음
+          globalGrid.classList.remove('stats-group-muted');
+          globalGrid.classList.add('stats-group-highlight');
+          
+          yrGrid.classList.remove('stats-group-highlight', 'stats-group-muted');
+        }
       }
 
       const majorBox = document.getElementById('major-stats-box');

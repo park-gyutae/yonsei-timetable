@@ -3588,7 +3588,46 @@ function renderAIProbabilityChart(course, currentBid) {
   // 2. Group past bids by mileage values to calculate pass/fail counts
   const groups = {};
   if (activeMileageData && activeMileageData.bids) {
-    const bids = filterCleanBids(activeMileageData.bids);
+    let bids = filterCleanBids(activeMileageData.bids);
+    
+    // 학년별/전공자 쿼터가 적용된 경우, 오버레이 바 차트의 빈도 분포역시 유저가 실제 경쟁하는 풀(pool)로만 필터링하여 일관성을 높입니다.
+    const summary = activeMileageData.summary;
+    const yq = summary?.year_quotas;
+    const isYearQuotasActive = yq && (yq['1'] > 0 || yq['2'] > 0 || yq['3'] > 0 || yq['4'] > 0);
+    const majorQuotaMatch = summary?.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
+    const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
+    const includesDoubleMajor = majorQuotaMatch && majorQuotaMatch[2] === 'Y';
+
+    const isBidProtected = (b) => {
+      return b.major.startsWith('Y(Y)') || (includesDoubleMajor && b.major.startsWith('Y(N)'));
+    };
+
+    const userMajor = determineMajorStatus(course.code, myProfile, course.title);
+    let userBelongsToProtectedGroup = false;
+    if (userMajor === 'Y(Y)') {
+      userBelongsToProtectedGroup = true;
+    } else if (userMajor === 'Y(N)') {
+      userBelongsToProtectedGroup = includesDoubleMajor;
+    }
+
+    const userGrade = myProfile.grade || 4;
+
+    if (isYearQuotasActive && isMajorQuotaActive) {
+      bids = bids.filter(b => {
+        const inGrade = b.grade === userGrade;
+        if (!inGrade) return false;
+        const protectedBid = isBidProtected(b);
+        return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+      });
+    } else if (isYearQuotasActive) {
+      bids = bids.filter(b => b.grade === userGrade);
+    } else if (isMajorQuotaActive) {
+      bids = bids.filter(b => {
+        const protectedBid = isBidProtected(b);
+        return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+      });
+    }
+
     bids.forEach(b => {
       const val = b.mileage;
       if (!groups[val]) {

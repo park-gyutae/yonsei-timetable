@@ -21,6 +21,66 @@ let myProfile = {          // Mileage Profile
   targetCredits: 9,        // 최소 확보 목표 학점
   targetProb: 0.85         // 보장 확률
 };
+const YONSEI_MAJORS = {
+  "math": { name: "수학과", prefixes: ["MAT"] },
+  "stats": { name: "응용통계학과", prefixes: ["STA"] },
+  "biz": { name: "경영학과", prefixes: ["BIZ"] },
+  "eco": { name: "경제학부", prefixes: ["ECO"] },
+  "csi": { name: "컴퓨터과학과", prefixes: ["CSI"] },
+  "eee": { name: "전기전자공학부", prefixes: ["EEE"] },
+  "meu": { name: "기계공학부", prefixes: ["MEU"] },
+  "chb": { name: "화공생명공학부", prefixes: ["CHB"] },
+  "mse": { name: "신소재공학부", prefixes: ["MSE"] },
+  "arc": { name: "건축공학과", prefixes: ["ARC"] },
+  "urb": { name: "도시공학과", prefixes: ["URB"] },
+  "cee": { name: "토목환경공학과", prefixes: ["CEE"] },
+  "iie": { name: "산업공학과", prefixes: ["IIE"] },
+  "sec": { name: "시스템반도체공학과", prefixes: ["SEC"] },
+  "ded": { name: "디스플레이융합공학과", prefixes: ["DED"] },
+  "phy": { name: "물리학과", prefixes: ["PHY"] },
+  "che": { name: "화학과", prefixes: ["CHE"] },
+  "ess": { name: "지구시스템과학과", prefixes: ["ESS"] },
+  "ast": { name: "천문우주학과", prefixes: ["AST"] },
+  "atm": { name: "대기과학과", prefixes: ["ATM"] },
+  "lsb": { name: "시스템생물학과", prefixes: ["LSB"] },
+  "bch": { name: "생화학과", prefixes: ["BCH"] },
+  "bte": { name: "생명공학과", prefixes: ["BTE"] },
+  "tai": { name: "인공지능학과", prefixes: ["TAI"] },
+  "kor": { name: "국어국문학과", prefixes: ["KOR"] },
+  "chi": { name: "중어중문학과", prefixes: ["CHI"] },
+  "ell": { name: "영어영문학과", prefixes: ["ELL"] },
+  "ger": { name: "독어독문학과", prefixes: ["GER"] },
+  "fre": { name: "불어불문학과", prefixes: ["FRE"] },
+  "rus": { name: "노어노문학과", prefixes: ["RUS"] },
+  "his": { name: "사학과", prefixes: ["HIS"] },
+  "phi": { name: "철학과", prefixes: ["PHI"] },
+  "lis": { name: "문헌정보학과", prefixes: ["LIS"] },
+  "psy": { name: "심리학과", prefixes: ["PSY"] },
+  "pos": { name: "정치외교학과", prefixes: ["POS"] },
+  "pub": { name: "행정학과", prefixes: ["PUB"] },
+  "sow": { name: "사회복지학과", prefixes: ["SOW"] },
+  "soc": { name: "사회학과", prefixes: ["SOC"] },
+  "ant": { name: "문화인류학과", prefixes: ["ANT"] },
+  "coy": { name: "언론홍보영상학부", prefixes: ["COY"] },
+  "nur": { name: "간호학과", prefixes: ["NUR"] },
+  "med": { name: "의학과", prefixes: ["MED"] },
+  "den": { name: "치의학과", prefixes: ["DEN"] },
+  "pha": { name: "약학과", prefixes: ["PHA"] },
+  "ped": { name: "체육교육학과", prefixes: ["PED"] },
+  "sps": { name: "스포츠응용산업학과", prefixes: ["SPS"] },
+  "edu": { name: "교육학과", prefixes: ["EDU"] },
+  "fnu": { name: "식품영양학과", prefixes: ["FNU"] },
+  "cfs": { name: "아동가족학과", prefixes: ["CFS"] },
+  "cld": { name: "생활디자인학과", prefixes: ["CLD"] },
+  "cte": { name: "의류환경학과", prefixes: ["CTE"] },
+  "int": { name: "통합디자인학과", prefixes: ["INT"] },
+  "gle": { name: "글로벌엘리트학부", prefixes: ["GLE"] },
+  "udc": { name: "언더우드학부", prefixes: ["UDC", "UIC"] },
+  "ise": { name: "융합과학공학부", prefixes: ["ISE"] },
+  "asd": { name: "융합사회과학부", prefixes: ["ASD"] },
+  "other": { name: "기타전공", prefixes: [] }
+};
+
 let activeCourseCode = null; // Global cache of the course code currently analyzed
 let activeCourseObject = null; // Global cache of the full course object currently analyzed
 let precomputedCurves = null; // Precalculated curves for all course-sections
@@ -172,8 +232,44 @@ function clearOldCache() {
 }
 
 
+function populateMajorOptions() {
+  const firstSelect = document.getElementById('profile-first-major');
+  const secondSelect = document.getElementById('profile-second-major');
+  if (!firstSelect || !secondSelect) return;
+
+  firstSelect.innerHTML = '';
+  secondSelect.innerHTML = '';
+
+  // Add 'none' to second major options
+  const noneOpt = document.createElement('option');
+  noneOpt.value = 'none';
+  noneOpt.textContent = '없음';
+  secondSelect.appendChild(noneOpt);
+
+  Object.entries(YONSEI_MAJORS).forEach(([key, info]) => {
+    const opt1 = document.createElement('option');
+    opt1.value = key;
+    opt1.textContent = info.name;
+    firstSelect.appendChild(opt1);
+
+    if (key !== 'other') { // Avoid adding duplicate other/none in second major
+      const opt2 = document.createElement('option');
+      opt2.value = key;
+      opt2.textContent = info.name;
+      secondSelect.appendChild(opt2);
+    }
+  });
+  
+  // Also add 'other' option to second select
+  const otherOpt = document.createElement('option');
+  otherOpt.value = 'other';
+  otherOpt.textContent = '기타전공';
+  secondSelect.appendChild(otherOpt);
+}
+
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
+  populateMajorOptions();
   // Automatic cache invalidation for new database version
   const CACHE_VERSION = 'v1.2.8';
   if (localStorage.getItem('ymu_cache_version') !== CACHE_VERSION) {
@@ -3910,21 +4006,17 @@ function calculateGroupSpecificCutoff(course, profile) {
 function determineMajorStatus(courseCode, profile, courseTitle) {
   if (!courseCode) return 'N(N)';
 
-  const isMathCourse = courseCode.startsWith('MAT');
-  const isStatsCourse = courseCode.startsWith('STA');
-  
   const firstMajor = profile.firstMajor;
   const secondMajor = profile.secondMajor;
   
   let matchesFirst = false;
   let matchesSecond = false;
   
-  if (isMathCourse) {
-    matchesFirst = (firstMajor === 'math');
-    matchesSecond = (secondMajor === 'math');
-  } else if (isStatsCourse) {
-    matchesFirst = (firstMajor === 'stats');
-    matchesSecond = (secondMajor === 'stats');
+  if (YONSEI_MAJORS[firstMajor]) {
+    matchesFirst = YONSEI_MAJORS[firstMajor].prefixes.some(p => courseCode.toUpperCase().startsWith(p));
+  }
+  if (YONSEI_MAJORS[secondMajor]) {
+    matchesSecond = YONSEI_MAJORS[secondMajor].prefixes.some(p => courseCode.toUpperCase().startsWith(p));
   }
   
   if (matchesFirst) return 'Y(Y)';

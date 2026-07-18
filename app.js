@@ -3144,14 +3144,69 @@ function renderAIProbabilityChart(course, currentBid) {
     }
   }
 
-  // 1. Fix for Under-Enrolled (미달) Courses!
-  // If a course is historically under-enrolled (or ML predicted median is very low <= 1.5),
-  // the logistic curve forces the median probability to ~50%. But in reality, bidding 1 point
-  // in an under-enrolled course guarantees almost 100% pass rate. We must boost the base curve.
-  let isUnderEnrolled = (pred.median <= 1.5);
-  if (course.mileageSummary && course.mileageSummary.applicants <= course.mileageSummary.capacity) {
-    isUnderEnrolled = true;
+  // 1. Fix for Under-Enrolled (미달) Groups!
+  // If the user's specific competition group is under-enrolled (applicants <= capacity),
+  // bidding 1 point guarantees a pass. Otherwise, if it's over-enrolled, they must compete.
+  let isGroupUnderEnrolled = false;
+  if (activeMileageData && activeMileageData.summary) {
+    const summary = activeMileageData.summary;
+    const bids = filterCleanBids(activeMileageData.bids);
+    const userGrade = myProfile.grade || 4;
+    const userMajorStatus = determineMajorStatus(course.code, myProfile);
+    const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
+    const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
+    const mqVal = isMajorQuotaActive ? parseInt(majorQuotaMatch[1]) : 0;
+    const includesDoubleMajor = majorQuotaMatch && majorQuotaMatch[2] === 'Y';
+
+    const isBidProtected = (b) => {
+      return b.major.startsWith('Y(Y)') || (includesDoubleMajor && b.major.startsWith('Y(N)'));
+    };
+
+    let userBelongsToProtectedGroup = false;
+    if (userMajorStatus === 'Y(Y)') {
+      userBelongsToProtectedGroup = true;
+    } else if (userMajorStatus === 'Y(N)') {
+      userBelongsToProtectedGroup = includesDoubleMajor;
+    } else {
+      userBelongsToProtectedGroup = false;
+    }
+
+    const yq = summary.year_quotas;
+    const isYearQuotasActive = yq && (yq['1'] > 0 || yq['2'] > 0 || yq['3'] > 0 || yq['4'] > 0);
+    const yearCapacity = isYearQuotasActive ? (yq[userGrade] || 0) : summary.capacity;
+
+    let groupCapacityVal = summary.capacity;
+    let groupBids = bids;
+
+    if (isYearQuotasActive && isMajorQuotaActive) {
+      groupBids = bids.filter(b => {
+        const inGrade = b.grade === userGrade;
+        if (!inGrade) return false;
+        const protectedBid = isBidProtected(b);
+        return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+      });
+      groupCapacityVal = yearCapacity;
+    } else if (isYearQuotasActive) {
+      groupBids = bids.filter(b => b.grade === userGrade);
+      groupCapacityVal = yearCapacity;
+    } else if (isMajorQuotaActive) {
+      groupBids = bids.filter(b => {
+        const protectedBid = isBidProtected(b);
+        return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+      });
+      if (userBelongsToProtectedGroup) {
+        groupCapacityVal = mqVal;
+      } else {
+        groupCapacityVal = Math.max(0, summary.capacity - mqVal);
+      }
+    }
+
+    if (groupCapacityVal > 0 && groupBids.length <= groupCapacityVal) {
+      isGroupUnderEnrolled = true;
+    }
   }
+
+  let isUnderEnrolled = isGroupUnderEnrolled || (pred.median <= 1.5);
   
   if (isUnderEnrolled) {
     probCurve = probCurve.map((p, m) => {
@@ -3522,16 +3577,17 @@ function simulate2StageSelection(applicants, capacity, majorQuota, includesDoubl
     return sorted.slice(0, capacity);
   }
 
-  // Stage 1: Select majors up to majorQuota limit
-  // If includesDoubleMajor is true, both Y(Y) and Y(N) are eligible.
-  // If false, only Y(Y) is eligible.
-  const majors = applicants.filter(a => {
+  // Helper to check if applicant is protected
+  const isProtected = (a) => {
     if (includesDoubleMajor) {
       return a.major.startsWith('Y');
     } else {
       return a.major.startsWith('Y(Y)');
     }
-  });
+  };
+
+  // Stage 1: Select majors up to majorQuota limit
+  const majors = applicants.filter(isProtected);
   const sortedMajors = [...majors].sort(compareBids);
   const selectedMajors = sortedMajors.slice(0, majorQuota);
 
@@ -3543,7 +3599,31 @@ function simulate2StageSelection(applicants, capacity, majorQuota, includesDoubl
     return !selectedIds.has(id);
   });
   const sortedRemaining = [...remaining].sort(compareBids);
-  const selectedGeneral = sortedRemaining.slice(0, capacity - selectedMajors.length);
+
+  // General seats available in Stage 2
+  const generalSeatsAvailable = capacity - selectedMajors.length;
+  // Strictly cap the number of unprotected (non-major) students at (capacity - majorQuota)
+  const maxUnprotectedSeats = Math.max(0, capacity - majorQuota);
+
+  const selectedGeneral = [];
+  let unprotectedSelectedCount = 0;
+
+  for (let i = 0; i < sortedRemaining.length; i++) {
+    if (selectedGeneral.length >= generalSeatsAvailable) {
+      break;
+    }
+    const a = sortedRemaining[i];
+    const protectedBid = isProtected(a);
+
+    if (protectedBid) {
+      selectedGeneral.push(a);
+    } else {
+      if (unprotectedSelectedCount < maxUnprotectedSeats) {
+        selectedGeneral.push(a);
+        unprotectedSelectedCount++;
+      }
+    }
+  }
 
   return [...selectedMajors, ...selectedGeneral];
 }

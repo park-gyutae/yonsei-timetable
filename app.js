@@ -4913,19 +4913,8 @@ function renderWishlist() {
   renderCourses(wishlist);
 }
 
-// Open Course Syllabus inside page modal overlay (using iframe and base64 parameters)
+// Open Course Syllabus inside a native browser popup window (avoiding X-Frame-Options sameorigin blocking)
 function openSyllabusModal(course) {
-  const modal = document.getElementById('syllabus-modal');
-  const title = document.getElementById('syllabus-modal-title');
-  const iframe = document.getElementById('syllabus-iframe');
-  const btnExternal = document.getElementById('btn-syllabus-external');
-
-  if (!modal || !iframe) return;
-
-  // Title layout
-  title.textContent = `[${course.code}-${course.division}] ${course.title} - 강의계획서`;
-
-  // Parameters
   const year = course.year || '2026';
   const semester = course.semester || '20';
   const paramsObj = {
@@ -4938,25 +4927,16 @@ function openSyllabusModal(course) {
   const base64Params = btoa(JSON.stringify(paramsObj));
   const url = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
 
-  // Bind parameters to internal iframe source
-  iframe.src = url;
+  // Open official portal syllabus popup directly
+  const newWin = window.open(
+    url,
+    `syllabus_${course.code}_${course.division}`,
+    'width=1000,height=850,status=no,toolbar=no,menubar=no,location=no,resizable=yes,scrollbars=yes'
+  );
 
-  // Bind parameters to external redirection button click
-  if (btnExternal) {
-    // Clear old listeners if any by cloning
-    const newBtn = btnExternal.cloneNode(true);
-    btnExternal.parentNode.replaceChild(newBtn, btnExternal);
-    newBtn.addEventListener('click', () => {
-      window.open(
-        url,
-        `syllabus_${course.code}_${course.division}`,
-        'width=1000,height=850,status=no,toolbar=no,menubar=no,location=no,resizable=yes,scrollbars=yes'
-      );
-    });
+  if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+    alert("팝업 차단이 감지되었습니다. 강의계획서 창을 열려면 브라우저 설정에서 팝업 차단을 해제하거나 허용해 주세요.");
   }
-
-  // Open modal layout
-  modal.classList.add('active');
 }
 
 // Open Course Context Action Modal (Floating Course Card Popup)

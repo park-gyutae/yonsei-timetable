@@ -2432,7 +2432,11 @@ function switchTab(tabId) {
   } else if (tabId === 'tab-search') {
     // Hide search card in sidebar because filters are relocated inside the tab!
     if (searchCard) searchCard.style.display = 'none';
-    if (miniTimetableCard) miniTimetableCard.style.display = 'none';
+    // Show mini timetable in sidebar so they can see live updates while searching!
+    if (miniTimetableCard) {
+      miniTimetableCard.style.display = 'flex';
+      renderMiniTimetableGrid();
+    }
   } else {
     // Timetable tab: show search card in sidebar
     if (searchCard) searchCard.style.display = 'flex';

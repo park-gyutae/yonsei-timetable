@@ -3277,16 +3277,30 @@ async function openMileageAnalysisModal(course) {
       `;
     }
 
-    // 6. Dynamic Quick Chips Population (최소 1점 / AI 예측컷 / 직전 학기컷 / 최대 점수)
-    let aiPredictCut = null;
-    if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[lookupKey]) {
-      const pred = precomputedCurves.curves[lookupKey];
-      const userMajor = determineMajorStatus(course.code, myProfile);
-      const isMajor = userMajor !== 'N(N)';
-      const groupPred = isMajor ? pred.major : pred.non_major;
-      const userGrade = myProfile.grade || 4;
-      const gradePred = groupPred[`grade_${userGrade}`] || groupPred.grade_4 || groupPred;
-      aiPredictCut = Math.round(gradePred.median);
+    // 6. Dynamic Quick Chips Population (최소 1점 / AI 적정컷 (50%) / AI 안전컷 (90%) / 직전 학기컷 / 최대 점수)
+    const curve = getCalibratedProbabilityCurve(course);
+    let aiPredictCut = null; // 50% probability cutoff
+    let aiSafeCut = null;    // 90% probability cutoff
+    
+    if (curve) {
+      // Find the first index m where probability >= 50%
+      aiPredictCut = curve.findIndex(p => p >= 0.5);
+      if (aiPredictCut === -1) aiPredictCut = 1;
+      
+      // Find the first index m where probability >= 90%
+      aiSafeCut = curve.findIndex(p => p >= 0.9);
+      if (aiSafeCut === -1) aiSafeCut = curve.length - 1;
+    } else {
+      // Fallback if no curves are precomputed
+      if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[lookupKey]) {
+        const pred = precomputedCurves.curves[lookupKey];
+        const userMajor = determineMajorStatus(course.code, myProfile);
+        const isMajor = userMajor !== 'N(N)';
+        const groupPred = isMajor ? pred.major : pred.non_major;
+        const userGrade = myProfile.grade || 4;
+        const gradePred = groupPred[`grade_${userGrade}`] || groupPred.grade_4 || groupPred;
+        aiPredictCut = Math.round(gradePred.median);
+      }
     }
 
     let lastActualCut = null;
@@ -3303,10 +3317,13 @@ async function openMileageAnalysisModal(course) {
       ];
       
       if (aiPredictCut !== null && aiPredictCut > 0) {
-        chips.push({ label: `AI 예측컷 (${aiPredictCut}점)`, val: aiPredictCut });
+        chips.push({ label: `AI 적정컷 (50%): ${aiPredictCut}점`, val: aiPredictCut });
       }
-      if (lastActualCut !== null && lastActualCut > 0 && lastActualCut !== aiPredictCut) {
-        chips.push({ label: `직전 학기컷 (${lastActualCut}점)`, val: lastActualCut });
+      if (aiSafeCut !== null && aiSafeCut > 0 && aiSafeCut !== aiPredictCut) {
+        chips.push({ label: `AI 안전컷 (90%): ${aiSafeCut}점`, val: aiSafeCut });
+      }
+      if (lastActualCut !== null && lastActualCut > 0 && lastActualCut !== aiPredictCut && lastActualCut !== aiSafeCut) {
+        chips.push({ label: `직전 학기컷: ${lastActualCut}점`, val: lastActualCut });
       }
       
       chips.push({ label: `최대 ${summary.max_allowed_mileage}점`, val: summary.max_allowed_mileage });
@@ -3383,66 +3400,15 @@ async function openMileageAnalysisModal(course) {
 }
 
 
-// Render AI Probability Curve Chart using Chart.js (gradient line chart with current bid highlight)
-function renderAIProbabilityChart(course, currentBid) {
-  const ctx = document.getElementById('ai-probability-chart');
-  if (!ctx) return;
-
+// Calculate the calibrated probability curve based on active under-enrollment status and group cutoff
+function getCalibratedProbabilityCurve(course) {
   const lookupKey = `${course.code}-${course.division}`;
   if (!precomputedCurves || !precomputedCurves.curves || !precomputedCurves.curves[lookupKey]) {
-    // Hide the chart container if curves are not computed for this course
-    document.querySelector('.ai-chart-container').style.display = 'none';
-    return;
-  }
-
-  document.querySelector('.ai-chart-container').style.display = 'block';
-
-  const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark' || 
-                     (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.getAttribute('data-theme'));
-  const currentThemeTag = isDarkMode ? 'dark' : 'light';
-
-  const accentColor = isDarkMode ? '#3291ff' : '#0070f3';
-  const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(23, 23, 23, 0.6)';
-  const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.03)';
-  const legendColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(23, 23, 23, 0.7)';
-
-  // 1. If chart already exists for the same course and theme, update the slider indicator line and the highlight point without recreation (buttery smooth update)
-  if (aiChartInstance && aiChartInstance.lookupKey === lookupKey && aiChartInstance.themeTag === currentThemeTag) {
-    if (aiChartInstance.options.plugins && aiChartInstance.options.plugins.verticalLine) {
-      aiChartInstance.options.plugins.verticalLine.xValue = currentBid;
-    }
-    
-    // Highlight the point for current bid in the line dataset (dataset index 2)
-    const probDataset = aiChartInstance.data.datasets[2];
-    if (probDataset) {
-      const pointRadii = probDataset.pointRadius;
-      const pointBgColors = probDataset.pointBackgroundColor;
-      const pointBorderColors = probDataset.pointBorderColor;
-
-      pointRadii.fill(0);
-      pointBgColors.fill('rgba(0,0,0,0)');
-      pointBorderColors.fill('rgba(0,0,0,0)');
-
-      const bidIdx = Math.round(currentBid);
-      if (bidIdx >= 0 && bidIdx < pointRadii.length) {
-        pointRadii[bidIdx] = 6;
-        pointBgColors[bidIdx] = accentColor;
-        pointBorderColors[bidIdx] = '#ffffff';
-      }
-    }
-
-    aiChartInstance.update('none');
-    return;
-  }
-
-  // Destroy previous instance to avoid canvas redraw glitch
-  if (aiChartInstance) {
-    aiChartInstance.destroy();
-    aiChartInstance = null;
+    return null;
   }
 
   const pred = precomputedCurves.curves[lookupKey];
-  const userMajor = determineMajorStatus(course.code, myProfile);
+  const userMajor = determineMajorStatus(course.code, myProfile, course.title);
   const isMajor = userMajor !== 'N(N)';
   const groupPred = isMajor ? pred.major : pred.non_major;
   const userGrade = myProfile.grade || 4;
@@ -3450,7 +3416,6 @@ function renderAIProbabilityChart(course, currentBid) {
   const maxAllowed = pred.max_allowed || 36;
   const rawCurve = gradePred.prob_curve;
 
-  // Make sure we slice or pad rawCurve according to maxAllowed
   let probCurve = [...rawCurve];
   if (probCurve.length > maxAllowed + 1) {
     probCurve = probCurve.slice(0, maxAllowed + 1);
@@ -3460,14 +3425,12 @@ function renderAIProbabilityChart(course, currentBid) {
     }
   }
 
-  // Calculate under-enrolled state
+  // Calculate under-enrolled state dynamically
   let isGroupUnderEnrolled = false;
   let groupBids = [];
   if (activeMileageData && activeMileageData.summary) {
     const summary = activeMileageData.summary;
     const bids = filterCleanBids(activeMileageData.bids);
-    const userGrade = myProfile.grade || 4;
-    const userMajorStatus = determineMajorStatus(course.code, myProfile);
     const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
     const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
     const mqVal = isMajorQuotaActive ? parseInt(majorQuotaMatch[1]) : 0;
@@ -3478,9 +3441,9 @@ function renderAIProbabilityChart(course, currentBid) {
     };
 
     let userBelongsToProtectedGroup = false;
-    if (userMajorStatus === 'Y(Y)') {
+    if (userMajor === 'Y(Y)') {
       userBelongsToProtectedGroup = true;
-    } else if (userMajorStatus === 'Y(N)') {
+    } else if (userMajor === 'Y(N)') {
       userBelongsToProtectedGroup = includesDoubleMajor;
     } else {
       userBelongsToProtectedGroup = false;
@@ -3554,6 +3517,73 @@ function renderAIProbabilityChart(course, currentBid) {
     }
     calibratedCurve.push(p);
   }
+
+  return calibratedCurve;
+}
+
+
+// Render AI Probability Curve Chart using Chart.js (gradient line chart with current bid highlight)
+function renderAIProbabilityChart(course, currentBid) {
+  const ctx = document.getElementById('ai-probability-chart');
+  if (!ctx) return;
+
+  const lookupKey = `${course.code}-${course.division}`;
+  if (!precomputedCurves || !precomputedCurves.curves || !precomputedCurves.curves[lookupKey]) {
+    // Hide the chart container if curves are not computed for this course
+    document.querySelector('.ai-chart-container').style.display = 'none';
+    return;
+  }
+
+  document.querySelector('.ai-chart-container').style.display = 'block';
+
+  const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark' || 
+                     (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.getAttribute('data-theme'));
+  const currentThemeTag = isDarkMode ? 'dark' : 'light';
+
+  const accentColor = isDarkMode ? '#3291ff' : '#0070f3';
+  const textColor = isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(23, 23, 23, 0.6)';
+  const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.03)';
+  const legendColor = isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(23, 23, 23, 0.7)';
+
+  // 1. If chart already exists for the same course and theme, update the slider indicator line and the highlight point without recreation (buttery smooth update)
+  if (aiChartInstance && aiChartInstance.lookupKey === lookupKey && aiChartInstance.themeTag === currentThemeTag) {
+    if (aiChartInstance.options.plugins && aiChartInstance.options.plugins.verticalLine) {
+      aiChartInstance.options.plugins.verticalLine.xValue = currentBid;
+    }
+    
+    // Highlight the point for current bid in the line dataset (dataset index 2)
+    const probDataset = aiChartInstance.data.datasets[2];
+    if (probDataset) {
+      const pointRadii = probDataset.pointRadius;
+      const pointBgColors = probDataset.pointBackgroundColor;
+      const pointBorderColors = probDataset.pointBorderColor;
+
+      pointRadii.fill(0);
+      pointBgColors.fill('rgba(0,0,0,0)');
+      pointBorderColors.fill('rgba(0,0,0,0)');
+
+      const bidIdx = Math.round(currentBid);
+      if (bidIdx >= 0 && bidIdx < pointRadii.length) {
+        pointRadii[bidIdx] = 6;
+        pointBgColors[bidIdx] = accentColor;
+        pointBorderColors[bidIdx] = '#ffffff';
+      }
+    }
+
+    aiChartInstance.update('none');
+    return;
+  }
+
+  // Destroy previous instance to avoid canvas redraw glitch
+  if (aiChartInstance) {
+    aiChartInstance.destroy();
+    aiChartInstance = null;
+  }
+
+  const pred = precomputedCurves.curves[lookupKey];
+  const maxAllowed = pred.max_allowed || 36;
+  const calibratedCurve = getCalibratedProbabilityCurve(course);
+  if (!calibratedCurve) return;
 
   // 2. Group past bids by mileage values to calculate pass/fail counts
   const groups = {};

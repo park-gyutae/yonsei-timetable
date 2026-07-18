@@ -2912,26 +2912,24 @@ function switchTab(tabId) {
     }
   });
 
-  // ── 공강만 필터 토글 버튼 이벤트 바인딩 ────────────────
-  const btnNoConflict = document.getElementById('btn-toggle-no-conflict');
-  if (btnNoConflict) {
-    btnNoConflict.addEventListener('click', () => {
-      filterNoConflict = !filterNoConflict;
-      const label = document.getElementById('no-conflict-btn-label');
-      if (filterNoConflict) {
-        btnNoConflict.style.background = 'var(--accent-light)';
-        btnNoConflict.style.color = '#fff';
-        btnNoConflict.style.borderColor = 'var(--accent-light)';
-        if (label) label.textContent = '공강만 ✓';
-      } else {
-        btnNoConflict.style.background = 'var(--canvas-card)';
-        btnNoConflict.style.color = 'var(--text-primary)';
-        btnNoConflict.style.borderColor = 'var(--border-color)';
-        if (label) label.textContent = '공강만';
-      }
-      fetchCourses();
-    });
+  // ── 공강만 필터 토글 — document 이벤트 델리게이션 (DOM 이동 후에도 동작) ────
+  function applyNoConflictStyle(btn, label, active) {
+    if (!btn) return;
+    btn.style.background = active ? 'var(--accent-light)' : 'var(--canvas-card)';
+    btn.style.color      = active ? '#fff' : 'var(--text-primary)';
+    btn.style.borderColor = active ? 'var(--accent-light)' : 'var(--border-color)';
+    if (label) label.textContent = active ? '공강만 ✓' : '공강만';
   }
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#btn-toggle-no-conflict')) {
+      filterNoConflict = !filterNoConflict;
+      const btn   = document.getElementById('btn-toggle-no-conflict');
+      const label = document.getElementById('no-conflict-btn-label');
+      applyNoConflictStyle(btn, label, filterNoConflict);
+      fetchCourses();
+    }
+  });
 
   // ── Dynamic relocation of search filters container ────────────────
   const filtersContainer = document.getElementById('search-filters-container');

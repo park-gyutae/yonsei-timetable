@@ -4296,71 +4296,110 @@ function autoAllocateMileage() {
 // 특정 마일리지 베팅 점수(bid)에 따른 보정된 합격 확률 반환 공통 함수
 function getCourseProbability(c, bid) {
   const key = `${c.code}-${c.division}`;
-  let maxAllowed = c.mileageSummary ? c.mileageSummary.max_allowed_mileage : 36;
-  let baseCurve = new Array(maxAllowed + 1).fill(0.0);
-  let medianVal = 12.0;
 
-  // 1. 기본 확률 곡선 로드
-  if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
-    const pData = precomputedCurves.curves[key];
-    const isMajor = determineMajorStatus(c.code, myProfile) !== 'N(N)';
-    const groupData = isMajor ? pData.major : pData.non_major;
-    const userGrade = myProfile.grade || 4;
-    const gradeData = groupData[`grade_${userGrade}`] || groupData.grade_4 || groupData;
-    baseCurve = [...gradeData.prob_curve];
-    medianVal = gradeData.median;
-    maxAllowed = pData.max_allowed;
-    if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
-      maxAllowed = c.mileageSummary.max_allowed_mileage;
-      if (baseCurve.length > maxAllowed + 1) {
-        baseCurve = baseCurve.slice(0, maxAllowed + 1);
-      }
+  // 1. Fallback to precomputed curves if historical bids are not loaded yet
+  if (!c.mileageBids || !c.mileageSummary) {
+    if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
+      const pData = precomputedCurves.curves[key];
+      const isMajor = determineMajorStatus(c.code, myProfile) !== 'N(N)';
+      const groupData = isMajor ? pData.major : pData.non_major;
+      const userGrade = myProfile.grade || 4;
+      const gradeData = groupData[`grade_${userGrade}`] || groupData.grade_4 || groupData;
+      const baseCurve = [...gradeData.prob_curve];
+      return baseCurve[Math.min(bid, baseCurve.length - 1)] || 0.0;
     }
-  } else {
-    let cutVal = 12.0;
-    if (c.mileageSummary) {
-      cutVal = c.mileageSummary.min_mileage || 12.0;
-      maxAllowed = c.mileageSummary.max_allowed_mileage || 36;
-    }
-    medianVal = cutVal;
+    let cutVal = c.mileageSummary ? (c.mileageSummary.min_mileage || 12.0) : 12.0;
     const k = 2.197 / Math.max(cutVal * 0.2, 1.5);
-    baseCurve = [];
-    for (let m = 0; m <= maxAllowed; m++) {
-      baseCurve.push(1 / (1 + Math.exp(-k * (m - cutVal))));
+    return 1 / (1 + Math.exp(-k * (bid - cutVal)));
+  }
+
+  const bids = c.mileageBids;
+  const summary = c.mileageSummary;
+  const userGrade = myProfile.grade || 4;
+  const userMajorStatus = determineMajorStatus(c.code, myProfile);
+  const majorQuotaMatch = summary.major_ratio ? summary.major_ratio.match(/^(\d+)(?:\((.+)\))?/) : null;
+  const isMajorQuotaActive = majorQuotaMatch && parseInt(majorQuotaMatch[1]) > 0;
+  const mqVal = isMajorQuotaActive ? parseInt(majorQuotaMatch[1]) : 0;
+  const includesDoubleMajor = majorQuotaMatch && majorQuotaMatch[2] === 'Y';
+
+  const isBidProtected = (b) => {
+    return b.major.startsWith('Y(Y)') || (includesDoubleMajor && b.major.startsWith('Y(N)'));
+  };
+
+  let userBelongsToProtectedGroup = false;
+  if (userMajorStatus === 'Y(Y)') {
+    userBelongsToProtectedGroup = true;
+  } else if (userMajorStatus === 'Y(N)') {
+    userBelongsToProtectedGroup = includesDoubleMajor;
+  } else {
+    userBelongsToProtectedGroup = false;
+  }
+
+  const yq = summary.year_quotas;
+  const isYearQuotasActive = yq && (yq['1'] > 0 || yq['2'] > 0 || yq['3'] > 0 || yq['4'] > 0);
+  const yearCapacity = isYearQuotasActive ? (yq[userGrade] || 0) : summary.capacity;
+
+  let groupCapacityVal = summary.capacity;
+  const cleanedBids = filterCleanBids(bids);
+  let groupBids = cleanedBids.filter(b => !b.is_user);
+
+  if (isYearQuotasActive && isMajorQuotaActive) {
+    groupBids = groupBids.filter(b => {
+      const inGrade = b.grade === userGrade;
+      if (!inGrade) return false;
+      const protectedBid = isBidProtected(b);
+      return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+    });
+    groupCapacityVal = yearCapacity;
+  } else if (isYearQuotasActive) {
+    groupBids = groupBids.filter(b => b.grade === userGrade);
+    groupCapacityVal = yearCapacity;
+  } else if (isMajorQuotaActive) {
+    groupBids = groupBids.filter(b => {
+      const protectedBid = isBidProtected(b);
+      return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+    });
+    if (userBelongsToProtectedGroup) {
+      groupCapacityVal = mqVal;
+    } else {
+      groupCapacityVal = Math.max(0, summary.capacity - mqVal);
     }
   }
 
-  // 2. 미달 과목 보정
-  let isUnderEnrolled = (medianVal <= 1.5);
-  if (c.mileageSummary && c.mileageSummary.applicants <= c.mileageSummary.capacity) {
-    isUnderEnrolled = true;
+  let isGroupUnderEnrolled = false;
+  if (groupCapacityVal > 0 && groupBids.length <= groupCapacityVal) {
+    isGroupUnderEnrolled = true;
   }
+
+  const pred = precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key] ? precomputedCurves.curves[key] : { median: 12.0 };
+  let isUnderEnrolled = isGroupUnderEnrolled || (pred.median <= 1.5);
+
   if (isUnderEnrolled) {
-    baseCurve = baseCurve.map((p, m) => {
-      if (m >= 1) return Math.max(p, 0.98);
-      return p;
-    });
+    return (bid >= 1) ? 0.98 : 0.0;
   }
 
-  // 3. 그룹별 정확한 중간값(컷오프) 계산 반영
-  medianVal = calculateGroupSpecificCutoff(c, myProfile);
+  const medianVal = calculateGroupSpecificCutoff(c, myProfile);
 
-  // 4. 동점자 캘리브레이션 반영
-  const privilegeScore = computePrivilegeScore(myProfile, c.code);
-  const window = 3;
-  const maxAdjustment = 0.25;
-  const steepness = 5.0;
-
-  const dist = Math.abs(bid - medianVal);
-  let baseProb = baseCurve[Math.min(bid, baseCurve.length - 1)] || 0.0;
-  let prob = baseProb;
-  if (bid >= medianVal && dist <= window) {
-    const rho = Math.max(0, 1 - dist / window);
-    const adjustment = rho * privilegeScore * maxAdjustment * sigmoid(steepness * privilegeScore);
-    prob = Math.min(1.0, Math.max(0.0, baseProb + adjustment));
+  if (bid < medianVal) {
+    const dist = bid - medianVal;
+    let p = 1 / (1 + Math.exp(-2.0 * dist));
+    return p < 0.01 ? 0.0 : p;
   }
 
-  return prob;
+  let tieBreakerProb = 0.5;
+  const bidsAtCutoff = groupBids.filter(b => b.mileage === medianVal);
+  if (bidsAtCutoff.length > 0) {
+    const passedAtCutoff = bidsAtCutoff.filter(b => b.success === 'Y');
+    tieBreakerProb = passedAtCutoff.length / bidsAtCutoff.length;
+  }
+  tieBreakerProb = Math.min(0.9, Math.max(0.1, tieBreakerProb));
+
+  if (bid === medianVal) {
+    return tieBreakerProb;
+  }
+
+  const dist = bid - medianVal;
+  return tieBreakerProb + (1.0 - tieBreakerProb) * (1 - Math.exp(-1.5 * dist));
 }
 
 // Monte Carlo simulation for risk dashboard evaluation (E[Credits], E[Utility], VaR, Plan B)

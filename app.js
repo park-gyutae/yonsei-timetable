@@ -3148,6 +3148,7 @@ function renderAIProbabilityChart(course, currentBid) {
   // If the user's specific competition group is under-enrolled (applicants <= capacity),
   // bidding 1 point guarantees a pass. Otherwise, if it's over-enrolled, they must compete.
   let isGroupUnderEnrolled = false;
+  let groupBids = [];
   if (activeMileageData && activeMileageData.summary) {
     const summary = activeMileageData.summary;
     const bids = filterCleanBids(activeMileageData.bids);
@@ -3176,7 +3177,7 @@ function renderAIProbabilityChart(course, currentBid) {
     const yearCapacity = isYearQuotasActive ? (yq[userGrade] || 0) : summary.capacity;
 
     let groupCapacityVal = summary.capacity;
-    let groupBids = bids;
+    groupBids = bids;
 
     if (isYearQuotasActive && isMajorQuotaActive) {
       groupBids = bids.filter(b => {

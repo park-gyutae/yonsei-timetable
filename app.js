@@ -2858,29 +2858,87 @@ async function openMileageAnalysisModal(course) {
     }
     lucide.createIcons();
 
-    // 3. Populate Major / Non-major stats (for display)
-    const majorPass = bids.filter(b => b.major.startsWith('Y') && b.success === 'Y');
-    const majorCutVal = majorPass.length > 0 ? Math.min(...majorPass.map(b => b.mileage)) : 'N/A';
-    const majorAvgVal = majorPass.length > 0 ? (majorPass.reduce((sum, b) => sum + b.mileage, 0) / majorPass.length).toFixed(1) : 'N/A';
-    majorCutLabel.textContent = majorCutVal !== 'N/A' ? `${majorCutVal}점` : 'N/A';
-    majorAvgLabel.textContent = majorAvgVal !== 'N/A' ? `${majorAvgVal}점` : 'N/A';
-
-    const nonmajorPass = bids.filter(b => !b.major.startsWith('Y') && b.success === 'Y');
-    const nonmajorCutVal = nonmajorPass.length > 0 ? Math.min(...nonmajorPass.map(b => b.mileage)) : 'N/A';
-    const nonmajorAvgVal = nonmajorPass.length > 0 ? (nonmajorPass.reduce((sum, b) => sum + b.mileage, 0) / nonmajorPass.length).toFixed(1) : 'N/A';
-    nonmajorCutLabel.textContent = nonmajorCutVal !== 'N/A' ? `${nonmajorCutVal}점` : 'N/A';
-    nonmajorAvgLabel.textContent = nonmajorAvgVal !== 'N/A' ? `${nonmajorAvgVal}점` : 'N/A';
-
-    // Toggle Major protection display (reusing variables declared above)
+    // 3. Dynamic Sub-group Stats Cards (Grade x Major)
     const majorRow = document.getElementById('major-stats-row');
     const majorNotice = document.getElementById('major-stats-notice');
     
-    if (isMajorQuotaActive) {
-      if (majorRow) majorRow.style.display = 'flex';
-      if (majorNotice) majorNotice.style.display = 'none';
-    } else {
-      if (majorRow) majorRow.style.display = 'none';
-      if (majorNotice) majorNotice.style.display = 'flex';
+    if (majorRow) {
+      majorRow.innerHTML = '';
+      
+      let cardsData = [];
+
+      if (isYearQuotasActive && isMajorQuotaActive) {
+        // Case A: Both active (6 groups: Grades 2, 3, 4 x Major, Non-major)
+        const activeGrades = ['2', '3', '4'];
+        activeGrades.forEach(g => {
+          // Major Group for Grade g
+          const mPass = bids.filter(b => b.grade === g && b.major.startsWith('Y') && b.success === 'Y');
+          const mCut = mPass.length > 0 ? Math.min(...mPass.map(b => b.mileage)) : 'N/A';
+          const mAvg = mPass.length > 0 ? (mPass.reduce((sum, b) => sum + b.mileage, 0) / mPass.length).toFixed(1) : 'N/A';
+          cardsData.push({ title: `${g}학년 본전공자`, cut: mCut, avg: mAvg, isMajor: true });
+
+          // Non-major Group for Grade g
+          const nmPass = bids.filter(b => b.grade === g && !b.major.startsWith('Y') && b.success === 'Y');
+          const nmCut = nmPass.length > 0 ? Math.min(...nmPass.map(b => b.mileage)) : 'N/A';
+          const nmAvg = nmPass.length > 0 ? (nmPass.reduce((sum, b) => sum + b.mileage, 0) / nmPass.length).toFixed(1) : 'N/A';
+          cardsData.push({ title: `${g}학년 비전공자`, cut: nmCut, avg: nmAvg, isMajor: false });
+        });
+      } else if (isYearQuotasActive) {
+        // Case B: Grade Quotas only (Grades 1, 2, 3, 4 depending on yq)
+        const grades = ['1', '2', '3', '4'];
+        grades.forEach(g => {
+          if (yq && yq[g] > 0) {
+            const gPass = bids.filter(b => b.grade === g && b.success === 'Y');
+            const gCut = gPass.length > 0 ? Math.min(...gPass.map(b => b.mileage)) : 'N/A';
+            const gAvg = gPass.length > 0 ? (gPass.reduce((sum, b) => sum + b.mileage, 0) / gPass.length).toFixed(1) : 'N/A';
+            cardsData.push({ title: `${g}학년 전체`, cut: gCut, avg: gAvg, isMajor: true });
+          }
+        });
+      } else if (isMajorQuotaActive) {
+        // Case C: Major Protection only (2 groups: Major, Non-major)
+        const mPass = bids.filter(b => b.major.startsWith('Y') && b.success === 'Y');
+        const mCut = mPass.length > 0 ? Math.min(...mPass.map(b => b.mileage)) : 'N/A';
+        const mAvg = mPass.length > 0 ? (mPass.reduce((sum, b) => sum + b.mileage, 0) / mPass.length).toFixed(1) : 'N/A';
+        cardsData.push({ title: '본전공자 합격 기준', cut: mCut, avg: mAvg, isMajor: true });
+
+        const nmPass = bids.filter(b => !b.major.startsWith('Y') && b.success === 'Y');
+        const nmCut = nmPass.length > 0 ? Math.min(...nmPass.map(b => b.mileage)) : 'N/A';
+        const nmAvg = nmPass.length > 0 ? (nmPass.reduce((sum, b) => sum + b.mileage, 0) / nmPass.length).toFixed(1) : 'N/A';
+        cardsData.push({ title: '비전공자 합격 기준', cut: nmCut, avg: nmAvg, isMajor: false });
+      }
+
+      if (cardsData.length > 0) {
+        majorRow.style.display = 'grid';
+        if (majorNotice) majorNotice.style.display = 'none';
+        
+        cardsData.forEach(card => {
+          const cardDiv = document.createElement('div');
+          cardDiv.className = 'quota-box';
+          cardDiv.style.borderLeft = card.isMajor ? '3px solid var(--accent-light)' : '3px solid var(--warning)';
+          cardDiv.innerHTML = `
+            <h3 style="font-size:12px; margin-bottom:10px; color:var(--text-primary); font-weight:700; border-left:none; padding-left:0;">${card.title}</h3>
+            <div class="quota-stat" style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11.5px;">
+              <span class="lbl" style="color:var(--text-muted);">커트라인</span>
+              <strong style="color:var(--warning); font-size:12.5px;">${card.cut !== 'N/A' ? card.cut + '점' : 'N/A'}</strong>
+            </div>
+            <div class="quota-stat" style="display:flex; justify-content:space-between; font-size:11.5px;">
+              <span class="lbl" style="color:var(--text-muted);">합격 평균</span>
+              <span style="color:var(--text-secondary); font-weight:500;">${card.avg !== 'N/A' ? card.avg + '점' : 'N/A'}</span>
+            </div>
+          `;
+          majorRow.appendChild(cardDiv);
+        });
+      } else {
+        majorRow.style.display = 'none';
+        if (majorNotice) {
+          majorNotice.style.display = 'flex';
+          majorNotice.innerHTML = `
+            <i data-lucide="info" style="width: 14.5px; height: 14.5px; color: var(--accent-light); flex-shrink: 0;"></i>
+            <span>이 과목은 전공자 보호 및 학년별 배정 제한이 없습니다. 모든 인원이 공동 경쟁합니다.</span>
+          `;
+          lucide.createIcons();
+        }
+      }
     }
 
     // 4. Populate Constraints details

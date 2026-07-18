@@ -2571,24 +2571,45 @@ function loadDataFromStorage() {
   }
 }
 
-// Filter out voluntary drop outliers from bids array
+// Filter out voluntary drop outliers from bids array (preserving major-protection competitive groups)
 function filterCleanBids(bids) {
   if (!bids || bids.length === 0) return [];
   
-  // Find max rank among successful applicants
-  const successRanks = bids.filter(b => b.success === 'Y' && b.rank !== null && b.rank > 0).map(b => b.rank);
-  if (successRanks.length === 0) {
-    return bids;
-  }
+  // Group bids by their exact major status to avoid cross-group rank contamination (due to major protection)
+  const groups = {};
+  bids.forEach(b => {
+    const key = b.major || 'N(N)';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(b);
+  });
+
+  const cleanedBids = [];
   
-  const maxSuccessRank = Math.max(...successRanks);
-  
-  // Clean bids: Exclude those who failed but had higher/equal ranks (rank < maxSuccessRank)
-  return bids.filter(b => {
-    if (b.success !== 'Y' && b.rank !== null && b.rank > 0 && b.rank < maxSuccessRank) {
-      return false; // Outlier! Exclude from statistics
+  Object.keys(groups).forEach(key => {
+    const groupBids = groups[key];
+    const successRanks = groupBids.filter(b => b.success === 'Y' && b.rank !== null && b.rank > 0).map(b => b.rank);
+    
+    if (successRanks.length === 0) {
+      // If no successful bids in this major group, all bids are kept
+      cleanedBids.push(...groupBids);
+    } else {
+      const maxSuccessRank = Math.max(...successRanks);
+      groupBids.forEach(b => {
+        // Exclude failed bids that had rank less than the maximum successful rank in their own group
+        if (b.success !== 'Y' && b.rank !== null && b.rank > 0 && b.rank < maxSuccessRank) {
+          // Outlier (withdrawn/deleted)
+          return;
+        }
+        cleanedBids.push(b);
+      });
     }
-    return true;
+  });
+
+  // Re-sort the final merged bids by their rank ascending
+  return cleanedBids.sort((a, b) => {
+    const rA = a.rank || 9999;
+    const rB = b.rank || 9999;
+    return rA - rB;
   });
 }
 

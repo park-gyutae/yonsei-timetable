@@ -584,9 +584,11 @@ else:
 
 
 def calculate_clean_cutoff(conn, code, div, year, semester, fallback_min_mileage) -> float:
-    """자의적인 삭제/정원 초과 삭제로 인해 불합격 처리된 고마일리지 아웃라이어를 필터링하고 실제 경쟁 컷오프를 반환합니다."""
+    """자의적인 삭제/정원 초과 삭제로 인해 불합격 처리된 고마일리지 아웃라이어를 필터링하고 실제 경쟁 컷오프를 반환합니다.
+    전공자 보호 등으로 인해 학년/전공별로 합격 컷오프가 분리된 경우 교차 오염을 방지하기 위해 각 전공 분류별로 청소합니다.
+    """
     bids = conn.execute("""
-        SELECT rank, mileage, success 
+        SELECT rank, mileage, success, major
         FROM mileage_bids 
         WHERE course_code=? AND division=? AND year=? AND semester=?
     """, (code, div, year, semester)).fetchall()
@@ -594,16 +596,32 @@ def calculate_clean_cutoff(conn, code, div, year, semester, fallback_min_mileage
     if not bids:
         return fallback_min_mileage or 1.0
 
-    success_ranks = [b[0] for b in bids if b[2] == 'Y' and b[0] is not None]
-    if not success_ranks:
-        return max([b[1] for b in bids]) if bids else 1.0
+    # Group bids by major status (e.g. Y(Y), Y(N), N(N))
+    groups = {}
+    for b in bids:
+        key = b[3] or 'N(N)'
+        if key not in groups:
+            groups[key] = []
+        groups[key].append(b)
 
-    max_success_rank = max(success_ranks)
-    clean_failures = [b[1] for b in bids if b[2] != 'Y' and b[0] is not None and b[0] > max_success_rank]
+    clean_failures = []
+    for key, group_bids in groups.items():
+        success_ranks = [b[0] for b in group_bids if b[2] == 'Y' and b[0] is not None]
+        if not success_ranks:
+            # If no successes in this major group, all failed bids are genuine competition outcomes
+            clean_failures.extend([b[1] for b in group_bids if b[2] != 'Y' and b[1] is not None])
+        else:
+            max_success_rank = max(success_ranks)
+            # Only keep failed bids that rank below the last successful bid in their own major category
+            clean_failures.extend([b[1] for b in group_bids if b[2] != 'Y' and b[0] is not None and b[0] > max_success_rank])
 
     if clean_failures:
         return float(max(clean_failures))
-    return 1.0
+        
+    all_success_mileages = [b[1] for b in bids if b[2] == 'Y' and b[1] is not None]
+    if all_success_mileages:
+        return float(min(all_success_mileages))
+    return fallback_min_mileage or 1.0
 
 def get_mileage_from_db(code: str, division: str):
     """SQLite DB에서 특정 과목 분반의 마일리지 상세 이력을 조회하여 FastAPI Response 용 dict로 반환합니다."""

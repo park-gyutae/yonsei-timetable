@@ -3564,7 +3564,22 @@ function calculateMileagePrediction(testMileage) {
   const history = activeMileageData.history || [];
   
   // Calculate current simulated grade-specific cut and global cut to obtain grade pressure ratio
-  const simPassBids = selectedApplicants.filter(b => !b.remark);
+  const simPassBids = selectedApplicants.filter(b => {
+    if (b.remark) return false;
+    
+    // Filter to only include the user's competition group for accurate pressure ratio
+    if (isYearQuotasActive && isMajorQuotaActive) {
+      if (b.grade !== userGrade) return false;
+      const protectedBid = isBidProtected(b);
+      return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+    } else if (isYearQuotasActive) {
+      return b.grade === userGrade;
+    } else if (isMajorQuotaActive) {
+      const protectedBid = isBidProtected(b);
+      return userBelongsToProtectedGroup ? protectedBid : !protectedBid;
+    }
+    return true;
+  });
   const simGradeCut = simPassBids.length > 0 ? Math.min(...simPassBids.map(b => b.mileage)) : summary.min_mileage;
   
   const sortedAll = [...pool].sort(compareBids);

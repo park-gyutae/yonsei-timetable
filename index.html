@@ -118,54 +118,60 @@
             </div>
           </div>
           
+          <!-- Search sub-tabs: always visible, outside the movable filters container -->
+
           <!-- Sub-Tab 1: General Search -->
           <div class="search-tab-content active" id="search-general">
             <div id="sidebar-filters-placeholder">
-              <div class="search-filters" id="search-filters-container">
-                <div class="search-tabs-nav" style="display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; grid-column: 1 / -1; margin-bottom: 10px; border-bottom: 1px solid var(--border-color);">
-                  <button type="button" class="search-tab-btn active" id="btn-search-tab-general">일반 검색</button>
-                  <button type="button" class="search-tab-btn" id="btn-search-tab-wishlist">장바구니</button>
+              <div id="search-filters-container" style="display: flex; flex-direction: column;">
+                <!-- Sub-tab toggle bar (moves with filter container) -->
+                <div style="display: flex; border-bottom: 1px solid var(--border-color);">
+                  <button type="button" class="search-tab-btn active" id="btn-search-tab-general" style="flex: 1;">일반 검색</button>
+                  <button type="button" class="search-tab-btn" id="btn-search-tab-wishlist" style="flex: 1;">⭐ 장바구니</button>
                 </div>
-                <div class="filter-group">
-                  <label for="btn-campus-trigger">캠퍼스</label>
-                  <button type="button" class="multiselect-trigger" id="btn-campus-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
-                    <span id="label-campus-selected">신촌캠퍼스</span>
-                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                  </button>
-                  <select id="select-campus" style="display: none;">
-                    <option value="">전체</option>
-                    <option value="S" selected>신촌캠퍼스</option>
-                    <option value="G">국제캠퍼스(송도)</option>
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <label for="btn-college-trigger">대학(원)</label>
-                  <button type="button" class="multiselect-trigger" id="btn-college-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
-                    <span id="label-college-selected">전체</span>
-                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                  </button>
-                  <select id="select-college" style="display: none;">
-                    <!-- Dynamically loaded -->
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <label for="btn-dept-trigger">개설학과</label>
-                  <button type="button" class="multiselect-trigger" id="btn-dept-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
-                    <span id="label-dept-selected">전체</span>
-                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                  </button>
-                  <select id="select-dept" style="display: none;">
-                    <!-- Dynamically loaded -->
-                  </select>
-                </div>
-                <div class="filter-group">
-                  <label for="input-search">과목명/교수명/과목코드</label>
-                  <div class="search-input-wrapper" style="position: relative;">
-                    <input type="text" id="input-search" placeholder="검색어를 입력하세요...">
-                    <i data-lucide="search" class="input-icon"></i>
-                    <button type="button" id="btn-clear-search" style="position: absolute; right: 32px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: none; align-items: center; justify-content: center; transition: color 0.15s ease; z-index: 10;">
-                      <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                <!-- General filter grid -->
+                <div class="search-filters" id="search-filters-inner">
+                  <div class="filter-group">
+                    <label for="btn-campus-trigger">캠퍼스</label>
+                    <button type="button" class="multiselect-trigger" id="btn-campus-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
+                      <span id="label-campus-selected">신촌캠퍼스</span>
+                      <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
                     </button>
+                    <select id="select-campus" style="display: none;">
+                      <option value="">전체</option>
+                      <option value="S" selected>신촌캠퍼스</option>
+                      <option value="G">국제캠퍼스(송도)</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label for="btn-college-trigger">대학(원)</label>
+                    <button type="button" class="multiselect-trigger" id="btn-college-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
+                      <span id="label-college-selected">전체</span>
+                      <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                    </button>
+                    <select id="select-college" style="display: none;">
+                      <!-- Dynamically loaded -->
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label for="btn-dept-trigger">개설학과</label>
+                    <button type="button" class="multiselect-trigger" id="btn-dept-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
+                      <span id="label-dept-selected">전체</span>
+                      <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                    </button>
+                    <select id="select-dept" style="display: none;">
+                      <!-- Dynamically loaded -->
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label for="input-search">과목명/교수명/과목코드</label>
+                    <div class="search-input-wrapper" style="position: relative;">
+                      <input type="text" id="input-search" placeholder="검색어를 입력하세요...">
+                      <i data-lucide="search" class="input-icon"></i>
+                      <button type="button" id="btn-clear-search" style="position: absolute; right: 32px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: none; align-items: center; justify-content: center; transition: color 0.15s ease; z-index: 10;">
+                        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

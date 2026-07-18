@@ -2333,22 +2333,28 @@ function setupEventListeners() {
   const btnSearchWishlist = document.getElementById('btn-search-tab-wishlist');
   const searchGeneralContent = document.getElementById('search-general');
 
-  if (btnSearchGeneral && btnSearchWishlist) {
-    btnSearchGeneral.addEventListener('click', () => {
-      activeSearchTab = 'search-general';
-      btnSearchGeneral.classList.add('active');
-      btnSearchWishlist.classList.remove('active');
-      if (searchGeneralContent) searchGeneralContent.style.display = 'block';
+  function switchSearchTab(tabName) {
+    activeSearchTab = tabName;
+    const filtersInner = document.getElementById('search-filters-inner');
+    if (tabName === 'search-general') {
+      btnSearchGeneral?.classList.add('active');
+      btnSearchWishlist?.classList.remove('active');
+      // Show filter rows
+      if (filtersInner) filtersInner.style.display = '';
       fetchCourses();
-    });
-
-    btnSearchWishlist.addEventListener('click', () => {
-      activeSearchTab = 'search-wishlist';
-      btnSearchWishlist.classList.add('active');
-      btnSearchGeneral.classList.remove('active');
-      if (searchGeneralContent) searchGeneralContent.style.display = 'none';
+    } else {
+      btnSearchWishlist?.classList.add('active');
+      btnSearchGeneral?.classList.remove('active');
+      // Hide filter rows, show wishlist results
+      if (filtersInner) filtersInner.style.display = 'none';
       renderWishlist();
-    });
+    }
+  }
+  window.switchSearchTab = switchSearchTab;
+
+  if (btnSearchGeneral && btnSearchWishlist) {
+    btnSearchGeneral.addEventListener('click', () => switchSearchTab('search-general'));
+    btnSearchWishlist.addEventListener('click', () => switchSearchTab('search-wishlist'));
   }
 
   // Global Quick search tags logic

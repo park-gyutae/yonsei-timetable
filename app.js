@@ -4927,16 +4927,9 @@ function openSyllabusModal(course) {
   const base64Params = btoa(JSON.stringify(paramsObj));
   const url = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
 
-  // Open official portal syllabus popup directly
-  const newWin = window.open(
-    url,
-    `syllabus_${course.code}_${course.division}`,
-    'width=1000,height=850,status=no,toolbar=no,menubar=no,location=no,resizable=yes,scrollbars=yes'
-  );
-
-  if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
-    alert("팝업 차단이 감지되었습니다. 강의계획서 창을 열려면 브라우저 설정에서 팝업 차단을 해제하거나 허용해 주세요.");
-  }
+  // Open in a standard new browser tab (_blank) instead of custom popup window
+  // This bypasses the popup blockers in Chrome/Safari/iOS completely and never prompts warnings!
+  window.open(url, '_blank');
 }
 
 // Open Course Context Action Modal (Floating Course Card Popup)

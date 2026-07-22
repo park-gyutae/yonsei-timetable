@@ -2389,14 +2389,12 @@ body {
     gap: 16px !important;
   }
 
-  /* Put main workspace & tabs FIRST on mobile screens (iPhone 15) */
-  .timetable-panel {
-    order: 1 !important;
-    width: 100% !important;
+  /* Hide redundant sidebar cards on mobile screens (profile accessible via bottom dock, search filters in search tab) */
+  .sidebar-panel {
+    display: none !important;
   }
 
-  .sidebar-panel {
-    order: 2 !important;
+  .timetable-panel {
     width: 100% !important;
   }
 

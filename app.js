@@ -3227,8 +3227,8 @@ function setupEventListeners() {
   // Profile Edit Modal Toggle
   const profileModal = document.getElementById('profile-modal');
 
-  document.getElementById('btn-edit-profile').addEventListener('click', () => {
-    // Fill form values with state
+  window.openProfileModal = function() {
+    if (!profileModal) return;
     document.getElementById('profile-first-major').value = myProfile.firstMajor;
     document.getElementById('profile-second-major').value = myProfile.secondMajor;
     document.getElementById('profile-grade').value = myProfile.grade;
@@ -3245,7 +3245,12 @@ function setupEventListeners() {
     document.getElementById('profile-max-mileage-budget').value = myProfile.maxTotalMileage || (myProfile.firstMajor === 'stats' ? 72 : 76);
     
     profileModal.classList.add('active');
-  });
+  };
+
+  const btnEditProfile = document.getElementById('btn-edit-profile');
+  if (btnEditProfile) {
+    btnEditProfile.addEventListener('click', openProfileModal);
+  }
 
   document.getElementById('btn-close-modal').addEventListener('click', () => {
     profileModal.classList.remove('active');
@@ -3418,9 +3423,8 @@ function setupEventListeners() {
         switchTab(targetTab);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (btn.id === 'btn-mnav-profile') {
-        const profileCard = document.querySelector('.profile-card');
-        if (profileCard) {
-          profileCard.scrollIntoView({ behavior: 'smooth' });
+        if (typeof window.openProfileModal === 'function') {
+          window.openProfileModal();
         }
       }
     });

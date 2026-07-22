@@ -3410,6 +3410,22 @@ function setupEventListeners() {
     });
   });
 
+  const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+  mobileNavBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+      if (targetTab) {
+        switchTab(targetTab);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (btn.id === 'btn-mnav-profile') {
+        const profileCard = document.querySelector('.profile-card');
+        if (profileCard) {
+          profileCard.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    });
+  });
+
   // ── Theme Switcher Event Binding ─────────────────────────────────────────
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   if (btnToggleTheme) {
@@ -3476,6 +3492,12 @@ function setupEventListeners() {
 function switchTab(tabId) {
   const tabButtons = document.querySelectorAll('.tab-btn');
   tabButtons.forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('data-tab') === tabId) {
+      btn.classList.add('active');
+    }
+  const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+  mobileNavBtns.forEach(btn => {
     btn.classList.remove('active');
     if (btn.getAttribute('data-tab') === tabId) {
       btn.classList.add('active');

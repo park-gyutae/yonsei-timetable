@@ -6992,7 +6992,12 @@ function generateShareUrl() {
     const compactData = selectedCourses.map(c => ({
       c: c.code,
       d: c.division || '01',
-      m: c.mileage || 18
+      m: c.mileage || 18,
+      t: c.title || c.name || '',
+      s: c.time || '',
+      r: c.room || '',
+      p: c.professor || '',
+      cr: c.credits || 3
     }));
     
     const jsonStr = JSON.stringify(compactData);
@@ -7032,11 +7037,19 @@ function checkAndImportSharedTimetable() {
     if (countEl) countEl.textContent = compactList.length;
 
     previewEl.innerHTML = compactList.map((item, idx) => {
-      let found = (typeof allCoursesData !== 'undefined' && allCoursesData) ? allCoursesData.find(c => c.code === item.c && (c.division === item.d || !item.d)) : null;
-      let title = found ? (found.title || found.name) : `${item.c} (${item.d}분반)`;
-      return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--border-color);">
-        <span style="font-weight: 600; color: var(--text-primary);">${idx + 1}. [${item.c}-${item.d}] ${title}</span>
-        <span style="color: var(--accent-light); font-weight: 700;">⚡ ${item.m}M</span>
+      let found = (typeof coursesData !== 'undefined' && coursesData) ? coursesData.find(c => c.code === item.c && (c.division === item.d || !item.d)) : null;
+      let title = found ? (found.title || found.name) : (item.t || `${item.c} (${item.d || '01'}분반)`);
+      let timeStr = found ? found.time : (item.s || '');
+      let roomStr = found ? found.room : (item.r || '');
+      return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
+        <div>
+          <div style="font-weight: 600; color: var(--text-primary); font-size: 12.5px;">${idx + 1}. [${item.c}-${item.d || '01'}] ${title}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+            ${timeStr ? `<span style="margin-right: 8px;">🕒 ${timeStr}</span>` : ''}
+            ${roomStr ? `<span>📍 ${roomStr}</span>` : ''}
+          </div>
+        </div>
+        <span style="color: var(--accent-light); font-weight: 700; font-size: 13px;">⚡ ${item.m}M</span>
       </div>`;
     }).join('');
 
@@ -7068,30 +7081,42 @@ async function applyImportedCourses(compactList) {
   const newSelected = [];
 
   for (const item of compactList) {
-    let found = (typeof allCoursesData !== 'undefined' && allCoursesData) ? allCoursesData.find(c => c.code === item.c && (c.division === item.d || !item.d)) : null;
+    let found = (typeof coursesData !== 'undefined' && coursesData) ? coursesData.find(c => c.code === item.c && (c.division === item.d || !item.d)) : null;
     
-    if (!found) {
+    if (!found && item.c) {
       try {
-        const res = await fetch(`/api/search?keyword=${encodeURIComponent(item.c)}`);
+        const res = await fetch(`/api/courses?keyword=${encodeURIComponent(item.c)}`);
         if (res.ok) {
           const resData = await res.json();
-          if (resData.courses && resData.courses.length > 0) {
-            found = resData.courses.find(c => c.code === item.c && (c.division === item.d || !item.d)) || resData.courses[0];
+          const list = Array.isArray(resData) ? resData : (resData.courses || []);
+          if (list.length > 0) {
+            found = list.find(c => c.code === item.c && (c.division === item.d || !item.d)) || list[0];
           }
         }
       } catch (e) {}
     }
 
     if (found) {
-      const courseObj = { ...found, mileage: item.m || found.mileage || 18 };
+      const courseObj = { 
+        ...found, 
+        mileage: item.m || found.mileage || 18,
+        title: found.title || found.name || item.t || found.code,
+        time: found.time || item.s || '',
+        room: found.room || item.r || '',
+        professor: found.professor || item.p || '교수 미지정',
+        credits: found.credits || item.cr || 3
+      };
       newSelected.push(courseObj);
     } else {
       newSelected.push({
         code: item.c,
         division: item.d || '01',
-        title: `공유 과목 (${item.c})`,
-        credits: 3,
-        time: '',
+        title: item.t || `공유 과목 (${item.c})`,
+        name: item.t || `공유 과목 (${item.c})`,
+        credits: item.cr || 3,
+        time: item.s || '',
+        room: item.r || '',
+        professor: item.p || '교수 미지정',
         mileage: item.m || 18,
         color: PALETTE[newSelected.length % PALETTE.length]
       });

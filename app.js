@@ -1250,7 +1250,7 @@ function renderCourses(courses) {
       syllabusBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        openSyllabusModal(c.title, syllabusUrl);
+        openSyllabusModal(c, syllabusUrl);
       });
     }
 
@@ -1817,7 +1817,7 @@ function renderSelectedCoursesList() {
       syllabusBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        openSyllabusModal(c.title, syllabusUrl);
+        openSyllabusModal(c, syllabusUrl);
       });
     }
 
@@ -3544,32 +3544,84 @@ function setupEventListeners() {
     });
   }
 
+  let currentSyllabusCourse = null;
+
+  function generateSyllabusUrl(code, division, year = '2026', semester = '20') {
+    const paramsObj = {
+      sysinstDivCd: "H1",
+      syy: String(year),
+      smtDivCd: String(semester),
+      subjtnb: String(code),
+      corseDvclsNo: String(division)
+    };
+    const base64Params = btoa(JSON.stringify(paramsObj));
+    return `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
+  }
+
   // ── Open Syllabus In-App Popup Modal Function ──────────────────────────
-  window.openSyllabusModal = function(courseTitle, syllabusUrl) {
+  window.openSyllabusModal = function(courseOrTitle, syllabusUrl, courseCode, courseDivision) {
     const modal = document.getElementById('syllabus-modal');
     const iframe = document.getElementById('syllabus-iframe');
     const titleEl = document.getElementById('syllabus-modal-title');
     const extBtn = document.getElementById('btn-syllabus-external');
+    const semSelect = document.getElementById('select-syllabus-semester');
 
     if (!modal || !iframe) {
       window.open(syllabusUrl, '_blank');
       return;
     }
 
-    if (titleEl) {
-      titleEl.textContent = courseTitle ? `${courseTitle} - 강의계획서` : '강의계획서 조회';
+    let title = '강의계획서 조회';
+    let code = courseCode || '';
+    let division = courseDivision || '01';
+
+    if (typeof courseOrTitle === 'object' && courseOrTitle !== null) {
+      currentSyllabusCourse = courseOrTitle;
+      title = courseOrTitle.title;
+      code = courseOrTitle.code;
+      division = courseOrTitle.division;
+    } else if (typeof courseOrTitle === 'string') {
+      title = courseOrTitle;
+      currentSyllabusCourse = { title, code, division };
     }
+
+    if (titleEl) {
+      titleEl.textContent = `${title} - 강의계획서`;
+    }
+
+    if (semSelect) {
+      semSelect.value = '2026-20';
+    }
+
+    const currentUrl = (code && division) ? generateSyllabusUrl(code, division, '2026', '20') : syllabusUrl;
 
     if (extBtn) {
       extBtn.onclick = () => {
-        window.open(syllabusUrl, '_blank');
+        const activeUrl = iframe.src && iframe.src !== 'about:blank' ? iframe.src : currentUrl;
+        window.open(activeUrl, '_blank');
       };
     }
 
-    iframe.src = syllabusUrl;
+    iframe.src = currentUrl;
     modal.classList.add('active');
     if (window.lucide) window.lucide.createIcons();
   };
+
+  // Past Semester Syllabus Dropdown Change Handler
+  const semSelect = document.getElementById('select-syllabus-semester');
+  if (semSelect) {
+    semSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (!val || !currentSyllabusCourse || !currentSyllabusCourse.code) return;
+
+      const [year, semester] = val.split('-');
+      const pastUrl = generateSyllabusUrl(currentSyllabusCourse.code, currentSyllabusCourse.division || '01', year, semester);
+      const iframe = document.getElementById('syllabus-iframe');
+      if (iframe) {
+        iframe.src = pastUrl;
+      }
+    });
+  }
 
   // ── Syllabus Modal Close Event Binding ──────────────────────────────────
   const syllabusModal = document.getElementById('syllabus-modal');

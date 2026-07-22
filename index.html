@@ -930,16 +930,30 @@
   <!-- 4. Course Syllabus Modal -->
   <div class="modal-overlay" id="syllabus-modal">
     <div class="modal-content" style="max-width: 1000px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-      <div class="modal-header" style="padding: 12px 20px; border-bottom: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; background: var(--canvas-elevated);">
+      <div class="modal-header" style="padding: 10px 16px; border-bottom: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; background: var(--canvas-elevated); flex-wrap: wrap; gap: 8px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="book-open" style="color: var(--primary); width: 18px; height: 18px;"></i>
+          <i data-lucide="book-open" style="color: var(--accent-light, #0070f3); width: 18px; height: 18px;"></i>
           <h2 id="syllabus-modal-title" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">강의계획서 조회</h2>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <button id="btn-syllabus-external" style="font-size: 11px; padding: 5px 10px; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; border: 1px solid var(--hairline); cursor: pointer; background: var(--canvas-soft); color: var(--text-secondary); transition: all 0.15s; font-weight: 500;">
-            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i> 새 창으로 열기
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <!-- Past Semester Select Dropdown -->
+          <div style="display: flex; align-items: center; gap: 4px; background: var(--canvas-soft); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <i data-lucide="calendar" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
+            <select id="select-syllabus-semester" style="font-size: 11px; font-weight: 600; background: transparent; border: none; color: var(--text-primary); cursor: pointer; outline: none; padding: 1px 2px;">
+              <option value="2026-20" selected>2026학년도 2학기 (최신)</option>
+              <option value="2026-10">2026학년도 1학기</option>
+              <option value="2025-20">2025학년도 2학기</option>
+              <option value="2025-10">2025학년도 1학기</option>
+              <option value="2024-20">2024학년도 2학기</option>
+              <option value="2024-10">2024학년도 1학기</option>
+              <option value="2023-20">2023학년도 2학기</option>
+              <option value="2023-10">2023학년도 1학기</option>
+            </select>
+          </div>
+          <button id="btn-syllabus-external" title="새 창으로 열기" style="font-size: 11px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; border: 1px solid var(--hairline); cursor: pointer; background: var(--canvas-soft); color: var(--text-secondary); transition: all 0.15s; font-weight: 500;">
+            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i> 새 창
           </button>
-          <button class="btn-close" id="btn-close-syllabus-modal" style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; display: inline-flex; align-items: center; transition: color 0.15s;">
+          <button class="btn-close" id="btn-close-syllabus-modal" style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; display: inline-flex; align-items: center;">
             <i data-lucide="x" style="width: 18px; height: 18px;"></i>
           </button>
         </div>
@@ -1226,6 +1240,6 @@
   </nav>
 
   <!-- JavaScript file -->
-  <script src="app.js?v=1.4.4"></script>
+  <script src="app.js?v=1.4.5"></script>
 </body>
 </html>

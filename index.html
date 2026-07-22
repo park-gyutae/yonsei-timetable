@@ -128,7 +128,22 @@
                 <div style="display: flex; border-bottom: 1px solid var(--border-color);">
                   <button type="button" class="search-tab-btn active" id="btn-search-tab-general" style="flex: 1;">일반 검색</button>
                   <button type="button" class="search-tab-btn" id="btn-search-tab-wishlist" style="flex: 1;">⭐ 장바구니</button>
+                  <button type="button" class="search-tab-btn affiliated-tab-btn" id="btn-search-tab-affiliated" style="flex: 1; font-size: 10.5px;">🎓 연계전공</button>
                 </div>
+                <!-- Affiliated Major Panel (hidden by default) -->
+                <div id="affiliated-major-panel" style="display: none; padding: 10px 12px; border-bottom: 1px solid var(--border-color); background: linear-gradient(135deg, rgba(124,58,237,0.06) 0%, rgba(124,58,237,0.02) 100%);">
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <i data-lucide="graduation-cap" style="width: 14px; height: 14px; color: #7c3aed; flex-shrink: 0;"></i>
+                    <span style="font-size: 11px; font-weight: 700; color: #7c3aed;">연계전공 전용 검색</span>
+                    <span style="font-size: 10px; color: var(--text-muted);">— 전공 인정 과목만 표시</span>
+                  </div>
+                  <select id="select-affiliated-major" style="width: 100%; font-size: 11px; border: 1.5px solid rgba(124,58,237,0.4); border-radius: 5px; background: var(--canvas-card); color: var(--text-primary); padding: 5px 8px; cursor: pointer; outline: none; transition: border-color 0.15s;">
+                    <option value="">— 연계전공 선택 —</option>
+                    <option value="cognitive">🧠 인지과학</option>
+                  </select>
+                  <div id="affiliated-major-info" style="margin-top: 7px; font-size: 10.5px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-height: 16px;"></div>
+                </div>
+
                 <!-- General filter grid -->
                 <div style="padding: 6px 12px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; background: var(--canvas-soft); flex-wrap: wrap;">
                   <button type="button" id="btn-toggle-no-conflict" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; gap: 5px; font-weight: 600; transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;">

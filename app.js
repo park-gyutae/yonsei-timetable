@@ -89,6 +89,127 @@ let wishlist = [];            // Starred courses (Wishlist sandbox)
 let activeSearchTab = 'search-general'; // Tracks active search sub-tab
 let filterNoConflict = false;  // 공강만 필터: 시간표 충돌 없는 과목만 표시
 let currentSortKey = 'default'; // 과목 목록 정렬 기준
+let activeAffiliatedMajor = null; // 선택된 연계전공 key (null이면 비활성)
+
+// ─── 연계전공 데이터 ──────────────────────────────────────────────────────────
+// 각 연계전공에서 전공으로 인정되는 과목 코드 목록
+const AFFILIATED_MAJORS = {
+  "cognitive": {
+    name: "인지과학",
+    emoji: "🧠",
+    color: "#7c3aed",
+    description: "총 36학점 이수 필요. 인지과학입문(COG3101) 필수.",
+    required: ["COG3101"],
+    codes: [
+      // 인지과학 전공
+      "COG3101", "COG3102", "COG3104", "COG3105", "COG4101",
+      // 디지털예술학
+      "FIL3102", "FIL3107", "FIL4102",
+      // 공과대학
+      "ENG2009", "ENG3016", "ENG3011",
+      // 벤처학
+      "VEN3105",
+      // 심리학
+      "PSY2105", "PSY3122", "PSY2110", "PSY3102", "PSY3103", "PSY3105",
+      "PSY3109", "PSY3111", "PSY3126", "PSY3137", "PSY3146", "PSY3163",
+      "PSY3164", "PSY4113", "PSY4121", "PSY4122", "PSY4123", "PSY4125",
+      "PSY4126", "PSY4127", "PSY4130", "PSY4132", "PSY4136", "PSY4141",
+      "PSY4143", "PSY4145", "PSY4146",
+      // 영어영문학
+      "ELL2101", "ELL3301",
+      "ELL3402", "ELL3915", "ELL3923", "ELL3936", "ELL4241", "ELL4305",
+      // 국어국문학
+      "KOR2301", "KOR3104", "KOR3404", "KOR3410", "KOR3414", "KOR3512",
+      "KOR3520", "KOR3535", "KOR4202",
+      // 불어불문학
+      "FRE2102", "FRE4540",
+      // 노어노문학
+      "RUS2133",
+      // 독어독문학
+      "GER2114", "GER2116", "GER3107", "GER3108",
+      // 문헌정보학
+      "LIS1102", "LIS2403", "LIS2804", "LIS2810", "LIS2812", "LIS3701",
+      "LIS3806", "LIS3808", "LIS3813", "LIS4701", "LIS4703", "LIS4704",
+      "LIS4803", "LIS4809", "LIS4810", "LIS4811", "LIS4813",
+      // 철학
+      "PHI1001", "PHI2256", "PHI2259", "PHI3264", "PHI3369", "PHI4203",
+      "PHI4205", "PHI4210", "PHI4265", "PHI4270",
+      // 문화인류학
+      "ANT1001", "ANT2109", "ANT2305", "ANT3112", "ANT3307", "ANT4103", "ANT4202",
+      // 문화비중학 / 생물대중
+      "CUL3101", "CNT4115", "CNT4117",
+      // 언론홍보
+      "COM2105", "COM2107", "COM3106", "COM3117", "COM3134", "COM3156",
+      "COM3164", "COM4200", "COM4205", "COM4206", "COM4217",
+      // 사회학
+      "SOC1002", "SOC2103", "SOC3601", "SOC3801", "SOC4703",
+      // 체육교육
+      "PED2502", "PED2504",
+      // 로과대학
+      "HUM2038", "HUM2039", "HUM2040", "HUM2041", "HUM3006",
+      // 한국학
+      "EOS3108",
+      // 경영학
+      "BIZ3189", "BIZ1102", "BIZ2101", "BIZ2121", "BIZ2122", "BIZ3117",
+      "BIZ3126", "BIZ3127", "BIZ3163", "BIZ3166", "BIZ3167", "BIZ3198",
+      "BIZ4142", "BIZ4167", "BIZ4185", "BIZ4192", "BIZ4194", "BIZ4195",
+      // 경제학
+      "ECO1103", "ECO1104", "ECO3101", "ECO4866",
+      // 교육학
+      "EDU4119", "EDU4138",
+      // 아동가족학
+      "CFS3132", "CFS3134", "CFS3138",
+      // 응용통계
+      "STA3126", "STA2103", "STA1002", "STA2102", "STA2104", "STA2105",
+      "STA2005", "STA3110", "STA3125", "STA3133", "STA3140", "STA3145",
+      // 인공지능 (대학원)
+      "AAI5003",
+      // 인공지능 (학부)
+      "AAB3120",
+      // AI / 컴퓨터융합
+      "CAS1102", "CCO1102", "CAS2103", "CCO2103",
+      "AIC2100", "AIC2110", "AIC2120", "AIC2130", "AIC3100", "AIC3110",
+      "CAS1100", "CCO100", "CSI4121",
+      // 신학
+      "THE3909",
+      // 통합디자인
+      "DSN3107", "DSN3108", "DSN3110", "DSN3120", "DSN3122", "DSN3128",
+      "DSN3134", "DSN4120",
+      // 실내건축학
+      "HID2102", "HID3112", "HID3119", "HID4115",
+      // 교직
+      "TTP2006",
+      // 시스템생물학 / 생물학
+      "BIO3101", "BIO3112", "BIO3712", "BIO3107", "BIO3121", "BIO3716",
+      // 생명공학
+      "BTE3101", "BTE3102", "BTE2703", "BTE2702", "BTE3105", "BTE3607", "BTE4609",
+      // 화학
+      "CHE2103",
+      // 생화학
+      "BCH3109", "BCH3104", "BCH3123",
+      // 이과대학
+      "SCD002",
+      // LSB
+      "LSB3101", "LSB3102", "LSB3202",
+      // 산업공학
+      "IIE2101", "IIE2102", "IIE2107", "IIE3104", "IIE3107", "IIE4101",
+      "IIE4102", "IIE4106", "IIE4115", "IIE4123",
+      // 컴퓨터과학
+      "CSI2106", "CSI2109", "CSI2111", "CSI3103", "CSI3105", "CSI3109",
+      "CSI4106", "CSI4107", "CSI4108", "CSI4109",
+      // 수학
+      "MAT2102", "MAT2103", "MAT2106", "MAT2014", "MAT3111", "MAT3114",
+      "MAT3122", "MAT3123",
+      // 정치외교학
+      "POL4134", "POL4839"
+    ]
+  }
+};
+// 연계전공 코드 목록을 Set으로 변환 (빠른 lookup용)
+const AFFILIATED_MAJOR_CODE_SETS = {};
+Object.keys(AFFILIATED_MAJORS).forEach(key => {
+  AFFILIATED_MAJOR_CODE_SETS[key] = new Set(AFFILIATED_MAJORS[key].codes);
+});
 
 // DJB2 문자열 해싱 헬퍼 (글자 한 자만 달라져도 색조가 겹치지 않고 완전히 분산되도록 보장)
 function getHashCode(str) {
@@ -492,7 +613,12 @@ function renderCourses(courses) {
 
   // Filter courses by search query and advanced options
   const filtered = courses.filter(c => {
-    // 1. Text Search matching
+    // 0. Affiliated Major filter (연계전공 모드)
+    if (activeAffiliatedMajor) {
+      const codeSet = AFFILIATED_MAJOR_CODE_SETS[activeAffiliatedMajor];
+      if (codeSet && !codeSet.has(String(c.code || '').trim())) return false;
+    }
+
     // 1. Text Search matching
     const titleStr = String(c.title || '').toLowerCase();
     const codeStr = String(c.code || '').toLowerCase();
@@ -2391,34 +2517,65 @@ function setupEventListeners() {
     }
   });
 
-  // Search sub-tabs switcher (General vs Wishlist)
+  // Search sub-tabs switcher (General / Wishlist / Affiliated Major)
   const btnSearchGeneral = document.getElementById('btn-search-tab-general');
   const btnSearchWishlist = document.getElementById('btn-search-tab-wishlist');
+  const btnSearchAffiliated = document.getElementById('btn-search-tab-affiliated');
   const searchGeneralContent = document.getElementById('search-general');
 
   function switchSearchTab(tabName) {
     activeSearchTab = tabName;
     const filtersInner = document.getElementById('search-filters-inner');
+    const affiliatedPanel = document.getElementById('affiliated-major-panel');
+
+    // Reset all tab buttons
+    [btnSearchGeneral, btnSearchWishlist, btnSearchAffiliated].forEach(b => b?.classList.remove('active'));
+
     if (tabName === 'search-general') {
       btnSearchGeneral?.classList.add('active');
-      btnSearchWishlist?.classList.remove('active');
-      // Show filter rows
+      activeAffiliatedMajor = null; // Clear affiliated filter
+      // Show filter rows, hide affiliated panel
       if (filtersInner) filtersInner.style.display = '';
+      if (affiliatedPanel) affiliatedPanel.style.display = 'none';
       fetchCourses();
+    } else if (tabName === 'search-affiliated') {
+      btnSearchAffiliated?.classList.add('active');
+      // Hide general filter rows, show affiliated panel
+      if (filtersInner) filtersInner.style.display = 'none';
+      if (affiliatedPanel) affiliatedPanel.style.display = '';
+      renderAffiliatedMajorPanel();
     } else {
       btnSearchWishlist?.classList.add('active');
-      btnSearchGeneral?.classList.remove('active');
+      activeAffiliatedMajor = null;
       // Hide filter rows, show wishlist results
       if (filtersInner) filtersInner.style.display = 'none';
+      if (affiliatedPanel) affiliatedPanel.style.display = 'none';
       renderWishlist();
     }
   }
   window.switchSearchTab = switchSearchTab;
 
-  if (btnSearchGeneral && btnSearchWishlist) {
-    btnSearchGeneral.addEventListener('click', () => switchSearchTab('search-general'));
-    btnSearchWishlist.addEventListener('click', () => switchSearchTab('search-wishlist'));
-  }
+  if (btnSearchGeneral) btnSearchGeneral.addEventListener('click', () => switchSearchTab('search-general'));
+  if (btnSearchWishlist) btnSearchWishlist.addEventListener('click', () => switchSearchTab('search-wishlist'));
+  if (btnSearchAffiliated) btnSearchAffiliated.addEventListener('click', () => switchSearchTab('search-affiliated'));
+
+  // Affiliated major selector change handler
+  document.addEventListener('change', (e) => {
+    if (e.target.id === 'select-affiliated-major') {
+      const val = e.target.value;
+      activeAffiliatedMajor = val || null;
+      if (activeAffiliatedMajor) {
+        // Fetch all courses (no college/dept restriction) and filter by affiliated major codes
+        fetchCoursesForAffiliatedMajor();
+      } else {
+        const listContainer = document.getElementById('search-results-list');
+        const countLabel = document.getElementById('results-count');
+        if (listContainer) listContainer.innerHTML = '<div class="list-placeholder"><i data-lucide="graduation-cap"></i><p>연계전공을 선택하면<br>인정 과목 목록이 표시됩니다.</p></div>';
+        lucide.createIcons();
+        if (countLabel) countLabel.textContent = '';
+      }
+    }
+  });
 
   // Global Quick search tags logic
   window.applyQuickSearch = function(keyword) {
@@ -5749,8 +5906,94 @@ function clearWishlist() {
 }
 
 
+// ─── 연계전공 탭 UI 렌더 ─────────────────────────────────────────────────────
+function renderAffiliatedMajorPanel() {
+  const panel = document.getElementById('affiliated-major-panel');
+  if (!panel) return;
+  // Panel content is static HTML; just make sure result area shows appropriate state
+  const val = document.getElementById('select-affiliated-major')?.value || '';
+  if (val) {
+    activeAffiliatedMajor = val;
+    fetchCoursesForAffiliatedMajor();
+  } else {
+    const listContainer = document.getElementById('search-results-list');
+    const countLabel = document.getElementById('results-count');
+    if (listContainer) {
+      listContainer.innerHTML = `
+        <div class="list-placeholder">
+          <i data-lucide="graduation-cap" style="color: #7c3aed;"></i>
+          <p>연계전공을 선택하면<br><span style="font-size: 11.5px; color: var(--text-muted); display: block; margin-top: 4px;">해당 전공으로 인정되는 과목만 표시됩니다.</span></p>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+    if (countLabel) countLabel.textContent = '';
+  }
+}
+
+// 연계전공 전용 과목 fetch: 캠퍼스 필터만 유지, college/dept 무시하고 전체 과목에서 코드 기반 필터링
+async function fetchCoursesForAffiliatedMajor() {
+  if (!activeAffiliatedMajor) return;
+  const major = AFFILIATED_MAJORS[activeAffiliatedMajor];
+  if (!major) return;
+
+  const listContainer = document.getElementById('search-results-list');
+  const countLabel = document.getElementById('results-count');
+  const campus = document.getElementById('select-campus')?.value || 'S';
+
+  // Show loading
+  if (listContainer) {
+    listContainer.innerHTML = `
+      <div class="list-placeholder">
+        <i data-lucide="loader-2" class="spin"></i>
+        <p>${major.emoji} ${major.name} 연계전공 인정 과목을 불러오는 중...</p>
+      </div>
+    `;
+    lucide.createIcons();
+  }
+
+  // Fetch all courses (no college/dept filter) and filter by the major's code set
+  const lsKey = `courses__${campus}`;
+  let allCourses = lsGet(lsKey, 'courses');
+
+  if (!allCourses) {
+    try {
+      const response = await fetch(`/api/courses?college=&dept=&campus=${campus}`);
+      const data = await response.json();
+      if (data.success) {
+        allCourses = data.courses;
+        lsSet(lsKey, allCourses);
+      } else {
+        if (listContainer) listContainer.innerHTML = `<div class="list-placeholder"><i data-lucide="alert-triangle" style="color: var(--danger)"></i><p>데이터 로딩 실패: ${data.error}</p></div>`;
+        lucide.createIcons();
+        return;
+      }
+    } catch (err) {
+      if (listContainer) listContainer.innerHTML = `<div class="list-placeholder"><i data-lucide="alert-triangle" style="color: var(--danger)"></i><p>네트워크 오류가 발생했습니다.</p></div>`;
+      lucide.createIcons();
+      return;
+    }
+  }
+
+  // Update coursesData with all courses so renderCourses can work
+  coursesData = allCourses;
+  renderCourses(coursesData);
+
+  // Update badge/info text
+  const codeSet = AFFILIATED_MAJOR_CODE_SETS[activeAffiliatedMajor];
+  const matchCount = allCourses.filter(c => codeSet && codeSet.has(String(c.code || '').trim())).length;
+  const infoEl = document.getElementById('affiliated-major-info');
+  if (infoEl) {
+    infoEl.innerHTML = `
+      <span style="color: #7c3aed; font-weight: 700;">${major.emoji} ${major.name}</span>
+      <span style="margin-left: 8px; color: var(--text-muted);">인정 과목 ${matchCount}개 개설 확인</span>
+      ${major.required && major.required.length > 0 ? `<span style="margin-left: 8px; background: rgba(124,58,237,0.12); color: #7c3aed; padding: 1px 7px; border-radius: 4px; font-size: 10.5px; font-weight: 600;">필수: ${major.required.join(', ')}</span>` : ''}
+    `;
+  }
+}
 
 // Render Starred wishlist sandbox courses
+
 function renderWishlist() {
   const listContainer = document.getElementById('search-results-list');
   const countLabel = document.getElementById('results-count');

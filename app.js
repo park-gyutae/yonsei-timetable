@@ -7111,6 +7111,18 @@ async function applyImportedCourses(compactList) {
   }
 }
 
+const CANVAS_COURSE_GRADIENTS = [
+  { start: '#6366f1', end: '#4f46e5', border: '#818cf8', text: '#ffffff' }, // Indigo
+  { start: '#0ea5e9', end: '#0284c7', border: '#38bdf8', text: '#ffffff' }, // Sky Blue
+  { start: '#10b981', end: '#059669', border: '#34d399', text: '#ffffff' }, // Emerald
+  { start: '#8b5cf6', end: '#7c3aed', border: '#a78bfa', text: '#ffffff' }, // Purple
+  { start: '#f59e0b', end: '#d97706', border: '#fbbf24', text: '#ffffff' }, // Amber
+  { start: '#ec4899', end: '#db2777', border: '#f472b6', text: '#ffffff' }, // Pink
+  { start: '#06b6d4', end: '#0891b2', border: '#22d3ee', text: '#ffffff' }, // Cyan
+  { start: '#84cc16', end: '#65a30d', border: '#a3e635', text: '#ffffff' }, // Lime
+  { start: '#f97316', end: '#ea580c', border: '#fb923c', text: '#ffffff' }  // Orange
+];
+
 function exportTimetableAsImage() {
   if (!selectedCourses || selectedCourses.length === 0) {
     showToast('시간표에 과목이 없습니다. 과목을 추가한 후 저장하세요.', 'alert-triangle');
@@ -7121,115 +7133,199 @@ function exportTimetableAsImage() {
   const ctx = canvas.getContext('2d');
   
   const width = 1200;
-  const padding = 40;
-  const headerHeight = 120;
+  const padding = 36;
+  const headerHeight = 124;
   
   const { activeDays, maxPeriod } = getActiveTimetableLimits();
   const dayCount = activeDays.length;
   
-  const timeColWidth = 100;
+  const timeColWidth = 110;
   const gridWidth = width - (padding * 2) - timeColWidth;
   const colWidth = gridWidth / dayCount;
-  const rowHeight = 54;
+  const rowHeight = 58;
   const gridHeight = (maxPeriod + 1) * rowHeight;
   
   const onlineCourses = selectedCourses.filter(c => !c.time || c.time.includes('동영상') || c.time.includes('인터넷'));
-  const onlineSectionHeight = onlineCourses.length > 0 ? 80 + (onlineCourses.length * 36) : 0;
+  const onlineSectionHeight = onlineCourses.length > 0 ? 84 + (onlineCourses.length * 36) : 0;
   
-  const totalHeight = headerHeight + gridHeight + onlineSectionHeight + padding + 60;
+  const totalHeight = padding + headerHeight + 16 + gridHeight + onlineSectionHeight + padding + 40;
   
   const scale = 2;
   canvas.width = width * scale;
   canvas.height = totalHeight * scale;
   ctx.scale(scale, scale);
 
-  // Background
-  ctx.fillStyle = '#0b1329';
+  // 1. Premium Dark Gradient Background
+  const bgGrad = ctx.createLinearGradient(0, 0, width, totalHeight);
+  bgGrad.addColorStop(0, '#090d16');
+  bgGrad.addColorStop(0.5, '#0f172a');
+  bgGrad.addColorStop(1, '#151c2e');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, totalHeight);
 
-  // Header Box
-  ctx.fillStyle = '#1e293b';
+  // Subtle background dot grid overlay
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+  for (let gx = 20; gx < width; gx += 40) {
+    for (let gy = 20; gy < totalHeight; gy += 40) {
+      ctx.beginPath();
+      ctx.arc(gx, gy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 2. Glassmorphism Header Box
+  ctx.fillStyle = '#172033';
   ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(padding, padding, width - padding * 2, headerHeight - 20, 16);
-  else ctx.fillRect(padding, padding, width - padding * 2, headerHeight - 20);
+  if (ctx.roundRect) ctx.roundRect(padding, padding, width - padding * 2, headerHeight, 16);
+  else ctx.fillRect(padding, padding, width - padding * 2, headerHeight);
   ctx.fill();
 
-  // Header Title & Subtitle
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('연세대학교 마일리지 시간표', padding + 24, padding + 42);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
-  const totalCredits = selectedCourses.reduce((s, c) => s + (c.credits || 3), 0);
-  const totalMileage = selectedCourses.reduce((s, c) => s + (c.mileage || 0), 0);
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText(`2026학년도 2학기 • ${selectedCourses.length}개 과목 • 총 ${totalCredits}학점 • ${totalMileage}마일리지 배분`, padding + 24, padding + 70);
-
-  // Logo Pill
-  ctx.fillStyle = '#3b82f6';
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(width - padding - 180, padding + 24, 150, 36, 18);
-  else ctx.fillRect(width - padding - 180, padding + 24, 150, 36);
-  ctx.fill();
+  // Header Title & Active Plan Badge
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('연세대학교 수강신청 마일리지 시간표', padding + 24, padding + 42);
+
+  // Active Plan Badge Pill
+  const currentPlan = timetables.find(t => t.id === activeTimetableId);
+  const planNameStr = currentPlan ? currentPlan.name : '플랜 A (1안)';
+
+  ctx.fillStyle = 'rgba(124, 58, 237, 0.25)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(padding + 430, padding + 22, 130, 26, 13);
+  else ctx.fillRect(padding + 430, padding + 22, 130, 26);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(167, 139, 250, 0.5)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#c4b5fd';
+  ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Yonsei Timetable', width - padding - 105, padding + 47);
+  ctx.fillText(planNameStr, padding + 495, padding + 39);
   ctx.textAlign = 'left';
 
-  // Grid Header
-  const gridStartY = padding + headerHeight;
-  ctx.fillStyle = '#1e293b';
-  ctx.fillRect(padding, gridStartY, timeColWidth, rowHeight);
-  ctx.strokeStyle = '#334155';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(padding, gridStartY, timeColWidth, rowHeight);
+  // Stats Badges Row (3 Stat Pills)
+  const totalCredits = selectedCourses.reduce((s, c) => s + (c.credits || 3), 0);
+  const totalMileage = selectedCourses.reduce((s, c) => s + (c.mileage || 0), 0);
+
+  const drawPill = (x, y, text, bgColor, textColor, borderColor) => {
+    ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    const textWidth = ctx.measureText(text).width;
+    const pillW = textWidth + 24;
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, pillW, 28, 14);
+    else ctx.fillRect(x, y, pillW, 28);
+    ctx.fill();
+    if (borderColor) {
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.fillStyle = textColor;
+    ctx.fillText(text, x + 12, y + 18);
+    return pillW;
+  };
+
+  let startX = padding + 24;
+  const pillY = padding + 68;
+  startX += drawPill(startX, pillY, `📚 2026-2학기`, 'rgba(255, 255, 255, 0.08)', '#94a3b8', 'rgba(255, 255, 255, 0.1)') + 8;
+  startX += drawPill(startX, pillY, `📌 ${selectedCourses.length}개 과목`, 'rgba(59, 130, 246, 0.2)', '#60a5fa', 'rgba(59, 130, 246, 0.4)') + 8;
+  startX += drawPill(startX, pillY, `🎓 ${totalCredits}학점`, 'rgba(16, 185, 129, 0.2)', '#34d399', 'rgba(16, 185, 129, 0.4)') + 8;
+  drawPill(startX, pillY, `⚡ ${totalMileage} 마일리지`, 'rgba(245, 158, 11, 0.2)', '#fbbf24', 'rgba(245, 158, 11, 0.4)');
+
+  // Top Right Branding
+  ctx.fillStyle = '#0070f3';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(width - padding - 170, padding + 22, 146, 36, 18);
+  else ctx.fillRect(width - padding - 170, padding + 22, 146, 36);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('YONSEI TIMETABLE', width - padding - 97, padding + 45);
+  ctx.textAlign = 'left';
+
+  // 3. Grid Day Headers
+  const gridStartY = padding + headerHeight + 16;
+  
+  // Time Corner Cell
+  ctx.fillStyle = '#172033';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(padding, gridStartY, timeColWidth, rowHeight, [12, 0, 0, 0]);
+  else ctx.fillRect(padding, gridStartY, timeColWidth, rowHeight);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.stroke();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('교시 / 시간', padding + (timeColWidth / 2), gridStartY + 34);
 
   activeDays.forEach((day, idx) => {
     const x = padding + timeColWidth + (idx * colWidth);
-    ctx.fillStyle = '#1e293b';
-    ctx.fillRect(x, gridStartY, colWidth, rowHeight);
-    ctx.strokeRect(x, gridStartY, colWidth, rowHeight);
+    ctx.fillStyle = '#172033';
+    ctx.beginPath();
+    const radius = (idx === activeDays.length - 1) ? [0, 12, 0, 0] : 0;
+    if (ctx.roundRect) ctx.roundRect(x, gridStartY, colWidth, rowHeight, radius);
+    else ctx.fillRect(x, gridStartY, colWidth, rowHeight);
+    ctx.fill();
 
-    ctx.fillStyle = '#f1f5f9';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.stroke();
+
+    ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(day, x + (colWidth / 2), gridStartY + 33);
+    ctx.fillText(day, x + (colWidth / 2), gridStartY + 35);
   });
   ctx.textAlign = 'left';
 
-  // Time Rows
+  // 4. Time Rows & Grid Background
   const periodTimes = [
-    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '18:55', '19:50', '20:45', '21:40'
+    '09:00~09:50', '10:00~10:50', '11:00~11:50', '12:00~12:50', 
+    '13:00~13:50', '14:00~14:50', '15:00~15:50', '16:00~16:50', 
+    '17:00~17:50', '18:00~18:50', '18:55~19:45', '19:50~20:40', '20:45~21:35', '21:40~22:30'
   ];
 
   for (let p = 1; p <= maxPeriod; p++) {
     const y = gridStartY + (p * rowHeight);
-    ctx.fillStyle = '#0f172a';
+    
+    // Time Column
+    ctx.fillStyle = '#111827';
     ctx.fillRect(padding, y, timeColWidth, rowHeight);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.strokeRect(padding, y, timeColWidth, rowHeight);
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#cbd5e1';
     ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(`${p}교시`, padding + 14, y + 26);
+    ctx.fillText(`${p}교시`, padding + 12, y + 26);
     ctx.fillStyle = '#64748b';
-    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(periodTimes[p - 1] || '', padding + 14, y + 43);
+    ctx.font = '10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(periodTimes[p - 1] || '', padding + 12, y + 44);
 
+    // Day Grid Cells
     activeDays.forEach((_, idx) => {
       const x = padding + timeColWidth + (idx * colWidth);
-      ctx.fillStyle = (p % 2 === 0) ? '#0f172a' : '#141e33';
+      ctx.fillStyle = (p % 2 === 0) ? '#0f172a' : '#131d31';
       ctx.fillRect(x, y, colWidth, rowHeight);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.strokeRect(x, y, colWidth, rowHeight);
     });
   }
 
-  // Course Blocks
+  // 5. Draw Sleek Course Cards (Unique Color Gradients per Course)
   const dayIndexMap = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5 };
 
-  selectedCourses.forEach(c => {
+  selectedCourses.forEach((c, courseIdx) => {
     const parsedSlots = parseTimeSlots(c.time);
     if (!parsedSlots || parsedSlots.length === 0) return;
+
+    const gradTheme = CANVAS_COURSE_GRADIENTS[courseIdx % CANVAS_COURSE_GRADIENTS.length];
 
     const dayGroups = {};
     parsedSlots.forEach(s => {
@@ -7250,41 +7346,61 @@ function exportTimetableAsImage() {
         if (i < periods.length && periods[i] === periods[i - 1] + 1) {
           countP++;
         } else {
-          const blockX = padding + timeColWidth + (dayIdx * colWidth) + 3;
-          const blockY = gridStartY + (startP * rowHeight) + 3;
-          const blockW = colWidth - 6;
-          const blockH = (countP * rowHeight) - 6;
+          const blockX = padding + timeColWidth + (dayIdx * colWidth) + 4;
+          const blockY = gridStartY + (startP * rowHeight) + 4;
+          const blockW = colWidth - 8;
+          const blockH = (countP * rowHeight) - 8;
 
-          const cardBg = c.color || '#3b82f6';
-          ctx.fillStyle = cardBg;
+          // Block Fill Gradient
+          const cardGrad = ctx.createLinearGradient(blockX, blockY, blockX + blockW, blockY + blockH);
+          cardGrad.addColorStop(0, gradTheme.start);
+          cardGrad.addColorStop(1, gradTheme.end);
+
+          ctx.fillStyle = cardGrad;
           ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(blockX, blockY, blockW, blockH, 8);
+          if (ctx.roundRect) ctx.roundRect(blockX, blockY, blockW, blockH, 10);
           else ctx.fillRect(blockX, blockY, blockW, blockH);
           ctx.fill();
 
-          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-          ctx.lineWidth = 1;
+          // Block Border Glow
+          ctx.strokeStyle = gradTheme.border;
+          ctx.lineWidth = 1.5;
           ctx.stroke();
 
+          // Course Title
           ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
           let titleStr = c.title || c.name || c.code;
-          if (titleStr.length > 11 && blockW < 130) {
-            titleStr = titleStr.slice(0, 10) + '…';
+          if (titleStr.length > 12 && blockW < 135) {
+            titleStr = titleStr.slice(0, 11) + '…';
           }
-          ctx.fillText(titleStr, blockX + 8, blockY + 20);
+          ctx.fillText(titleStr, blockX + 10, blockY + 22);
 
-          if (blockH > 35) {
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          // Room & Division Badge
+          if (blockH > 38) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(blockX + 8, blockY + 28, Math.min(blockW - 16, 120), 20, 5);
+            else ctx.fillRect(blockX + 8, blockY + 28, Math.min(blockW - 16, 120), 20);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
             ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillText(`[${c.division || '01'}] ${c.room || ''}`, blockX + 8, blockY + 36);
+            ctx.fillText(`[${c.division || '01'}] ${c.room || ''}`, blockX + 12, blockY + 42);
           }
 
-          if (blockH > 55 && c.mileage) {
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+          // Mileage Badge Pill
+          if (blockH > 60 && c.mileage) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(blockX + 8, blockY + 52, Math.min(blockW - 16, 110), 20, 10);
+            else ctx.fillRect(blockX + 8, blockY + 52, Math.min(blockW - 16, 110), 20);
+            ctx.fill();
+
+            ctx.fillStyle = '#fde047';
             ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            ctx.fillText(`⚡ ${c.mileage} 마일리지`, blockX + 8, blockY + 52);
+            ctx.fillText(`⚡ ${c.mileage} 마일리지`, blockX + 14, blockY + 66);
           }
 
           if (i < periods.length) {
@@ -7296,22 +7412,25 @@ function exportTimetableAsImage() {
     });
   });
 
-  // Online Section
+  // 6. Online Section Card
   if (onlineCourses.length > 0) {
-    const onlineY = gridStartY + ((maxPeriod + 1) * rowHeight) + 20;
-    ctx.fillStyle = '#1e293b';
+    const onlineY = gridStartY + ((maxPeriod + 1) * rowHeight) + 16;
+    ctx.fillStyle = '#172033';
     ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(padding, onlineY, width - padding * 2, onlineSectionHeight - 20, 12);
-    else ctx.fillRect(padding, onlineY, width - padding * 2, onlineSectionHeight - 20);
+    if (ctx.roundRect) ctx.roundRect(padding, onlineY, width - padding * 2, onlineSectionHeight - 16, 14);
+    else ctx.fillRect(padding, onlineY, width - padding * 2, onlineSectionHeight - 16);
     ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     ctx.fillStyle = '#f8fafc';
     ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('💻 시간표 외 동영상/인터넷 강좌', padding + 16, onlineY + 30);
+    ctx.fillText('💻 시간표 외 동영상 / 인터넷 강좌', padding + 18, onlineY + 30);
 
     onlineCourses.forEach((c, idx) => {
-      const itemY = onlineY + 52 + (idx * 32);
-      ctx.fillStyle = '#334155';
+      const itemY = onlineY + 50 + (idx * 32);
+      ctx.fillStyle = '#0f172a';
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(padding + 16, itemY - 16, width - padding * 2 - 32, 28, 6);
       else ctx.fillRect(padding + 16, itemY - 16, width - padding * 2 - 32, 28);
@@ -7320,22 +7439,23 @@ function exportTimetableAsImage() {
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.fillText(`[${c.code}-${c.division || '01'}] ${c.title || c.name} (${c.credits || 3}학점)`, padding + 26, itemY + 2);
-      ctx.fillStyle = '#60a5fa';
-      ctx.fillText(`${c.mileage || 0} 마일리지`, width - padding - 120, itemY + 2);
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`⚡ ${c.mileage || 0} 마일리지`, width - padding - 130, itemY + 2);
     });
   }
 
-  // Footer Watermark
-  const footerY = totalHeight - 25;
+  // 7. Footer Watermark
+  const footerY = totalHeight - 20;
   ctx.fillStyle = '#64748b';
   ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Yonsei Timetable Planner • 생성일시: ' + new Date().toLocaleDateString('ko-KR'), width / 2, footerY);
+  ctx.fillText(`Yonsei Timetable Planner • 생성일시: ${new Date().toLocaleDateString('ko-KR')} • https://yonsei-timetable.vercel.app`, width / 2, footerY);
   ctx.textAlign = 'left';
 
   const dataUrl = canvas.toDataURL('image/png');
   const link = document.createElement('a');
-  link.download = `yonsei_timetable_${new Date().toISOString().slice(0, 10)}.png`;
+  link.download = `yonsei_timetable_${planNameStr.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.png`;
   link.href = dataUrl;
   link.click();
 

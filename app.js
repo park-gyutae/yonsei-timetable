@@ -6984,8 +6984,127 @@ function initShareModule() {
     btnDownloadPng.addEventListener('click', exportTimetableAsImage);
   }
 
+  const btnNativeShare = document.getElementById('btn-native-share');
+  if (btnNativeShare) {
+    btnNativeShare.addEventListener('click', shareTimetableWithWebShare);
+  }
+
+  const modalImgPreview = document.getElementById('image-export-preview-modal');
+  const btnCloseImgModal = document.getElementById('btn-close-img-modal');
+  if (btnCloseImgModal && modalImgPreview) {
+    btnCloseImgModal.addEventListener('click', () => {
+      modalImgPreview.classList.remove('active');
+    });
+    modalImgPreview.addEventListener('click', (e) => {
+      if (e.target === modalImgPreview) modalImgPreview.classList.remove('active');
+    });
+  }
+
   // Check URL query parameters for shared timetable import
   checkAndImportSharedTimetable();
+}
+
+function generateShareUrlString() {
+  if (!selectedCourses || selectedCourses.length === 0) return window.location.href;
+  try {
+    const compactData = selectedCourses.map(c => ({
+      c: c.code,
+      d: c.division || '01',
+      m: c.mileage || 18,
+      t: c.title || c.name || '',
+      s: c.time || '',
+      r: c.room || '',
+      p: c.professor || '',
+      cr: c.credits || 3
+    }));
+    const jsonStr = JSON.stringify(compactData);
+    const b64Str = btoa(unescape(encodeURIComponent(jsonStr)));
+    return `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(b64Str)}`;
+  } catch (e) {
+    return window.location.href;
+  }
+}
+
+async function shareTimetableWithWebShare() {
+  if (!selectedCourses || selectedCourses.length === 0) {
+    showToast('시간표에 추가된 과목이 없습니다.', 'alert-triangle');
+    return;
+  }
+
+  const shareUrl = generateShareUrlString();
+  const activePlan = timetables.find(t => t.id === activeTimetableId);
+  const planName = activePlan ? activePlan.name : '시간표 1';
+  const totalCredits = selectedCourses.reduce((sum, c) => sum + (c.credits || 3), 0);
+  const totalMileage = selectedCourses.reduce((sum, c) => sum + (c.mileage || 0), 0);
+
+  const courseListText = selectedCourses.map((c, i) => 
+    `${i + 1}. [${c.code}-${c.division || '01'}] ${c.title || c.name} (⚡ ${c.mileage || 0}M)`
+  ).join('\n');
+
+  const textMessage = `🎓 연세대학교 수강신청 시간표 [${planName}]\n📌 총 ${selectedCourses.length}개 과목 | ${totalCredits}학점 | ⚡ ${totalMileage} 마일리지\n\n📚 과목 목록:\n${courseListText}\n\n👇 1-Click 내 시간표로 불러오기:\n${shareUrl}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `연세대학교 시간표 [${planName}]`,
+        text: textMessage,
+        url: shareUrl
+      });
+      showToast('시간표 정보가 모바일 카카오톡/앱으로 공유되었습니다! 💬', 'send');
+      return;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Web Share API Error:', err);
+      } else {
+        return;
+      }
+    }
+  }
+
+  navigator.clipboard.writeText(textMessage).then(() => {
+    showToast('카톡 공유용 요약 텍스트와 링크가 복사되었습니다! 🔗', 'copy');
+  }).catch(() => {
+    prompt('아래 텍스트를 복사하여 카카오톡에 붙여넣으세요:', textMessage);
+  });
+}
+
+function showImagePreviewModal(dataUrl, fileName, blobFile) {
+  const modal = document.getElementById('image-export-preview-modal');
+  const imgEl = document.getElementById('export-preview-img');
+  const btnNewTab = document.getElementById('btn-open-img-newtab');
+  const btnNativeShare = document.getElementById('btn-share-img-native');
+
+  if (!modal || !imgEl) return;
+
+  imgEl.src = dataUrl;
+  modal.classList.add('active');
+
+  if (btnNewTab) {
+    btnNewTab.onclick = () => {
+      const win = window.open();
+      if (win) {
+        win.document.write(`<html><head><title>${fileName}</title></head><body style="margin:0; background:#0b0f19; display:flex; align-items:center; justify-content:center; min-height:100vh;"><img src="${dataUrl}" style="max-width:100%; height:auto; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);" /></body></html>`);
+      } else {
+        window.location.href = dataUrl;
+      }
+    };
+  }
+
+  if (btnNativeShare) {
+    btnNativeShare.onclick = async () => {
+      if (blobFile && navigator.canShare && navigator.canShare({ files: [blobFile] })) {
+        try {
+          await navigator.share({
+            files: [blobFile],
+            title: '연세대학교 시간표',
+            text: '연세대학교 수강신청 마일리지 시간표'
+          });
+          return;
+        } catch (e) {}
+      }
+      shareTimetableWithWebShare();
+    };
+  }
 }
 
 function showToast(message, iconName = 'check-circle') {
@@ -7497,13 +7616,52 @@ function exportTimetableAsImage() {
   ctx.fillText(`Yonsei Timetable Planner • 생성일시: ${new Date().toLocaleDateString('ko-KR')} • https://yonsei-timetable.vercel.app`, width / 2, footerY);
   ctx.textAlign = 'left';
 
-  const dataUrl = canvas.toDataURL('image/png');
-  const link = document.createElement('a');
-  link.download = `yonsei_timetable_${planNameStr.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.png`;
-  link.href = dataUrl;
-  link.click();
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const fileName = `yonsei_timetable_${planNameStr.replace(/[^a-zA-Z0-9가-힣]/g, '_')}_${new Date().toISOString().slice(0, 10)}.png`;
 
-  showToast('시간표 고화질 PNG 이미지가 저장되었습니다! 📸');
+  canvas.toBlob(async (blob) => {
+    if (!blob) {
+      const fallbackUrl = canvas.toDataURL('image/png');
+      showImagePreviewModal(fallbackUrl, fileName, null);
+      return;
+    }
+
+    const file = new File([blob], fileName, { type: 'image/png' });
+
+    // Option A: If mobile device with Native File WebShare support
+    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: '연세대학교 시간표',
+          text: `🎓 연세대학교 수강신청 시간표 [${planNameStr}]`
+        });
+        showToast('시간표 이미지가 성공적으로 공유/저장되었습니다! 📸');
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+
+    // Option B: If mobile device, open preview modal for long-press save
+    if (isMobile) {
+      const dataUrl = canvas.toDataURL('image/png');
+      showImagePreviewModal(dataUrl, fileName, file);
+      showToast('이미지를 길게 눌러 사진 앱에 저장하세요! 📸', 'image');
+      return;
+    }
+
+    // Option C: Desktop standard ObjectURL blob download
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = fileName;
+    a.href = blobUrl;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    showToast('시간표 고화질 PNG 이미지가 저장되었습니다! 📸');
+  }, 'image/png');
 }
 
 // ─── Multi-Timetable Plan Management (Plan A/B/C) ──────────────────────────

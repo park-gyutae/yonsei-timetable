@@ -7494,20 +7494,20 @@ function renderPlanTabBar() {
     const isActive = plan.id === activeTimetableId;
     const courseCount = (plan.courses || []).length;
     html += `
-      <div class="plan-tab-item" style="display: flex; align-items: center; gap: 2px;">
+      <div class="plan-tab-item" style="display: flex; align-items: center; gap: 2px; flex-shrink: 0;">
         <button type="button" class="plan-tab-btn ${isActive ? 'active' : ''}" onclick="switchActiveTimetable('${plan.id}')">
           <span>${plan.name}</span>
           <span style="font-size: 10px; opacity: 0.85; background: rgba(0,0,0,0.15); padding: 1px 5px; border-radius: 10px;">${courseCount}</span>
         </button>
         ${isActive ? `
-          <button type="button" title="플랜 복사" onclick="duplicatePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; display: inline-flex; align-items: center;">
+          <button type="button" title="시간표 복사" onclick="duplicatePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; display: inline-flex; align-items: center; flex-shrink: 0;">
             <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
           </button>
-          <button type="button" title="플랜 이름 변경" onclick="renamePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; display: inline-flex; align-items: center;">
+          <button type="button" title="시간표 이름 변경" onclick="renamePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; display: inline-flex; align-items: center; flex-shrink: 0;">
             <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i>
           </button>
           ${timetables.length > 1 ? `
-            <button type="button" title="플랜 삭제" onclick="deletePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--danger); padding: 2px 4px; display: inline-flex; align-items: center;">
+            <button type="button" title="시간표 삭제" onclick="deletePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--danger); padding: 2px 4px; display: inline-flex; align-items: center; flex-shrink: 0;">
               <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
             </button>
           ` : ''}
@@ -7517,7 +7517,7 @@ function renderPlanTabBar() {
   });
 
   html += `
-    <button type="button" class="plan-action-btn" onclick="addNewPlan()" style="margin-left: 4px;">
+    <button type="button" class="plan-action-btn" onclick="addNewPlan()" style="margin-left: 4px; flex-shrink: 0;">
       <i data-lucide="plus" style="width: 12px; height: 12px;"></i> 추가
     </button>
   `;

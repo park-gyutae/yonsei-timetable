@@ -2874,12 +2874,30 @@ input[type="range"].mileage-slider::-moz-range-thumb,
 
 /* Premium Multi-Timetable Plan Tab Bar */
 .plan-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   background: var(--canvas-soft);
   border: 1px solid var(--border-color);
   padding: 4px 6px;
   border-radius: 24px;
   backdrop-filter: blur(12px);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.plan-tab-bar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.plan-tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 
 .plan-tab-btn {

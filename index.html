@@ -367,19 +367,19 @@
         <!-- Tab 1 Content: Timetable Calendar -->
         <div class="tab-content active" id="tab-timetable" style="display: block;">
           <div class="card glass-card timetable-card" style="margin-bottom: 0;">
-            <div class="card-header flex-between" style="flex-wrap: wrap; gap: 10px;">
-              <div class="flex-align" style="gap: 12px; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <i data-lucide="calendar" class="header-icon"></i>
-                  <h2>내 시간표 시각표</h2>
-                </div>
-                <!-- Multi-Timetable Plan Tab Bar -->
-                <div class="plan-tab-bar" id="plan-tab-bar" style="display: flex; align-items: center; gap: 4px; background: var(--canvas-soft); padding: 3px; border-radius: 20px; border: 1px solid var(--border-color); overflow-x: auto; max-width: 100%;">
-                </div>
+            <div class="card-header flex-between" style="flex-wrap: nowrap; gap: 12px; align-items: center; overflow: hidden;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;">
+                <i data-lucide="calendar" class="header-icon"></i>
+                <h2 style="white-space: nowrap; margin: 0;">내 시간표 시각표</h2>
               </div>
-              <div class="timetable-stats" style="display: flex; align-items: center; gap: 8px;">
-                <span class="stat-badge" id="total-credits">0학점 신청됨</span>
-                <button class="btn btn-outline" id="btn-share-timetable" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 11.5px; border-radius: 20px; font-weight: 600; background: var(--canvas-elevated); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;">
+              
+              <!-- Multi-Timetable Plan Tab Bar (Horizontally Scrollable) -->
+              <div class="plan-tab-bar" id="plan-tab-bar">
+              </div>
+
+              <div class="timetable-stats" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;">
+                <span class="stat-badge" id="total-credits" style="white-space: nowrap;">0학점 신청됨</span>
+                <button class="btn btn-outline" id="btn-share-timetable" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 11.5px; border-radius: 20px; font-weight: 600; background: var(--canvas-elevated); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; white-space: nowrap;">
                   <i data-lucide="share-2" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 공유 / 내보내기
                 </button>
               </div>

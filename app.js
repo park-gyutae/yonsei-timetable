@@ -3496,6 +3496,8 @@ function switchTab(tabId) {
     if (btn.getAttribute('data-tab') === tabId) {
       btn.classList.add('active');
     }
+  });
+
   const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
   mobileNavBtns.forEach(btn => {
     btn.classList.remove('active');

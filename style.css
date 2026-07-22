@@ -2712,7 +2712,7 @@ input[type="range"].mileage-slider::-moz-range-thumb,
   }
 
   .timetable-grid {
-    grid-template-columns: 36px repeat(5, minmax(75px, 1fr)) !important;
+    font-size: 10px;
   }
 
   .grid-cell {

@@ -88,6 +88,7 @@ let aiChartInstance = null;   // Chart.js instance for AI probability curve
 let wishlist = [];            // Starred courses (Wishlist sandbox)
 let activeSearchTab = 'search-general'; // Tracks active search sub-tab
 let filterNoConflict = false;  // 공강만 필터: 시간표 충돌 없는 과목만 표시
+let currentSortKey = 'default'; // 과목 목록 정렬 기준
 
 // DJB2 문자열 해싱 헬퍼 (글자 한 자만 달라져도 색조가 겹치지 않고 완전히 분산되도록 보장)
 function getHashCode(str) {
@@ -619,6 +620,32 @@ function renderCourses(courses) {
     `;
     lucide.createIcons();
     return;
+  }
+
+  // ─ Sort filtered results ────────────────────────────────────
+  if (currentSortKey !== 'default') {
+    filtered.sort((a, b) => {
+      switch (currentSortKey) {
+        case 'title-asc':  return String(a.title||'').localeCompare(String(b.title||''), 'ko');
+        case 'title-desc': return String(b.title||'').localeCompare(String(a.title||''), 'ko');
+        case 'credits-asc':  return (a.credits||0) - (b.credits||0);
+        case 'credits-desc': return (b.credits||0) - (a.credits||0);
+        case 'cut-asc':
+        case 'cut-desc': {
+          const getQ50 = (c) => {
+            const key = `${c.code}-${c.division}`;
+            const curve = precomputedCurves?.curves?.[key];
+            return curve?.major?.grade_3?.median ?? curve?.major?.median ?? null;
+          };
+          const qa = getQ50(a), qb = getQ50(b);
+          if (qa === null && qb === null) return 0;
+          if (qa === null) return 1;   // null 값은 맨 뒤로
+          if (qb === null) return -1;
+          return currentSortKey === 'cut-asc' ? qa - qb : qb - qa;
+        }
+        default: return 0;
+      }
+    });
   }
 
   listContainer.innerHTML = '';
@@ -2246,6 +2273,14 @@ function setupEventListeners() {
     }
     if (label) label.textContent = filterNoConflict ? '공강만 ✓' : '공강만';
     fetchCourses();
+  });
+
+  // ── 정렬 드롭다운 체인지 이벤트 ─────────────────────
+  document.addEventListener('change', (e) => {
+    if (e.target.id === 'select-sort') {
+      currentSortKey = e.target.value;
+      fetchCourses();
+    }
   });
 
   // Mileage analysis modal tabs toggle handler

@@ -291,6 +291,15 @@
                 <div class="results-header" style="padding: 10px 18px; border-bottom: 1px solid var(--border-color); background: rgba(0, 0, 0, 0.01); display: flex; flex-direction: column; gap: 8px;">
                   <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <span id="results-count" style="font-size: 11px; font-weight: 600; color: var(--text-muted);">조회된 과목 0개</span>
+                    <select id="select-sort" style="font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); padding: 2px 6px; height: 24px; cursor: pointer; outline: none;">
+                      <option value="default">기본 순서</option>
+                      <option value="title-asc">과목명 가나다순</option>
+                      <option value="title-desc">과목명 역순</option>
+                      <option value="credits-asc">학점 낮은순</option>
+                      <option value="credits-desc">학점 높은순</option>
+                      <option value="cut-asc">AI 커트라인 낮은순 (꿀과목)</option>
+                      <option value="cut-desc">AI 커트라인 높은순 (헬과목)</option>
+                    </select>
                   </div>
                   <div id="active-filter-chips" style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 10.5px; align-items: center;"></div>
                 </div>

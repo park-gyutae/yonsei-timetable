@@ -367,10 +367,15 @@
         <!-- Tab 1 Content: Timetable Calendar -->
         <div class="tab-content active" id="tab-timetable" style="display: block;">
           <div class="card glass-card timetable-card" style="margin-bottom: 0;">
-            <div class="card-header flex-between">
-              <div class="flex-align">
-                <i data-lucide="calendar" class="header-icon"></i>
-                <h2>내 시간표 시각표</h2>
+            <div class="card-header flex-between" style="flex-wrap: wrap; gap: 10px;">
+              <div class="flex-align" style="gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="calendar" class="header-icon"></i>
+                  <h2>내 시간표 시각표</h2>
+                </div>
+                <!-- Multi-Timetable Plan Tab Bar -->
+                <div class="plan-tab-bar" id="plan-tab-bar" style="display: flex; align-items: center; gap: 4px; background: var(--canvas-soft); padding: 3px; border-radius: 20px; border: 1px solid var(--border-color); overflow-x: auto; max-width: 100%;">
+                </div>
               </div>
               <div class="timetable-stats" style="display: flex; align-items: center; gap: 8px;">
                 <span class="stat-badge" id="total-credits">0학점 신청됨</span>

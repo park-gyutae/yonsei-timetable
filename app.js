@@ -1,6 +1,12 @@
 // State Management
 let coursesData = [];      // Crawled course list
 let selectedCourses = [];  // Timetable courses
+let timetables = [
+  { id: 'plan-1', name: '플랜 A (1안)', courses: [] },
+  { id: 'plan-2', name: '플랜 B (2안)', courses: [] },
+  { id: 'plan-3', name: '플랜 C (3안)', courses: [] }
+];
+let activeTimetableId = 'plan-1';
 let myProfile = {          // Mileage Profile
   firstMajor: 'math',      // math, stats, other
   secondMajor: 'none',     // none, math, stats, other
@@ -3843,42 +3849,74 @@ function syncProfileWithTimetable() {
 // LocalStorage Persistence
 function saveDataToStorage() {
   syncProfileWithTimetable();
+
+  // Sync active plan courses
+  const activePlan = timetables.find(t => t.id === activeTimetableId);
+  if (activePlan) {
+    activePlan.courses = selectedCourses;
+  }
+
+  localStorage.setItem('yonsei_timetables', JSON.stringify(timetables));
+  localStorage.setItem('yonsei_active_timetable_id', activeTimetableId);
   localStorage.setItem('yonsei_timetable_selected', JSON.stringify(selectedCourses));
   localStorage.setItem('yonsei_timetable_profile', JSON.stringify(myProfile));
 }
 
 function loadDataFromStorage() {
-  const selected = localStorage.getItem('yonsei_timetable_selected');
+  const savedTimetables = localStorage.getItem('yonsei_timetables');
+  const savedActiveId = localStorage.getItem('yonsei_active_timetable_id');
+  const legacySelected = localStorage.getItem('yonsei_timetable_selected');
   const profile = localStorage.getItem('yonsei_timetable_profile');
 
-  if (selected) {
-    selectedCourses = JSON.parse(selected);
-    
-    // Sync-clamp values using precomputed curves before rendering to recover from stale states
-    selectedCourses.forEach(c => {
-      const key = `${c.code}-${c.division}`;
-      let maxVal = 36;
-      if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
-        maxVal = c.mileageSummary.max_allowed_mileage;
-      } else if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
-        maxVal = precomputedCurves.curves[key].max_allowed || 36;
-      }
-      if (c.mileage > maxVal) {
-        console.log(`[Storage Load Clamping] Clamped ${c.code}-${c.division} from ${c.mileage} to ${maxVal}`);
-        c.mileage = maxVal;
-      }
-    });
-
-    renderTimetableGrid();
-    renderSelectedCoursesList();
-    
-    // Fetch stats for the loaded courses to restore advisor card
-    selectedCourses.forEach(c => {
-      if (!c.mileageSummary) {
-        fetchMileageSummaryForAdvisor(c);
-      }
-    });
+  if (savedTimetables) {
+    try {
+      timetables = JSON.parse(savedTimetables);
+      activeTimetableId = savedActiveId || (timetables[0] ? timetables[0].id : 'plan-1');
+    } catch (e) {
+      timetables = [];
+    }
   }
+
+  if (!timetables || timetables.length === 0) {
+    let initialCourses = [];
+    if (legacySelected) {
+      try { initialCourses = JSON.parse(legacySelected); } catch (e) {}
+    }
+    timetables = [
+      { id: 'plan-1', name: '플랜 A (1안)', courses: initialCourses },
+      { id: 'plan-2', name: '플랜 B (2안)', courses: [] },
+      { id: 'plan-3', name: '플랜 C (3안)', courses: [] }
+    ];
+    activeTimetableId = 'plan-1';
+  }
+
+  const activePlan = timetables.find(t => t.id === activeTimetableId) || timetables[0];
+  activeTimetableId = activePlan.id;
+  selectedCourses = activePlan.courses || [];
+
+  // Sync-clamp values using precomputed curves before rendering
+  selectedCourses.forEach(c => {
+    const key = `${c.code}-${c.division}`;
+    let maxVal = 36;
+    if (c.mileageSummary && c.mileageSummary.max_allowed_mileage) {
+      maxVal = c.mileageSummary.max_allowed_mileage;
+    } else if (precomputedCurves && precomputedCurves.curves && precomputedCurves.curves[key]) {
+      maxVal = precomputedCurves.curves[key].max_allowed || 36;
+    }
+    if (c.mileage > maxVal) {
+      c.mileage = maxVal;
+    }
+  });
+
+  renderPlanTabBar();
+  renderTimetableGrid();
+  renderSelectedCoursesList();
+
+  selectedCourses.forEach(c => {
+    if (!c.mileageSummary) {
+      fetchMileageSummaryForAdvisor(c);
+    }
+  });
   if (profile) {
     myProfile = JSON.parse(profile);
     // Ensure new 7-stage fields are initialized even if loading older profiles
@@ -7302,4 +7340,146 @@ function exportTimetableAsImage() {
   link.click();
 
   showToast('시간표 고화질 PNG 이미지가 저장되었습니다! 📸');
+}
+
+// ─── Multi-Timetable Plan Management (Plan A/B/C) ──────────────────────────
+
+function renderPlanTabBar() {
+  const container = document.getElementById('plan-tab-bar');
+  if (!container) return;
+
+  let html = '';
+  timetables.forEach(plan => {
+    const isActive = plan.id === activeTimetableId;
+    const courseCount = (plan.courses || []).length;
+    html += `
+      <div class="plan-tab-item" style="display: flex; align-items: center; gap: 2px;">
+        <button type="button" class="plan-tab-btn ${isActive ? 'active' : ''}" onclick="switchActiveTimetable('${plan.id}')">
+          <span>${plan.name}</span>
+          <span style="font-size: 10px; opacity: 0.85; background: rgba(0,0,0,0.15); padding: 1px 5px; border-radius: 10px;">${courseCount}</span>
+        </button>
+        ${isActive ? `
+          <button type="button" title="플랜 복사" onclick="duplicatePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; display: inline-flex; align-items: center;">
+            <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+          </button>
+          <button type="button" title="플랜 이름 변경" onclick="renamePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px 4px; display: inline-flex; align-items: center;">
+            <i data-lucide="edit-3" style="width: 12px; height: 12px;"></i>
+          </button>
+          ${timetables.length > 1 ? `
+            <button type="button" title="플랜 삭제" onclick="deletePlan('${plan.id}')" style="background: none; border: none; cursor: pointer; color: var(--danger); padding: 2px 4px; display: inline-flex; align-items: center;">
+              <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+            </button>
+          ` : ''}
+        ` : ''}
+      </div>
+    `;
+  });
+
+  html += `
+    <button type="button" class="plan-action-btn" onclick="addNewPlan()" style="margin-left: 4px;">
+      <i data-lucide="plus" style="width: 12px; height: 12px;"></i> 추가
+    </button>
+  `;
+
+  container.innerHTML = html;
+  if (window.lucide) window.lucide.createIcons({ props: { scope: container } });
+}
+
+function switchActiveTimetable(id) {
+  if (activeTimetableId === id) return;
+
+  const currentPlan = timetables.find(t => t.id === activeTimetableId);
+  if (currentPlan) {
+    currentPlan.courses = selectedCourses;
+  }
+
+  const targetPlan = timetables.find(t => t.id === id);
+  if (!targetPlan) return;
+
+  activeTimetableId = id;
+  selectedCourses = targetPlan.courses || [];
+
+  saveDataToStorage();
+  renderPlanTabBar();
+  if (typeof renderTimetableGrid === 'function') renderTimetableGrid();
+  if (typeof renderSelectedCoursesList === 'function') renderSelectedCoursesList();
+  if (typeof initMiniTimetableCalendar === 'function') initMiniTimetableCalendar();
+  if (typeof runAdvisorDiagnostic === 'function') runAdvisorDiagnostic();
+  if (typeof renderCourses === 'function' && typeof coursesData !== 'undefined') renderCourses(coursesData);
+
+  showToast(`'${targetPlan.name}'(으)로 시간표가 전환되었습니다. 🗂️`, 'layers');
+}
+
+function addNewPlan() {
+  const planIndex = timetables.length + 1;
+  const defaultLetter = String.fromCharCode(64 + (planIndex > 26 ? 1 : planIndex));
+  const newName = prompt('새 시간표 이름을 입력하세요:', `플랜 ${defaultLetter} (${planIndex}안)`);
+  if (!newName || !newName.trim()) return;
+
+  const newId = `plan-${Date.now()}`;
+  timetables.push({
+    id: newId,
+    name: newName.trim(),
+    courses: []
+  });
+
+  switchActiveTimetable(newId);
+}
+
+function duplicatePlan(id) {
+  const sourcePlan = timetables.find(t => t.id === id);
+  if (!sourcePlan) return;
+
+  const newName = `${sourcePlan.name} (사본)`;
+  const newId = `plan-${Date.now()}`;
+  
+  const clonedCourses = JSON.parse(JSON.stringify(sourcePlan.courses || []));
+
+  timetables.push({
+    id: newId,
+    name: newName,
+    courses: clonedCourses
+  });
+
+  switchActiveTimetable(newId);
+  showToast(`'${sourcePlan.name}' 이(가) 복사되었습니다. 📋`, 'copy');
+}
+
+function renamePlan(id) {
+  const targetPlan = timetables.find(t => t.id === id);
+  if (!targetPlan) return;
+
+  const newName = prompt('시간표 이름을 수정하세요:', targetPlan.name);
+  if (!newName || !newName.trim() || newName.trim() === targetPlan.name) return;
+
+  targetPlan.name = newName.trim();
+  saveDataToStorage();
+  renderPlanTabBar();
+  showToast('시간표 이름이 변경되었습니다. ✏️');
+}
+
+function deletePlan(id) {
+  if (timetables.length <= 1) {
+    showToast('최소 1개의 시간표는 유지되어야 합니다.', 'alert-triangle');
+    return;
+  }
+
+  const targetPlan = timetables.find(t => t.id === id);
+  if (!targetPlan) return;
+
+  if (!confirm(`'${targetPlan.name}' 시간표를 삭제하시겠습니까?`)) return;
+
+  timetables = timetables.filter(t => t.id !== id);
+  if (activeTimetableId === id) {
+    activeTimetableId = timetables[0].id;
+    selectedCourses = timetables[0].courses || [];
+  }
+
+  saveDataToStorage();
+  renderPlanTabBar();
+  if (typeof renderTimetableGrid === 'function') renderTimetableGrid();
+  if (typeof renderSelectedCoursesList === 'function') renderSelectedCoursesList();
+  if (typeof initMiniTimetableCalendar === 'function') initMiniTimetableCalendar();
+  if (typeof runAdvisorDiagnostic === 'function') runAdvisorDiagnostic();
+  showToast(`'${targetPlan.name}' 이(가) 삭제되었습니다. 🗑️`);
 }

@@ -6892,6 +6892,11 @@ function openCourseActionModal(course) {
 
 // ─── Share & Export Module (URL Link & PNG Image Export) ───────────────────
 
+const PALETTE = [
+  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', 
+  '#06b6d4', '#6366f1', '#14b8a6', '#f97316', '#a855f7'
+];
+
 function initShareModule() {
   const btnShare = document.getElementById('btn-share-timetable');
   const modalShare = document.getElementById('share-modal');
@@ -7061,8 +7066,10 @@ async function applyImportedCourses(compactList) {
       if (!c.color) c.color = PALETTE[idx % PALETTE.length];
     });
     saveDataToStorage();
-    renderTimetable();
+    if (typeof renderTimetableGrid === 'function') renderTimetableGrid();
+    if (typeof renderSelectedCoursesList === 'function') renderSelectedCoursesList();
     if (typeof initMiniTimetableCalendar === 'function') initMiniTimetableCalendar();
+    if (typeof runAdvisorDiagnostic === 'function') runAdvisorDiagnostic();
   }
 }
 

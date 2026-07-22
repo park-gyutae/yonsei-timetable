@@ -883,9 +883,15 @@ async function fetchCourses() {
   }
 
   listContainer.innerHTML = `
-    <div class="list-placeholder">
-      <i data-lucide="loader-2" class="spin"></i>
-      <p>과목 데이터를 불러오는 중...</p>
+    <div class="list-placeholder" style="padding: 40px 20px; text-align: center;">
+      <div class="loading-spinner-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+        <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; color: var(--accent-light, #0070f3);"></i>
+        <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">연세대학교 수강편람 데이터 수집 중...</h4>
+        <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">개설 과목 정보를 서버에서 불러오고 있습니다.<br>잠시만 기다려 주세요.</p>
+        <div class="progress-bar-track" style="width: 180px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-top: 6px; position: relative;">
+          <div class="progress-bar-fill-indeterminate" style="height: 100%; background: linear-gradient(90deg, #0070f3, #00aaff); border-radius: 2px;"></div>
+        </div>
+      </div>
     </div>
   `;
   lucide.createIcons();
@@ -6436,6 +6442,21 @@ async function fetchCoursesForAffiliatedMajor() {
   let allCourses = lsGet(lsKey, 'courses');
 
   if (!allCourses) {
+    if (listContainer) {
+      listContainer.innerHTML = `
+        <div class="list-placeholder" style="padding: 40px 20px; text-align: center;">
+          <div class="loading-spinner-wrapper" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+            <i data-lucide="loader-2" class="spin" style="width: 32px; height: 32px; color: #7c3aed;"></i>
+            <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: #7c3aed;">연계전공 과목 데이터 수집 중...</h4>
+            <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">연계/융합전공 인정 과목 전체 정보를 수집 중입니다.<br>잠시만 기다려 주세요.</p>
+            <div class="progress-bar-track" style="width: 180px; height: 4px; background: rgba(124,58,237,0.15); border-radius: 2px; overflow: hidden; margin-top: 6px; position: relative;">
+              <div class="progress-bar-fill-indeterminate" style="height: 100%; background: linear-gradient(90deg, #7c3aed, #a855f7); border-radius: 2px;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
     try {
       const response = await fetch(`/api/courses?college=&dept=&campus=${campus}`);
       const data = await response.json();

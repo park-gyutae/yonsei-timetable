@@ -507,6 +507,24 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* Indeterminate Loading Shimmer Progress Bar */
+@keyframes indeterminateProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(50%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.progress-bar-fill-indeterminate {
+  width: 50% !important;
+  animation: indeterminateProgress 1.4s infinite ease-in-out !important;
+}
+
 /* Course Result Item Card */
 .course-item {
   background: rgba(255, 255, 255, 0.02);

@@ -138,8 +138,32 @@
                     <span style="font-size: 10px; color: var(--text-muted);">— 전공 인정 과목만 표시</span>
                   </div>
                   <select id="select-affiliated-major" style="width: 100%; font-size: 11px; border: 1.5px solid rgba(124,58,237,0.4); border-radius: 5px; background: var(--canvas-card); color: var(--text-primary); padding: 5px 8px; cursor: pointer; outline: none; transition: border-color 0.15s;">
-                    <option value="">— 연계전공 선택 —</option>
-                    <option value="cognitive">🧠 인지과학</option>
+                    <option value="">— 연계 / 융합전공 선택 —</option>
+                    <optgroup label="연계전공 (Interdisciplinary)">
+                      <option value="cognitive">🧠 인지과학</option>
+                      <option value="east_asian_korean">🇰🇷 한국및동아시아학(한국학)</option>
+                      <option value="east_asian_japanese">🇯🇵 한국및동아시아학(일본학)</option>
+                      <option value="east_asian_studies">🌏 한국및동아시아학(동아시아학)</option>
+                      <option value="european">🇪🇺 유럽지역학</option>
+                      <option value="digital_arts">🎨 디지털예술학</option>
+                      <option value="foreign_trade">🌐 외교통상학</option>
+                      <option value="venture">🚀 벤처학</option>
+                      <option value="leadership">👔 리더십</option>
+                      <option value="comparative_lit">📚 비교문학</option>
+                      <option value="cultural_criticism">🎭 문화비평학</option>
+                      <option value="public_leadership">🏛️ 공공리더십</option>
+                      <option value="finance">💵 금융 연계전공</option>
+                      <option value="public_talent">🏢 공공기관인재</option>
+                      <option value="fintech">💳 핀테크</option>
+                      <option value="healthcare_sw">🏥 보건의료SW</option>
+                      <option value="bioinformatics">🧬 바이오인포매틱스</option>
+                      <option value="smart_packaging">📦 스마트패키징물류</option>
+                      <option value="digital_humanities">💻 디지털인문학리터러시</option>
+                    </optgroup>
+                    <optgroup label="융합전공 (Convergence)">
+                      <option value="semiconductor_device">🔬 지능형반도체(소자·공정)</option>
+                      <option value="semiconductor_circuit">🔌 지능형반도체(회로·시스템)</option>
+                    </optgroup>
                   </select>
                   <div id="affiliated-major-info" style="margin-top: 7px; font-size: 10.5px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-height: 16px;"></div>
                 </div>

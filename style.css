@@ -2728,6 +2728,36 @@ input[type="range"].mileage-slider::-moz-range-thumb,
   }
 }
 
+/* Syllabus Modal Exact Fit System */
+#syllabus-modal .modal-content {
+  width: 95vw !important;
+  max-width: 1000px !important;
+  height: 90vh !important;
+  max-height: 90vh !important;
+  border-radius: var(--border-radius-md) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+}
+
+#syllabus-modal .iframe-mask-container {
+  flex: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+  background: #ffffff !important;
+}
+
+#syllabus-modal iframe {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
 /* ==========================================================================
    MOBILE BOTTOM NAVIGATION DOCK (Glassmorphic Floating Dock & Safe Area Support)
    ========================================================================== */

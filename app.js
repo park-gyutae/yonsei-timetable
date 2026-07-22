@@ -760,8 +760,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   initMiniTimetableCalendar();
   switchTab('tab-timetable');
+  checkFirstVisitWelcomeModal();
   lucide.createIcons();
 });
+
+// Check & open first-time visit welcome disclaimer modal
+function checkFirstVisitWelcomeModal() {
+  const seenKey = 'ymu_first_visit_seen';
+  const hasSeen = localStorage.getItem(seenKey);
+  const welcomeModal = document.getElementById('welcome-disclaimer-modal');
+
+  if (!hasSeen && welcomeModal) {
+    welcomeModal.style.display = 'flex';
+    lucide.createIcons();
+  }
+
+  const closeBtn = document.getElementById('btn-close-welcome-modal');
+  const setupProfileBtn = document.getElementById('btn-welcome-setup-profile');
+  const confirmStartBtn = document.getElementById('btn-welcome-confirm-start');
+
+  function dismissWelcomeModal() {
+    localStorage.setItem(seenKey, 'true');
+    if (welcomeModal) welcomeModal.style.display = 'none';
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', dismissWelcomeModal);
+  }
+
+  if (confirmStartBtn) {
+    confirmStartBtn.addEventListener('click', dismissWelcomeModal);
+  }
+
+  if (setupProfileBtn) {
+    setupProfileBtn.addEventListener('click', () => {
+      dismissWelcomeModal();
+      if (window.openProfileModal) {
+        window.openProfileModal();
+      }
+    });
+  }
+}
 
 
 // 특정 슬롯이 가상 동영상 슬롯(중복수강 가능)인지 체크하는 함수

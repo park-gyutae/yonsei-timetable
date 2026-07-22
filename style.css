@@ -2344,3 +2344,189 @@ body {
 [data-theme="dark"] .select-modal-item.active {
   background: rgba(50, 145, 255, 0.15) !important;
 }
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE DESIGN SYSTEM (Breakpoints: 1024px, 768px, 480px)
+   ========================================================================== */
+
+/* 1. Tablet & Medium Screens (<= 1024px) */
+@media (max-width: 1024px) {
+  .app-container {
+    padding: 16px;
+  }
+
+  .app-main {
+    grid-template-columns: 1fr; /* Switch from 2-column sidebar to 1-column layout */
+    gap: 16px;
+  }
+
+  .sidebar-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #sidebar-search-results-placeholder {
+    height: auto !important;
+    max-height: 400px !important;
+  }
+}
+
+/* 2. Mobile Screens (<= 768px) */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 10px;
+    gap: 12px;
+  }
+
+  /* Header Responsiveness */
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .header-status {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Main Tab Bar */
+  .tabs-nav {
+    gap: 8px;
+    padding: 0 2px;
+    margin-bottom: 14px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    font-size: 12px;
+    padding: 8px 6px;
+    flex: 1 0 auto;
+  }
+
+  /* Advanced Search & Filter Bar */
+  .advanced-search-bar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .custom-multiselect {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 2px !important;
+    width: 100%;
+  }
+
+  .multiselect-trigger {
+    width: 100% !important;
+  }
+
+  .search-filters {
+    gap: 8px;
+  }
+
+  /* Timetable Grid Mobile Adaptations */
+  .timetable-grid-wrapper {
+    padding: 10px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .timetable-grid {
+    grid-template-columns: 45px repeat(5, minmax(85px, 1fr)) !important;
+    font-size: 10px;
+  }
+
+  .timetable-event-block .event-title {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+  .timetable-event-block .event-details {
+    font-size: 9px !important;
+  }
+
+  /* Mileage Distribution & Optimization */
+  .optimization-constraints {
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .constraint-control {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .risk-metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .risk-metric-box {
+    padding: 8px !important;
+  }
+
+  /* Modals */
+  .modal-content {
+    width: 92vw !important;
+    max-width: 92vw !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
+    margin: auto !important;
+  }
+
+  .modal-header {
+    margin-bottom: 12px !important;
+  }
+}
+
+/* 3. Small Smartphones (<= 480px) */
+@media (max-width: 480px) {
+  .logo-text h1 {
+    font-size: 13px;
+  }
+
+  .logo-text p {
+    font-size: 9px;
+  }
+
+  .status-badge span {
+    font-size: 9.5px;
+  }
+
+  .tab-btn {
+    font-size: 11px;
+    padding: 6px 4px;
+  }
+
+  .timetable-grid {
+    grid-template-columns: 36px repeat(5, minmax(75px, 1fr)) !important;
+  }
+
+  .grid-cell {
+    font-size: 10px;
+  }
+
+  .risk-metrics-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .btn, .multiselect-trigger, select, input[type="text"] {
+    min-height: 38px;
+  }
+}
+

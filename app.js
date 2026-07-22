@@ -812,8 +812,12 @@ function initTimetableCalendar() {
 
   const { activeDays, maxPeriod } = getActiveTimetableLimits();
 
-  // CSS Grid columns & rows 동적 적용
-  calendar.style.gridTemplateColumns = `60px repeat(${activeDays.length}, minmax(130px, 1fr))`;
+  const isMobile = window.innerWidth <= 768;
+  const timeColWidth = isMobile ? 38 : 60;
+  const dayColMinWidth = isMobile ? (activeDays.length > 5 ? 50 : 58) : 110;
+
+  // CSS Grid columns & rows 동적 적용 (activeDays.length: 5 또는 6)
+  calendar.style.gridTemplateColumns = `${timeColWidth}px repeat(${activeDays.length}, minmax(${dayColMinWidth}px, 1fr))`;
   calendar.style.gridTemplateRows = `40px repeat(${maxPeriod}, 50px)`;
 
   calendar.innerHTML = '';

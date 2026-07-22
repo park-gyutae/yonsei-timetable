@@ -2535,8 +2535,8 @@ input[type="range"].mileage-slider::-moz-range-thumb,
   }
 
   .timetable-grid {
-    grid-template-columns: 45px repeat(5, minmax(85px, 1fr)) !important;
     font-size: 10px;
+    width: 100%;
   }
 
   .timetable-event-block .event-title {

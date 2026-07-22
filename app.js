@@ -2,9 +2,7 @@
 let coursesData = [];      // Crawled course list
 let selectedCourses = [];  // Timetable courses
 let timetables = [
-  { id: 'plan-1', name: '플랜 A (1안)', courses: [] },
-  { id: 'plan-2', name: '플랜 B (2안)', courses: [] },
-  { id: 'plan-3', name: '플랜 C (3안)', courses: [] }
+  { id: 'plan-1', name: '시간표 1', courses: [] }
 ];
 let activeTimetableId = 'plan-1';
 let myProfile = {          // Mileage Profile
@@ -3883,9 +3881,7 @@ function loadDataFromStorage() {
       try { initialCourses = JSON.parse(legacySelected); } catch (e) {}
     }
     timetables = [
-      { id: 'plan-1', name: '플랜 A (1안)', courses: initialCourses },
-      { id: 'plan-2', name: '플랜 B (2안)', courses: [] },
-      { id: 'plan-3', name: '플랜 C (3안)', courses: [] }
+      { id: 'plan-1', name: '시간표 1', courses: initialCourses }
     ];
     activeTimetableId = 'plan-1';
   }
@@ -7216,7 +7212,7 @@ function exportTimetableAsImage() {
 
   // Active Plan Badge Pill
   const currentPlan = timetables.find(t => t.id === activeTimetableId);
-  const planNameStr = currentPlan ? currentPlan.name : '플랜 A (1안)';
+  const planNameStr = currentPlan ? currentPlan.name : '시간표 1';
 
   ctx.fillStyle = 'rgba(124, 58, 237, 0.25)';
   ctx.beginPath();
@@ -7557,8 +7553,7 @@ function switchActiveTimetable(id) {
 
 function addNewPlan() {
   const planIndex = timetables.length + 1;
-  const defaultLetter = String.fromCharCode(64 + (planIndex > 26 ? 1 : planIndex));
-  const newName = prompt('새 시간표 이름을 입력하세요:', `플랜 ${defaultLetter} (${planIndex}안)`);
+  const newName = prompt('새 시간표 이름을 입력하세요:', `시간표 ${planIndex}`);
   if (!newName || !newName.trim()) return;
 
   const newId = `plan-${Date.now()}`;

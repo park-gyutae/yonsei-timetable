@@ -764,15 +764,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   lucide.createIcons();
 });
 
-// Check & open first-time visit welcome disclaimer modal
+// Open welcome & disclaimer popup modal on site access
 function checkFirstVisitWelcomeModal() {
-  const seenKey = 'ymu_first_visit_seen';
-  const hasSeen = localStorage.getItem(seenKey);
   const welcomeModal = document.getElementById('welcome-disclaimer-modal');
 
-  if (!hasSeen && welcomeModal) {
-    welcomeModal.style.display = 'flex';
-    lucide.createIcons();
+  if (welcomeModal) {
+    welcomeModal.classList.add('active');
+    setTimeout(() => {
+      lucide.createIcons();
+    }, 50);
   }
 
   const closeBtn = document.getElementById('btn-close-welcome-modal');
@@ -780,25 +780,26 @@ function checkFirstVisitWelcomeModal() {
   const confirmStartBtn = document.getElementById('btn-welcome-confirm-start');
 
   function dismissWelcomeModal() {
-    localStorage.setItem(seenKey, 'true');
-    if (welcomeModal) welcomeModal.style.display = 'none';
+    if (welcomeModal) {
+      welcomeModal.classList.remove('active');
+    }
   }
 
   if (closeBtn) {
-    closeBtn.addEventListener('click', dismissWelcomeModal);
+    closeBtn.onclick = dismissWelcomeModal;
   }
 
   if (confirmStartBtn) {
-    confirmStartBtn.addEventListener('click', dismissWelcomeModal);
+    confirmStartBtn.onclick = dismissWelcomeModal;
   }
 
   if (setupProfileBtn) {
-    setupProfileBtn.addEventListener('click', () => {
+    setupProfileBtn.onclick = () => {
       dismissWelcomeModal();
       if (window.openProfileModal) {
         window.openProfileModal();
       }
-    });
+    };
   }
 }
 

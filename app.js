@@ -1691,8 +1691,18 @@ function renderSelectedCoursesList() {
       <div class="course-color-indicator" style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: ${grad}; border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);"></div>
 
       <!-- Drag Grip Handle -->
-      <div class="drag-handle" style="cursor: grab; display: flex; align-items: center; justify-content: center; padding: 0 5px 0 10px; color: var(--text-muted);">
+      <div class="drag-handle" style="cursor: grab; display: flex; align-items: center; justify-content: center; padding: 0 4px 0 8px; color: var(--text-muted);">
         <i data-lucide="grip-vertical" style="width: 16px; height: 16px;"></i>
+      </div>
+
+      <!-- Priority Up/Down Controls for Touch & Quick Mobile Reordering -->
+      <div class="priority-reorder-buttons" style="display: flex; flex-direction: column; gap: 2px; justify-content: center; align-items: center;">
+        <button type="button" class="btn-priority-up" ${index === 0 ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''} title="우선순위 올려 위로 이동" style="padding: 1px; font-size: 10px; border: 1px solid var(--hairline); border-radius: 3px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 22px; height: 16px; transition: background 0.15s ease;">
+          <i data-lucide="chevron-up" style="width: 12px; height: 12px;"></i>
+        </button>
+        <button type="button" class="btn-priority-down" ${index === selectedCourses.length - 1 ? 'disabled style="opacity: 0.2; cursor: not-allowed;"' : ''} title="우선순위 내려 아래로 이동" style="padding: 1px; font-size: 10px; border: 1px solid var(--hairline); border-radius: 3px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 22px; height: 16px; transition: background 0.15s ease;">
+          <i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i>
+        </button>
       </div>
       
       <!-- Rank Index Indicator -->
@@ -1801,6 +1811,34 @@ function renderSelectedCoursesList() {
     removeBtn.addEventListener('click', () => {
       removeCourse(c.code, c.division);
     });
+
+    // Priority Up / Down button handlers for mobile touch reordering
+    const btnUp = item.querySelector('.btn-priority-up');
+    const btnDown = item.querySelector('.btn-priority-down');
+
+    if (btnUp && index > 0) {
+      btnUp.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const temp = selectedCourses[index];
+        selectedCourses[index] = selectedCourses[index - 1];
+        selectedCourses[index - 1] = temp;
+        saveDataToStorage();
+        renderSelectedCoursesList();
+        runAdvisorDiagnostic();
+      });
+    }
+
+    if (btnDown && index < selectedCourses.length - 1) {
+      btnDown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const temp = selectedCourses[index];
+        selectedCourses[index] = selectedCourses[index + 1];
+        selectedCourses[index + 1] = temp;
+        saveDataToStorage();
+        renderSelectedCoursesList();
+        runAdvisorDiagnostic();
+      });
+    }
 
     // ── Drag & Drop Event Handlers ──────────────────────────────────────────
     // Enable dragging ONLY when mousedown on the dedicated grip handle icon

@@ -785,8 +785,8 @@ body {
   border-radius: var(--border-radius-sm);
   padding: 8px 12px;
   display: grid;
-  /* Columns: drag(24px) | rank(50px) | info(1fr) | slider(120px) | input(55px) | prob(65px) | syllabus(32px) | analyze(32px) | remove(32px) */
-  grid-template-columns: 24px 50px 1fr 120px 55px 65px 32px 32px 32px;
+  /* Columns: drag(20px) | priority-buttons(24px) | rank(50px) | info(1fr) | slider(120px) | input(55px) | prob(65px) | syllabus(32px) | analyze(32px) | remove(32px) */
+  grid-template-columns: 20px 24px 50px 1fr 120px 55px 65px 32px 32px 32px;
   align-items: center;
   gap: 10px;
   transition: all var(--transition-fast);
@@ -2475,8 +2475,38 @@ body {
     gap: 8px !important;
   }
 
-  .risk-metric-box {
-    padding: 8px !important;
+  /* Allocation Item Mobile Flexibility */
+  .allocation-item {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px 10px !important;
+    padding: 10px 12px !important;
+  }
+
+  .allocation-item .drag-handle {
+    display: none !important;
+  }
+
+  .allocation-item .priority-reorder-buttons {
+    flex-direction: row !important;
+    gap: 4px !important;
+  }
+
+  .allocation-item .priority-reorder-buttons button {
+    width: 26px !important;
+    height: 22px !important;
+  }
+
+  .allocation-item .alloc-info {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    order: -1;
+  }
+
+  .allocation-item .alloc-control-slider {
+    flex: 1 1 120px !important;
+    min-width: 100px !important;
   }
 
   /* Modals */

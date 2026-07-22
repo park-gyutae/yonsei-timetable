@@ -722,25 +722,34 @@ body {
 
 /* Mileage Distributor Card */
 .mileage-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .status-label {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .status-val {
-  background: var(--ink);
-  color: var(--text-on-dark);
-  border: 1px solid var(--ink);
+  background: var(--link);
+  color: #ffffff !important;
+  border: 1px solid var(--link);
   padding: 4px 10px;
   border-radius: var(--border-radius-sm);
   font-size: 12px;
   font-family: var(--font-display);
   font-weight: 700;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .status-val.warning-state {
@@ -753,6 +762,80 @@ body {
   background: var(--danger);
   border-color: var(--danger);
   color: #ffffff !important;
+}
+
+/* Range Slider High-Contrast Visual Track System */
+input[type="range"].mileage-slider,
+.alloc-control-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(120, 120, 128, 0.3) !important;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+}
+
+[data-theme="dark"] input[type="range"].mileage-slider,
+[data-theme="dark"] .alloc-control-slider input[type="range"] {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+input[type="range"].mileage-slider::-webkit-slider-runnable-track,
+.alloc-control-slider input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] input[type="range"].mileage-slider::-webkit-slider-runnable-track,
+[data-theme="light"] .alloc-control-slider input[type="range"]::-webkit-slider-runnable-track {
+  background: #d1d1d6;
+  border: 1px solid #c7c7cc;
+}
+
+input[type="range"].mileage-slider::-webkit-slider-thumb,
+.alloc-control-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--link, #0070f3);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  margin-top: -6px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].mileage-slider::-webkit-slider-thumb:active,
+.alloc-control-slider input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+  background: #3291ff;
+}
+
+input[type="range"].mileage-slider::-moz-range-track,
+.alloc-control-slider input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+}
+
+input[type="range"].mileage-slider::-moz-range-thumb,
+.alloc-control-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--link, #0070f3);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
 }
 
 /* Selected Courses for Mileage Allocation - Compact view */

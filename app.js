@@ -1735,15 +1735,17 @@ function renderSelectedCoursesList() {
           </div>
         </span>
       </div>
-      <a href="${syllabusUrl}" target="_blank" class="btn-selected-syllabus" title="강의계획서 조회" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center;">
-        <i data-lucide="book-open"></i>
-      </a>
-      <button class="btn-analyze" title="상세 마일리지 통계 분석" style="margin-left: 4px;">
-        <i data-lucide="bar-chart-3"></i>
-      </button>
-      <button class="btn-remove" title="시간표에서 제거">
-        <i data-lucide="trash-2"></i>
-      </button>
+      <div class="allocation-item-actions" style="display: flex; align-items: center; gap: 4px;">
+        <a href="${syllabusUrl}" target="_blank" class="btn-selected-syllabus" title="강의계획서 조회" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center;">
+          <i data-lucide="book-open"></i>
+        </a>
+        <button class="btn-analyze" title="상세 마일리지 통계 분석" style="margin-left: 0;">
+          <i data-lucide="bar-chart-3"></i>
+        </button>
+        <button class="btn-remove" title="시간표에서 제거">
+          <i data-lucide="trash-2"></i>
+        </button>
+      </div>
     `;
 
     const slider = item.querySelector('.mileage-slider');

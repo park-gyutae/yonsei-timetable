@@ -789,8 +789,8 @@ body {
   border-radius: var(--border-radius-sm);
   padding: 8px 12px;
   display: grid;
-  /* Columns: drag(20px) | priority-buttons(24px) | rank(50px) | info(1fr) | slider(120px) | input(55px) | prob(65px) | syllabus(32px) | analyze(32px) | remove(32px) */
-  grid-template-columns: 20px 24px 50px 1fr 120px 55px 65px 32px 32px 32px;
+  /* Columns: drag(20px) | priority-buttons(24px) | rank(50px) | info(1fr) | slider(120px) | input(55px) | prob(65px) | actions(auto) */
+  grid-template-columns: 20px 24px 50px 1fr 120px 55px 65px auto;
   align-items: center;
   gap: 10px;
   transition: all var(--transition-fast);
@@ -2487,13 +2487,36 @@ body {
     gap: 8px !important;
   }
 
-  /* Allocation Item Mobile Flexibility */
+  /* Mileage Distribution Header Mobile Layout */
+  .mileage-dist-card .card-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+
+  .mileage-dist-card .card-header .flex-between {
+    width: 100% !important;
+  }
+
+  .mileage-dist-card .card-header .flex-align {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .mileage-dist-card #btn-auto-allocate {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Allocation Item Mobile Card Layout */
   .allocation-item {
     display: flex !important;
     flex-wrap: wrap !important;
     align-items: center !important;
-    gap: 8px 10px !important;
-    padding: 10px 12px !important;
+    gap: 10px 8px !important;
+    padding: 12px 12px 12px 16px !important;
+    position: relative !important;
   }
 
   .allocation-item .drag-handle {
@@ -2502,23 +2525,103 @@ body {
 
   .allocation-item .priority-reorder-buttons {
     flex-direction: row !important;
-    gap: 4px !important;
+    gap: 3px !important;
+    order: 1;
   }
 
   .allocation-item .priority-reorder-buttons button {
-    width: 26px !important;
+    width: 24px !important;
     height: 22px !important;
   }
 
-  .allocation-item .alloc-info {
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    order: -1;
+  .allocation-item .rank-indicator {
+    order: 2;
+    min-width: 44px !important;
+    font-size: 11px !important;
+    padding: 2px 4px !important;
+    margin-right: 0 !important;
   }
 
+  .allocation-item .alloc-info {
+    order: 3;
+    flex: 1 1 calc(100% - 170px) !important;
+    min-width: 140px !important;
+  }
+
+  .allocation-item .alloc-info h4 {
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+  }
+
+  .allocation-item .alloc-info p {
+    font-size: 10.5px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .allocation-item .allocation-item-actions {
+    order: 4;
+    margin-left: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  .allocation-item .btn-selected-syllabus,
+  .allocation-item .btn-analyze,
+  .allocation-item .btn-remove {
+    width: 28px !important;
+    height: 28px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+    border: 1px solid var(--hairline) !important;
+    background: var(--canvas-card) !important;
+    padding: 0 !important;
+  }
+
+  /* Slider Row: Takes 100% width on Mobile */
   .allocation-item .alloc-control-slider {
-    flex: 1 1 120px !important;
-    min-width: 100px !important;
+    order: 5;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    margin: 4px 0 2px 0 !important;
+  }
+
+  .allocation-item .alloc-control-slider input[type="range"] {
+    width: 100% !important;
+  }
+
+  /* Bottom Controls: Input & Probability Badge */
+  .allocation-item .alloc-val-box {
+    order: 6;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .allocation-item .alloc-val-box input {
+    width: 55px !important;
+    height: 28px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+  }
+
+  .allocation-item .alloc-prob-box {
+    order: 7;
+    margin-left: auto !important;
+    width: auto !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    align-items: center !important;
+  }
+
+  .allocation-item .alloc-prob-box span:first-child {
+    font-size: 10px !important;
+    margin-bottom: 0 !important;
   }
 
   /* Modals */

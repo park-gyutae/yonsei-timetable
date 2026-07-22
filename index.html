@@ -187,6 +187,16 @@
                   </select>
                 </div>
                 <div class="search-filters" id="search-filters-inner">
+                  <div class="filter-group filter-group-search" style="width: 100%;">
+                    <label for="input-search">과목명 / 교수명 / 과목코드 검색</label>
+                    <div class="search-input-wrapper" style="position: relative;">
+                      <input type="text" id="input-search" placeholder="과목명, 교수명, 과목코드를 입력하세요...">
+                      <i data-lucide="search" class="input-icon"></i>
+                      <button type="button" id="btn-clear-search" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: none; align-items: center; justify-content: center; transition: color 0.15s ease; z-index: 10;">
+                        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                      </button>
+                    </div>
+                  </div>
                   <div class="filter-group">
                     <label for="btn-campus-trigger">캠퍼스</label>
                     <button type="button" class="multiselect-trigger" id="btn-campus-trigger" style="width: 100%; justify-content: space-between; text-align: left; padding: 6px 12px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 26px; display: flex; align-items: center; gap: 8px;">
@@ -218,16 +228,6 @@
                     <select id="select-dept" style="display: none;">
                       <!-- Dynamically loaded -->
                     </select>
-                  </div>
-                  <div class="filter-group">
-                    <label for="input-search">과목명/교수명/과목코드</label>
-                    <div class="search-input-wrapper" style="position: relative;">
-                      <input type="text" id="input-search" placeholder="검색어를 입력하세요...">
-                      <i data-lucide="search" class="input-icon"></i>
-                      <button type="button" id="btn-clear-search" style="position: absolute; right: 32px; top: 50%; transform: translateY(-50%); background: none; border: none; padding: 4px; cursor: pointer; color: var(--text-muted); display: none; align-items: center; justify-content: center; transition: color 0.15s ease; z-index: 10;">
-                        <i data-lucide="x" style="width: 14px; height: 14px;"></i>
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1143,6 +1143,6 @@
   </nav>
 
   <!-- JavaScript file -->
-  <script src="app.js?v=1.3.3"></script>
+  <script src="app.js?v=1.3.4"></script>
 </body>
 </html>

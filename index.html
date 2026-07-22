@@ -452,48 +452,83 @@
           </div>
           <!-- Monte Carlo Risk Dashboard -->
           <div class="card glass-card risk-dashboard-card" id="risk-dashboard-card" style="margin-top: 20px; display: none;">
-            <div class="card-header">
-              <i data-lucide="activity" class="header-icon"></i>
-              <h2>Monte Carlo 리스크 대시보드 (10,000회 시뮬레이션)</h2>
+            <div class="card-header flex-between">
+              <div class="flex-align">
+                <i data-lucide="activity" class="header-icon"></i>
+                <h2>Monte Carlo 리스크 대시보드 (10,000회 시뮬레이션)</h2>
+              </div>
+              <span id="risk-status-tag" style="font-size: 10.5px; padding: 3px 10px; border-radius: 12px; background: rgba(0,112,243,0.1); color: var(--accent-light); font-weight: 700; display: none;">
+                ✨ 10,000회 연산 완료
+              </span>
             </div>
-            <div class="monte-carlo-trigger-wrapper" style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-              <button class="btn btn-primary" id="btn-run-monte-carlo" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; background: linear-gradient(135deg, var(--accent-light), #00aaff); border: none; cursor: pointer; transition: transform var(--transition-fast);">
-                <i data-lucide="play" id="icon-monte-carlo" style="width: 15px; height: 15px;"></i>
+            <div class="monte-carlo-trigger-wrapper" style="padding: 14px; border-bottom: 1px solid var(--border-color); background: var(--canvas-soft);">
+              <button class="btn btn-primary" id="btn-run-monte-carlo" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; height: 42px; font-size: 13px; background: linear-gradient(135deg, #0070f3 0%, #00aaff 100%); border: none; cursor: pointer; transition: transform var(--transition-fast), box-shadow var(--transition-fast); border-radius: var(--border-radius-sm); box-shadow: 0 4px 14px rgba(0, 112, 243, 0.25);">
+                <i data-lucide="play" id="icon-monte-carlo" style="width: 16px; height: 16px;"></i>
                 <span id="text-monte-carlo">10,000회 리스크 시뮬레이션 실행</span>
               </button>
             </div>
-            <div class="advisor-content" id="risk-dashboard-content" style="filter: blur(3px); opacity: 0.5; transition: all 0.3s ease; pointer-events: none;">
-              <div class="risk-metrics-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
-                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">기대 학점 (E[Credits])</div>
-                  <strong id="risk-expected-credits" style="font-size: 18px; color: var(--accent-light);">0.0 ± 0.0</strong>
+            <div class="advisor-content" id="risk-dashboard-content" style="padding: 16px; filter: blur(3px); opacity: 0.5; transition: all 0.3s ease; pointer-events: none;">
+              
+              <!-- 4 Key Metrics Grid -->
+              <div class="risk-metrics-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+                
+                <!-- Metric 1 -->
+                <div class="risk-metric-box" style="background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; text-align: left; position: relative;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>평균 확정 학점</span>
+                    <span style="font-size: 9.5px; opacity: 0.7;">E[Credits]</span>
+                  </div>
+                  <strong id="risk-expected-credits" style="font-size: 20px; color: var(--accent-light); font-weight: 800; display: block; margin-bottom: 4px;">0.0 ± 0.0학점</strong>
+                  <div id="risk-expected-credits-sub" style="font-size: 10.5px; color: var(--text-secondary);">신청 학점 중 평균 확정 예상</div>
                 </div>
-                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">기대 효용 (E[Utility])</div>
-                  <strong id="risk-expected-utility" style="font-size: 18px; color: var(--warning);">0.0000</strong>
+
+                <!-- Metric 2 -->
+                <div class="risk-metric-box" style="background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; text-align: left; position: relative;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>수강 안정도 점수</span>
+                    <span style="font-size: 9.5px; opacity: 0.7;">E[Utility]</span>
+                  </div>
+                  <strong id="risk-expected-utility" style="font-size: 20px; color: var(--warning); font-weight: 800; display: block; margin-bottom: 4px;">0.0점 / 100점</strong>
+                  <div id="risk-expected-utility-sub" style="font-size: 10.5px; color: var(--text-secondary);">시간표 만족도 및 안정성 종합지수</div>
                 </div>
-                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">VaR (5% 최악 기준)</div>
-                  <strong id="risk-var" style="font-size: 18px; color: var(--danger);">0.0</strong>
+
+                <!-- Metric 3 -->
+                <div class="risk-metric-box" style="background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; text-align: left; position: relative;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>최악 (하위 5%) 보장 학점</span>
+                    <span style="font-size: 9.5px; opacity: 0.7;">VaR 95%</span>
+                  </div>
+                  <strong id="risk-var" style="font-size: 20px; color: var(--danger); font-weight: 800; display: block; margin-bottom: 4px;">0.0학점 이상</strong>
+                  <div id="risk-var-sub" style="font-size: 10.5px; color: var(--text-secondary);">95% 확률로 최소 보장 학점</div>
                 </div>
-                <div class="risk-metric-box" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 10px; text-align: center;">
-                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">공동 탈락 확률 (Joint Fail)</div>
-                  <strong id="risk-joint-fail" style="font-size: 18px; color: var(--text-primary);">0.0%</strong>
+
+                <!-- Metric 4 -->
+                <div class="risk-metric-box" style="background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px; text-align: left; position: relative;">
+                  <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>주요과목 동시 탈락 위험</span>
+                    <span style="font-size: 9.5px; opacity: 0.7;">Joint Fail</span>
+                  </div>
+                  <strong id="risk-joint-fail" style="font-size: 20px; color: var(--text-primary); font-weight: 800; display: block; margin-bottom: 4px;">0.0%</strong>
+                  <div id="risk-joint-fail-sub" style="font-size: 10.5px; color: var(--text-secondary);">주요 과목 동시 낙방 확률</div>
                 </div>
               </div>
 
-              <!-- Probability Table -->
-              <div style="margin-bottom: 16px;">
-                <h4 style="font-size: 11.5px; margin-bottom: 8px; color: var(--text-secondary);">목표 학점 달성 확률</h4>
-                <div style="display: flex; gap: 6px;" id="risk-probability-bar-container">
+              <!-- Credit Goal Probabilities -->
+              <div style="margin-bottom: 20px; background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px;">
+                <h4 style="font-size: 12px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <i data-lucide="target" style="width: 14px; height: 14px; color: var(--accent-light);"></i> 목표 학점별 최종 수강 확정 확률
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;" id="risk-probability-bar-container">
                   <!-- Dynamically updated -->
                 </div>
               </div>
 
               <!-- Plan B Recommendations -->
-              <div>
-                <h4 style="font-size: 11.5px; margin-bottom: 8px; color: var(--text-secondary);"><i data-lucide="corner-down-right" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:2px;"></i> Plan B 대체 전략</h4>
-                <div id="risk-plan-b-list" class="suggestions-list">
+              <div style="background: var(--canvas-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: 14px;">
+                <h4 style="font-size: 12px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                  <i data-lucide="shield-alert" style="width: 14px; height: 14px; color: var(--warning);"></i> Plan B 대체 수강신청 전략 추천
+                </h4>
+                <div id="risk-plan-b-list" class="suggestions-list" style="display: flex; flex-direction: column; gap: 10px;">
                   <!-- Dynamically populated Plan B -->
                 </div>
               </div>
@@ -1143,6 +1178,6 @@
   </nav>
 
   <!-- JavaScript file -->
-  <script src="app.js?v=1.3.6"></script>
+  <script src="app.js?v=1.3.7"></script>
 </body>
 </html>

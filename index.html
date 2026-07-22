@@ -274,62 +274,71 @@
             <div id="tab-filters-placeholder"></div>
 
             <!-- Horizontal Advanced Search Filter Bar -->
-            <div class="advanced-search-bar" style="padding: 12px 18px; background: var(--canvas-soft); border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 11px;">
-              <span style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 4px; border-right: 1px solid var(--border-color); padding-right: 14px;">
-                <i data-lucide="filter" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 상세 필터
-              </span>
+            <div class="advanced-search-bar-wrapper" style="background: var(--canvas-soft); border-bottom: 1px solid var(--border-color);">
+              <div class="advanced-search-header" id="btn-toggle-advanced-filters" style="padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+                <span style="font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                  <i data-lucide="filter" style="width: 13px; height: 13px; color: var(--accent-light);"></i> 상세 조건 필터
+                  <span id="active-filter-badge" style="font-size: 9.5px; padding: 1px 6px; background: rgba(0,112,243,0.12); color: var(--accent-light); border-radius: 10px; font-weight: 600; display: none;">0개 선택됨</span>
+                </span>
+                <button type="button" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--text-muted); display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500;">
+                  <span id="label-toggle-filter-text">접기</span>
+                  <i data-lucide="chevron-up" id="icon-toggle-filter-arrow" style="width: 14px; height: 14px; transition: transform 0.2s ease;"></i>
+                </button>
+              </div>
               
-              <!-- 이수구분 멀티셀렉트 -->
-              <div class="custom-multiselect" id="multiselect-classification" style="position: relative; display: flex; align-items: center; gap: 6px;">
-                <span style="color: var(--text-secondary); font-weight: 500;">이수구분</span>
-                <button type="button" class="multiselect-trigger" id="btn-classification-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 120px; gap: 6px;">
-                  <span class="trigger-label">전체</span>
-                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                </button>
-              </div>
+              <div class="advanced-search-bar" id="advanced-search-content" style="padding: 0 16px 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 11px; transition: all 0.25s ease;">
+                <!-- 이수구분 멀티셀렉트 -->
+                <div class="custom-multiselect" id="multiselect-classification" style="position: relative; display: flex; align-items: center; gap: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">이수구분</span>
+                  <button type="button" class="multiselect-trigger" id="btn-classification-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 120px; gap: 6px;">
+                    <span class="trigger-label">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                </div>
 
-              <!-- 학점 멀티셀렉트 -->
-              <div class="custom-multiselect" id="multiselect-credits" style="position: relative; display: flex; align-items: center; gap: 6px;">
-                <span style="color: var(--text-secondary); font-weight: 500;">학점</span>
-                <button type="button" class="multiselect-trigger" id="btn-credits-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
-                  <span class="trigger-label">전체</span>
-                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                </button>
-              </div>
+                <!-- 학점 멀티셀렉트 -->
+                <div class="custom-multiselect" id="multiselect-credits" style="position: relative; display: flex; align-items: center; gap: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">학점</span>
+                  <button type="button" class="multiselect-trigger" id="btn-credits-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
+                    <span class="trigger-label">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                </div>
 
-              <!-- 학년 멀티셀렉트 -->
-              <div class="custom-multiselect" id="multiselect-grade" style="position: relative; display: flex; align-items: center; gap: 6px;">
-                <span style="color: var(--text-secondary); font-weight: 500;">학년</span>
-                <button type="button" class="multiselect-trigger" id="btn-grade-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
-                  <span class="trigger-label">전체</span>
-                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                </button>
-              </div>
+                <!-- 학년 멀티셀렉트 -->
+                <div class="custom-multiselect" id="multiselect-grade" style="position: relative; display: flex; align-items: center; gap: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">학년</span>
+                  <button type="button" class="multiselect-trigger" id="btn-grade-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
+                    <span class="trigger-label">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                </div>
 
-              <!-- 평가 멀티셀렉트 -->
-              <div class="custom-multiselect" id="multiselect-evaluation" style="position: relative; display: flex; align-items: center; gap: 6px;">
-                <span style="color: var(--text-secondary); font-weight: 500;">평가</span>
-                <button type="button" class="multiselect-trigger" id="btn-evaluation-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
-                  <span class="trigger-label">전체</span>
-                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                </button>
-              </div>
+                <!-- 평가 멀티셀렉트 -->
+                <div class="custom-multiselect" id="multiselect-evaluation" style="position: relative; display: flex; align-items: center; gap: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">평가</span>
+                  <button type="button" class="multiselect-trigger" id="btn-evaluation-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 90px; gap: 6px;">
+                    <span class="trigger-label">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                </div>
 
-              <!-- 강의실 멀티셀렉트 -->
-              <div class="custom-multiselect" id="multiselect-room" style="position: relative; display: flex; align-items: center; gap: 6px;">
-                <span style="color: var(--text-secondary); font-weight: 500;">강의실</span>
-                <button type="button" class="multiselect-trigger" id="btn-room-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 100px; gap: 6px;">
-                  <span class="trigger-label">전체</span>
-                  <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                </button>
-              </div>
+                <!-- 강의실 멀티셀렉트 -->
+                <div class="custom-multiselect" id="multiselect-room" style="position: relative; display: flex; align-items: center; gap: 6px;">
+                  <span style="color: var(--text-secondary); font-weight: 500;">강의실</span>
+                  <button type="button" class="multiselect-trigger" id="btn-room-trigger" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: space-between; min-width: 100px; gap: 6px;">
+                    <span class="trigger-label">전체</span>
+                    <i data-lucide="chevron-down" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                  </button>
+                </div>
 
-              <!-- 시간선택 버튼 -->
-              <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-                <button type="button" id="btn-open-time-filter" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; gap: 6px; font-weight: 600; transition: border-color 0.15s ease, color 0.15s ease;">
-                  <i data-lucide="clock" style="width: 12px; height: 12px; opacity: 0.7;"></i>
-                  <span id="time-filter-btn-label">시간선택</span>
-                </button>
+                <!-- 시간선택 버튼 -->
+                <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                  <button type="button" id="btn-open-time-filter" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--canvas-card); color: var(--text-primary); cursor: pointer; height: 24px; display: flex; align-items: center; gap: 6px; font-weight: 600; transition: border-color 0.15s ease, color 0.15s ease;">
+                    <i data-lucide="clock" style="width: 12px; height: 12px; opacity: 0.7;"></i>
+                    <span id="time-filter-btn-label">시간선택</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1134,6 +1143,6 @@
   </nav>
 
   <!-- JavaScript file -->
-  <script src="app.js?v=1.3.1"></script>
+  <script src="app.js?v=1.3.2"></script>
 </body>
 </html>

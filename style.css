@@ -2423,25 +2423,9 @@ body {
     white-space: nowrap !important;
   }
 
-  /* Sticky Tab Bar on iPhone */
+  /* Hide top tab bar on small screen widths (<= 768px) and rely on bottom navigation dock */
   .tabs-nav {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 100 !important;
-    background: var(--canvas) !important;
-    padding: 8px 4px 6px 4px !important;
-    margin-bottom: 12px !important;
-    gap: 6px !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    -webkit-overflow-scrolling: touch;
-    border-bottom: 1px solid var(--hairline) !important;
-  }
-
-  .tab-btn {
-    font-size: 12px !important;
-    padding: 8px 10px !important;
-    flex: 1 0 auto !important;
+    display: none !important;
   }
 
   /* Advanced Search & Filter Bar */

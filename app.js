@@ -3430,6 +3430,27 @@ function setupEventListeners() {
     });
   });
 
+  // ── Collapsible Advanced Filter Toggle ───────────────────────────────────
+  const btnToggleFilter = document.getElementById('btn-toggle-advanced-filters');
+  const filterContent = document.getElementById('advanced-search-content');
+  const filterText = document.getElementById('label-toggle-filter-text');
+  const filterArrow = document.getElementById('icon-toggle-filter-arrow');
+
+  if (btnToggleFilter && filterContent) {
+    btnToggleFilter.addEventListener('click', () => {
+      const isHidden = filterContent.style.display === 'none';
+      if (isHidden) {
+        filterContent.style.display = 'flex';
+        if (filterText) filterText.textContent = '접기';
+        if (filterArrow) filterArrow.style.transform = 'rotate(0deg)';
+      } else {
+        filterContent.style.display = 'none';
+        if (filterText) filterText.textContent = '펼치기';
+        if (filterArrow) filterArrow.style.transform = 'rotate(180deg)';
+      }
+    });
+  }
+
   // ── Theme Switcher Event Binding ─────────────────────────────────────────
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
   if (btnToggleTheme) {

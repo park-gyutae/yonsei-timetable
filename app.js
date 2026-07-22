@@ -764,7 +764,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   initMiniTimetableCalendar();
   initShareModule();
-  switchTab('tab-timetable');
+  switchTab('tab-search');
   checkFirstVisitWelcomeModal();
   lucide.createIcons();
 });
@@ -7197,6 +7197,7 @@ function checkAndImportSharedTimetable() {
       importModal.classList.remove('active');
       btnConfirm.removeEventListener('click', handleConfirm);
       await applyImportedCourses(compactList);
+      switchTab('tab-timetable');
       history.replaceState({}, document.title, window.location.pathname);
       showToast('공유받은 시간표가 내 시간표에 성공적으로 적용되었습니다! ✨', 'sparkles');
     };

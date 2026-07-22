@@ -256,10 +256,10 @@
       <section class="timetable-panel">
         <!-- Vercel Geist Tab Navigation (3 Main Tabs) -->
         <div class="tabs-nav">
-          <button class="tab-btn" data-tab="tab-search" id="btn-tab-search">
+          <button class="tab-btn active" data-tab="tab-search" id="btn-tab-search">
             <i data-lucide="search"></i> 개설과목 검색
           </button>
-          <button class="tab-btn active" data-tab="tab-timetable" id="btn-tab-timetable">
+          <button class="tab-btn" data-tab="tab-timetable" id="btn-tab-timetable">
             <i data-lucide="calendar"></i> 시간표 플래너
           </button>
           <button class="tab-btn" data-tab="tab-mileage" id="btn-tab-mileage">
@@ -268,7 +268,7 @@
         </div>
 
         <!-- Tab 0 Content: Course Search Workspace -->
-        <div class="tab-content" id="tab-search" style="display: none;">
+        <div class="tab-content active" id="tab-search" style="display: block;">
           <div class="card glass-card search-workspace-card" style="margin-bottom: 0; min-height: 550px; display: flex; flex-direction: column;">
             <!-- Horizontal Search Filter Bar -->
             <div id="tab-filters-placeholder"></div>
@@ -365,7 +365,7 @@
         </div>
 
         <!-- Tab 1 Content: Timetable Calendar -->
-        <div class="tab-content active" id="tab-timetable" style="display: block;">
+        <div class="tab-content" id="tab-timetable" style="display: none;">
           <div class="card glass-card timetable-card" style="margin-bottom: 0;">
             <div class="card-header flex-between" style="flex-wrap: nowrap; gap: 12px; align-items: center; overflow: hidden;">
               <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap;">

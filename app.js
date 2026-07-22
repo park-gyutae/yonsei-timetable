@@ -2851,6 +2851,8 @@ function setupEventListeners() {
     activeSearchTab = tabName;
     const filtersInner = document.getElementById('search-filters-inner');
     const affiliatedPanel = document.getElementById('affiliated-major-panel');
+    const groupCollege = document.getElementById('filter-group-college');
+    const groupDept = document.getElementById('filter-group-dept');
 
     // Reset all tab buttons
     [btnSearchGeneral, btnSearchWishlist, btnSearchAffiliated].forEach(b => b?.classList.remove('active'));
@@ -2858,21 +2860,26 @@ function setupEventListeners() {
     if (tabName === 'search-general') {
       btnSearchGeneral?.classList.add('active');
       activeAffiliatedMajor = null; // Clear affiliated filter
-      // Show filter rows, hide affiliated panel
       if (filtersInner) filtersInner.style.display = '';
+      if (groupCollege) groupCollege.style.display = '';
+      if (groupDept) groupDept.style.display = '';
       if (affiliatedPanel) affiliatedPanel.style.display = 'none';
       fetchCourses();
     } else if (tabName === 'search-affiliated') {
       btnSearchAffiliated?.classList.add('active');
-      // Hide general filter rows, show affiliated panel
-      if (filtersInner) filtersInner.style.display = 'none';
+      // Show affiliated panel AND search filters (keyword search/campus filter), hide college & dept
+      if (filtersInner) filtersInner.style.display = '';
+      if (groupCollege) groupCollege.style.display = 'none';
+      if (groupDept) groupDept.style.display = 'none';
       if (affiliatedPanel) affiliatedPanel.style.display = '';
       renderAffiliatedMajorPanel();
     } else {
       btnSearchWishlist?.classList.add('active');
       activeAffiliatedMajor = null;
-      // Hide filter rows, show wishlist results
-      if (filtersInner) filtersInner.style.display = 'none';
+      // Show search filters for wishlist searching, hide college & dept & affiliated panel
+      if (filtersInner) filtersInner.style.display = '';
+      if (groupCollege) groupCollege.style.display = 'none';
+      if (groupDept) groupDept.style.display = 'none';
       if (affiliatedPanel) affiliatedPanel.style.display = 'none';
       renderWishlist();
     }
@@ -3172,7 +3179,11 @@ function setupEventListeners() {
   
   document.getElementById('select-campus').addEventListener('change', () => {
     resetAdvancedSearchFilters();
-    fetchCourses();
+    if (activeAffiliatedMajor) {
+      fetchCoursesForAffiliatedMajor();
+    } else {
+      fetchCourses();
+    }
   });
 
   // Profile Edit Modal Toggle

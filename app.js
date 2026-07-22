@@ -6738,32 +6738,51 @@ function openCourseActionModal(course) {
   const syllabusUrl = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
 
   // Render the exact same allocation-item card structure inside the modal!
+  // Render the exact same allocation-item card structure inside the modal!
   container.innerHTML = `
-    <div class="allocation-item" data-key="${key}" style="margin-bottom: 0; box-shadow: none; border-color: transparent; background: transparent;">
-      <div class="drag-handle" style="visibility: hidden; cursor: default;">
-        <i data-lucide="grip-vertical" style="width: 14px; height: 14px;"></i>
+    <div class="allocation-item modal-allocation-item" data-key="${key}" style="margin-bottom: 0; box-shadow: none; border-color: transparent; background: transparent; display: grid; grid-template-columns: 20px 24px 50px 1fr 140px 55px 65px auto; align-items: center; gap: 10px; width: 100%;">
+      <!-- Left Edge Neon Color Indicator -->
+      <div class="course-color-indicator" style="position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: ${course.color || '#3b82f6'}; border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);"></div>
+
+      <!-- Drag Grip (Col 1) -->
+      <div class="drag-handle" style="visibility: hidden; cursor: default; display: flex; align-items: center; justify-content: center; padding: 0 4px 0 8px;">
+        <i data-lucide="grip-vertical" style="width: 16px; height: 16px;"></i>
       </div>
-      <div class="rank-badge" style="background: ${rankColor}; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; color: #fff; text-align: center; width: 45px; display: inline-block;">
+
+      <!-- Priority Buttons Placeholder (Col 2) -->
+      <div class="priority-reorder-buttons" style="visibility: hidden; display: flex; flex-direction: column; gap: 2px; justify-content: center; align-items: center;">
+        <span style="width: 22px; height: 16px;"></span>
+      </div>
+
+      <!-- Rank Indicator (Col 3) -->
+      <div class="rank-indicator" style="display: flex; align-items: center; justify-content: center; min-width: 50px; font-weight: 800; font-size: 11.5px; color: ${rankColor}; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; padding: 3px 6px;">
         ${rankLabel}
       </div>
 
-      <div class="alloc-info" style="flex: 1;">
-        <h4 style="margin: 0; font-size: 13px;">${course.title}</h4>
-        <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-secondary);">${course.code}-${course.division} | ${course.professor || '교수 미지정'} | ${course.credits}학점</p>
+      <!-- Info (Col 4) -->
+      <div class="alloc-info" style="min-width: 0;">
+        <h4 style="margin: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${course.title}</h4>
+        <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${course.code}-${course.division} | ${course.professor || '교수 미지정'} | ${course.credits}학점</p>
         <div class="alloc-meta-row" style="display:flex; gap:12px; align-items:center; margin-top:4px;">
-          <label class="retake-toggle-label" style="margin-top:0;">
+          <label class="retake-toggle-label" style="margin-top:0; cursor: pointer; font-size: 11px; color: var(--text-secondary);">
             <input type="checkbox" class="modal-retake-checkbox" ${course.isRetake ? 'checked' : ''}>
             <span>재수강</span>
           </label>
         </div>
       </div>
-      <div class="alloc-control-slider" style="flex: 1.5;">
-        <input type="range" class="modal-mileage-slider" min="0" max="${maxVal}" value="${course.mileage}">
+
+      <!-- Slider (Col 5) -->
+      <div class="alloc-control-slider" style="display: flex; align-items: center;">
+        <input type="range" class="modal-mileage-slider" min="0" max="${maxVal}" value="${course.mileage}" style="width: 100%;">
       </div>
+
+      <!-- Value Input Box (Col 6) -->
       <div class="alloc-val-box">
         <input type="number" class="modal-mileage-input" min="0" max="${maxVal}" value="${course.mileage}">
       </div>
-      <div class="alloc-prob-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:65px; margin-left:6px;">
+
+      <!-- Probability Box (Col 7) -->
+      <div class="alloc-prob-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:65px;">
         <span style="font-size:9px; color:var(--text-muted); margin-bottom:2px;">합격 확률</span>
         <span class="prob-badge" style="font-size:11.5px; font-weight:700; padding:2px 6px; border-radius:4px; color:${color}; background:${glow};">
           ${Math.round(prob * 100)}%
@@ -6772,15 +6791,19 @@ function openCourseActionModal(course) {
           </div>
         </span>
       </div>
-      <a href="${syllabusUrl}" target="_blank" class="btn-selected-syllabus modal-btn-syllabus" title="강의계획서 조회" style="text-decoration: none; color: inherit;">
-        <i data-lucide="book-open"></i>
-      </a>
-      <button class="btn-analyze modal-btn-analyze" title="상세 마일리지 통계 분석" style="margin-left: 4px;">
-        <i data-lucide="bar-chart-3"></i>
-      </button>
-      <button class="btn-remove modal-btn-remove" title="시간표에서 제거" style="margin-left: 4px;">
-        <i data-lucide="trash-2"></i>
-      </button>
+
+      <!-- Action Buttons Wrapper (Col 8) -->
+      <div class="allocation-item-actions" style="display: flex; align-items: center; gap: 4px;">
+        <a href="${syllabusUrl}" target="_blank" class="btn-selected-syllabus modal-btn-syllabus" title="강의계획서 조회" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; justify-content: center; padding: 5px; border-radius: 4px; background: var(--canvas-soft); border: 1px solid var(--border-color); color: var(--text-primary);">
+          <i data-lucide="book-open" style="width: 14px; height: 14px;"></i>
+        </a>
+        <button type="button" class="btn-analyze modal-btn-analyze" title="상세 마일리지 통계 분석" style="display: inline-flex; align-items: center; justify-content: center; padding: 5px; border-radius: 4px; background: var(--canvas-soft); border: 1px solid var(--border-color); cursor: pointer; color: var(--text-primary);">
+          <i data-lucide="bar-chart-3" style="width: 14px; height: 14px;"></i>
+        </button>
+        <button type="button" class="btn-remove modal-btn-remove" title="시간표에서 제거" style="display: inline-flex; align-items: center; justify-content: center; padding: 5px; border-radius: 4px; background: var(--canvas-soft); border: 1px solid var(--border-color); cursor: pointer; color: var(--danger);">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+        </button>
+      </div>
     </div>
   `;
 

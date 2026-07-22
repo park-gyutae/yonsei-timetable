@@ -372,8 +372,11 @@
                 <i data-lucide="calendar" class="header-icon"></i>
                 <h2>내 시간표 시각표</h2>
               </div>
-              <div class="timetable-stats">
+              <div class="timetable-stats" style="display: flex; align-items: center; gap: 8px;">
                 <span class="stat-badge" id="total-credits">0학점 신청됨</span>
+                <button class="btn btn-outline" id="btn-share-timetable" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; font-size: 11.5px; border-radius: 20px; font-weight: 600; background: var(--canvas-elevated); border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;">
+                  <i data-lucide="share-2" style="width: 13.5px; height: 13.5px; color: var(--accent-light);"></i> 공유 / 내보내기
+                </button>
               </div>
             </div>
 
@@ -1238,6 +1241,76 @@
       <span>프로필</span>
     </button>
   </nav>
+
+  <!-- Share & Export Modal -->
+  <div class="modal-overlay" id="share-modal" style="display: none; z-index: 10006;">
+    <div class="modal-content glass-card" style="max-width: 500px; width: 92%; padding: 22px; position: relative; border-radius: 16px; border: 1px solid var(--border-color); box-shadow: var(--shadow-xl);">
+      <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--hairline); padding-bottom: 12px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="share-2" style="width: 20px; height: 20px; color: var(--accent-light);"></i>
+          <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">시간표 공유 & 내보내기</h2>
+        </div>
+        <button class="modal-close-btn" id="btn-close-share-modal" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; display: inline-flex; align-items: center;">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Option 1: URL Share -->
+        <div class="share-option-card" style="background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all 0.2s ease;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #3b82f6; flex-shrink: 0;">
+              <i data-lucide="link" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">🔗 1-Click URL 공유 링크</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">시간표와 마일리지 설정을 링크로 바로 공유합니다.</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-copy-share-url" style="white-space: nowrap; font-size: 12px; padding: 8px 14px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <i data-lucide="copy" style="width: 14px; height: 14px;"></i> 링크 복사
+          </button>
+        </div>
+
+        <!-- Option 2: PNG Image Download -->
+        <div class="share-option-card" style="background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all 0.2s ease;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981; flex-shrink: 0;">
+              <i data-lucide="image" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">📸 고화질 PNG 이미지 저장</div>
+              <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">에타/카톡 공유용 고화질 이미지로 저장합니다.</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-download-png" style="white-space: nowrap; font-size: 12px; padding: 8px 14px; border-radius: 8px; font-weight: 600; background: #10b981; border-color: #10b981; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i> PNG 저장
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared Timetable Import Modal -->
+  <div class="modal-overlay" id="import-share-modal" style="display: none; z-index: 10007;">
+    <div class="modal-content glass-card" style="max-width: 440px; width: 92%; padding: 22px; position: relative; border-radius: 16px; border: 1px solid var(--border-color); text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(59, 130, 246, 0.15); color: #3b82f6; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+        <i data-lucide="sparkles" style="width: 28px; height: 28px;"></i>
+      </div>
+      <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">공유받은 시간표를 불러오시겠습니까?</h2>
+      <p id="import-share-desc" style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+        공유된 <span id="import-course-count" style="font-weight: 700; color: var(--accent-light);">0</span>개 과목의 시간표와 마일리지 정보가 포함되어 있습니다.
+      </p>
+      <div id="import-course-preview" style="max-height: 150px; overflow-y: auto; background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; margin-bottom: 18px; text-align: left; font-size: 12px; display: flex; flex-direction: column; gap: 6px;">
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-outline" id="btn-cancel-import" style="flex: 1; font-size: 12px; padding: 10px; border-radius: 8px; cursor: pointer;">취소</button>
+        <button class="btn btn-primary" id="btn-confirm-import" style="flex: 1.2; font-size: 12px; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">불러오기 적용</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10010; pointer-events: none; display: flex; flex-direction: column; gap: 8px; align-items: center;"></div>
 
   <!-- JavaScript file -->
   <script src="app.js?v=1.4.6"></script>

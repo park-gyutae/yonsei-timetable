@@ -759,6 +759,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSelectModals(); // Initialize campus/college/dept modals and sync labels
   setupEventListeners();
   initMiniTimetableCalendar();
+  initShareModule();
   switchTab('tab-timetable');
   checkFirstVisitWelcomeModal();
   lucide.createIcons();
@@ -6887,4 +6888,411 @@ function openCourseActionModal(course) {
 
   // Show modal overlay
   modal.classList.add('active');
+}
+
+// ─── Share & Export Module (URL Link & PNG Image Export) ───────────────────
+
+function initShareModule() {
+  const btnShare = document.getElementById('btn-share-timetable');
+  const modalShare = document.getElementById('share-modal');
+  const btnCloseShare = document.getElementById('btn-close-share-modal');
+  const btnCopyUrl = document.getElementById('btn-copy-share-url');
+  const btnDownloadPng = document.getElementById('btn-download-png');
+
+  if (btnShare && modalShare) {
+    btnShare.addEventListener('click', () => {
+      modalShare.classList.add('active');
+    });
+  }
+
+  if (btnCloseShare && modalShare) {
+    btnCloseShare.addEventListener('click', () => {
+      modalShare.classList.remove('active');
+    });
+    modalShare.addEventListener('click', (e) => {
+      if (e.target === modalShare) modalShare.classList.remove('active');
+    });
+  }
+
+  if (btnCopyUrl) {
+    btnCopyUrl.addEventListener('click', generateShareUrl);
+  }
+
+  if (btnDownloadPng) {
+    btnDownloadPng.addEventListener('click', exportTimetableAsImage);
+  }
+
+  // Check URL query parameters for shared timetable import
+  checkAndImportSharedTimetable();
+}
+
+function showToast(message, iconName = 'check-circle') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast-msg';
+  toast.innerHTML = `<i data-lucide="${iconName}" style="width: 16px; height: 16px; color: var(--accent-light);"></i> <span>${message}</span>`;
+  container.appendChild(toast);
+  if (window.lucide) window.lucide.createIcons({ props: { scope: toast } });
+  setTimeout(() => {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 3000);
+}
+
+function generateShareUrl() {
+  if (!selectedCourses || selectedCourses.length === 0) {
+    showToast('시간표에 추가된 과목이 없습니다.', 'alert-triangle');
+    return;
+  }
+
+  try {
+    const compactData = selectedCourses.map(c => ({
+      c: c.code,
+      d: c.division || '01',
+      m: c.mileage || 18
+    }));
+    
+    const jsonStr = JSON.stringify(compactData);
+    const b64Str = btoa(unescape(encodeURIComponent(jsonStr)));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(b64Str)}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast('1-Click 공유 링크가 클립보드에 복사되었습니다! 🔗', 'copy');
+    }).catch(() => {
+      prompt('아래 공유 링크를 복사하세요:', shareUrl);
+    });
+  } catch (err) {
+    console.error('Share URL generation error:', err);
+    showToast('공유 링크 생성 중 오류가 발생했습니다.', 'alert-triangle');
+  }
+}
+
+function checkAndImportSharedTimetable() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const shareParam = urlParams.get('share');
+  if (!shareParam) return;
+
+  try {
+    const jsonStr = decodeURIComponent(escape(atob(shareParam)));
+    const compactList = JSON.parse(jsonStr);
+    
+    if (!Array.isArray(compactList) || compactList.length === 0) return;
+
+    const importModal = document.getElementById('import-share-modal');
+    const countEl = document.getElementById('import-course-count');
+    const previewEl = document.getElementById('import-course-preview');
+    const btnConfirm = document.getElementById('btn-confirm-import');
+    const btnCancel = document.getElementById('btn-cancel-import');
+
+    if (!importModal || !previewEl) return;
+
+    if (countEl) countEl.textContent = compactList.length;
+
+    previewEl.innerHTML = compactList.map((item, idx) => {
+      let found = (typeof allCoursesData !== 'undefined' && allCoursesData) ? allCoursesData.find(c => c.code === item.c && (c.division === item.d || !item.d)) : null;
+      let title = found ? (found.title || found.name) : `${item.c} (${item.d}분반)`;
+      return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--border-color);">
+        <span style="font-weight: 600; color: var(--text-primary);">${idx + 1}. [${item.c}-${item.d}] ${title}</span>
+        <span style="color: var(--accent-light); font-weight: 700;">⚡ ${item.m}M</span>
+      </div>`;
+    }).join('');
+
+    importModal.classList.add('active');
+
+    const handleConfirm = async () => {
+      importModal.classList.remove('active');
+      btnConfirm.removeEventListener('click', handleConfirm);
+      await applyImportedCourses(compactList);
+      history.replaceState({}, document.title, window.location.pathname);
+      showToast('공유받은 시간표가 내 시간표에 성공적으로 적용되었습니다! ✨', 'sparkles');
+    };
+
+    const handleCancel = () => {
+      importModal.classList.remove('active');
+      btnCancel.removeEventListener('click', handleCancel);
+      history.replaceState({}, document.title, window.location.pathname);
+    };
+
+    btnConfirm.addEventListener('click', handleConfirm);
+    btnCancel.addEventListener('click', handleCancel);
+
+  } catch (err) {
+    console.error('Failed to parse share parameter:', err);
+  }
+}
+
+async function applyImportedCourses(compactList) {
+  const newSelected = [];
+
+  for (const item of compactList) {
+    let found = (typeof allCoursesData !== 'undefined' && allCoursesData) ? allCoursesData.find(c => c.code === item.c && (c.division === item.d || !item.d)) : null;
+    
+    if (!found) {
+      try {
+        const res = await fetch(`/api/search?keyword=${encodeURIComponent(item.c)}`);
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.courses && resData.courses.length > 0) {
+            found = resData.courses.find(c => c.code === item.c && (c.division === item.d || !item.d)) || resData.courses[0];
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (found) {
+      const courseObj = { ...found, mileage: item.m || found.mileage || 18 };
+      newSelected.push(courseObj);
+    } else {
+      newSelected.push({
+        code: item.c,
+        division: item.d || '01',
+        title: `공유 과목 (${item.c})`,
+        credits: 3,
+        time: '',
+        mileage: item.m || 18,
+        color: PALETTE[newSelected.length % PALETTE.length]
+      });
+    }
+  }
+
+  if (newSelected.length > 0) {
+    selectedCourses = newSelected;
+    selectedCourses.forEach((c, idx) => {
+      if (!c.color) c.color = PALETTE[idx % PALETTE.length];
+    });
+    saveDataToStorage();
+    renderTimetable();
+    if (typeof initMiniTimetableCalendar === 'function') initMiniTimetableCalendar();
+  }
+}
+
+function exportTimetableAsImage() {
+  if (!selectedCourses || selectedCourses.length === 0) {
+    showToast('시간표에 과목이 없습니다. 과목을 추가한 후 저장하세요.', 'alert-triangle');
+    return;
+  }
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  const width = 1200;
+  const padding = 40;
+  const headerHeight = 120;
+  
+  const { activeDays, maxPeriod } = getActiveTimetableLimits();
+  const dayCount = activeDays.length;
+  
+  const timeColWidth = 100;
+  const gridWidth = width - (padding * 2) - timeColWidth;
+  const colWidth = gridWidth / dayCount;
+  const rowHeight = 54;
+  const gridHeight = (maxPeriod + 1) * rowHeight;
+  
+  const onlineCourses = selectedCourses.filter(c => !c.time || c.time.includes('동영상') || c.time.includes('인터넷'));
+  const onlineSectionHeight = onlineCourses.length > 0 ? 80 + (onlineCourses.length * 36) : 0;
+  
+  const totalHeight = headerHeight + gridHeight + onlineSectionHeight + padding + 60;
+  
+  const scale = 2;
+  canvas.width = width * scale;
+  canvas.height = totalHeight * scale;
+  ctx.scale(scale, scale);
+
+  // Background
+  ctx.fillStyle = '#0b1329';
+  ctx.fillRect(0, 0, width, totalHeight);
+
+  // Header Box
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(padding, padding, width - padding * 2, headerHeight - 20, 16);
+  else ctx.fillRect(padding, padding, width - padding * 2, headerHeight - 20);
+  ctx.fill();
+
+  // Header Title & Subtitle
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('연세대학교 마일리지 시간표', padding + 24, padding + 42);
+
+  const totalCredits = selectedCourses.reduce((s, c) => s + (c.credits || 3), 0);
+  const totalMileage = selectedCourses.reduce((s, c) => s + (c.mileage || 0), 0);
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '500 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(`2026학년도 2학기 • ${selectedCourses.length}개 과목 • 총 ${totalCredits}학점 • ${totalMileage}마일리지 배분`, padding + 24, padding + 70);
+
+  // Logo Pill
+  ctx.fillStyle = '#3b82f6';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(width - padding - 180, padding + 24, 150, 36, 18);
+  else ctx.fillRect(width - padding - 180, padding + 24, 150, 36);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Yonsei Timetable', width - padding - 105, padding + 47);
+  ctx.textAlign = 'left';
+
+  // Grid Header
+  const gridStartY = padding + headerHeight;
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(padding, gridStartY, timeColWidth, rowHeight);
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padding, gridStartY, timeColWidth, rowHeight);
+
+  activeDays.forEach((day, idx) => {
+    const x = padding + timeColWidth + (idx * colWidth);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x, gridStartY, colWidth, rowHeight);
+    ctx.strokeRect(x, gridStartY, colWidth, rowHeight);
+
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(day, x + (colWidth / 2), gridStartY + 33);
+  });
+  ctx.textAlign = 'left';
+
+  // Time Rows
+  const periodTimes = [
+    '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '18:55', '19:50', '20:45', '21:40'
+  ];
+
+  for (let p = 1; p <= maxPeriod; p++) {
+    const y = gridStartY + (p * rowHeight);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(padding, y, timeColWidth, rowHeight);
+    ctx.strokeRect(padding, y, timeColWidth, rowHeight);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(`${p}교시`, padding + 14, y + 26);
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(periodTimes[p - 1] || '', padding + 14, y + 43);
+
+    activeDays.forEach((_, idx) => {
+      const x = padding + timeColWidth + (idx * colWidth);
+      ctx.fillStyle = (p % 2 === 0) ? '#0f172a' : '#141e33';
+      ctx.fillRect(x, y, colWidth, rowHeight);
+      ctx.strokeRect(x, y, colWidth, rowHeight);
+    });
+  }
+
+  // Course Blocks
+  const dayIndexMap = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5 };
+
+  selectedCourses.forEach(c => {
+    const parsedSlots = parseTimeSlots(c.time);
+    if (!parsedSlots || parsedSlots.length === 0) return;
+
+    const dayGroups = {};
+    parsedSlots.forEach(s => {
+      if (dayIndexMap[s.day] !== undefined && dayIndexMap[s.day] < dayCount) {
+        if (!dayGroups[s.day]) dayGroups[s.day] = [];
+        dayGroups[s.day].push(s.period);
+      }
+    });
+
+    Object.keys(dayGroups).forEach(day => {
+      const dayIdx = dayIndexMap[day];
+      const periods = dayGroups[day].sort((a, b) => a - b);
+
+      let startP = periods[0];
+      let countP = 1;
+
+      for (let i = 1; i <= periods.length; i++) {
+        if (i < periods.length && periods[i] === periods[i - 1] + 1) {
+          countP++;
+        } else {
+          const blockX = padding + timeColWidth + (dayIdx * colWidth) + 3;
+          const blockY = gridStartY + (startP * rowHeight) + 3;
+          const blockW = colWidth - 6;
+          const blockH = (countP * rowHeight) - 6;
+
+          const cardBg = c.color || '#3b82f6';
+          ctx.fillStyle = cardBg;
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(blockX, blockY, blockW, blockH, 8);
+          else ctx.fillRect(blockX, blockY, blockW, blockH);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+          let titleStr = c.title || c.name || c.code;
+          if (titleStr.length > 11 && blockW < 130) {
+            titleStr = titleStr.slice(0, 10) + '…';
+          }
+          ctx.fillText(titleStr, blockX + 8, blockY + 20);
+
+          if (blockH > 35) {
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(`[${c.division || '01'}] ${c.room || ''}`, blockX + 8, blockY + 36);
+          }
+
+          if (blockH > 55 && c.mileage) {
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            ctx.fillText(`⚡ ${c.mileage} 마일리지`, blockX + 8, blockY + 52);
+          }
+
+          if (i < periods.length) {
+            startP = periods[i];
+            countP = 1;
+          }
+        }
+      }
+    });
+  });
+
+  // Online Section
+  if (onlineCourses.length > 0) {
+    const onlineY = gridStartY + ((maxPeriod + 1) * rowHeight) + 20;
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(padding, onlineY, width - padding * 2, onlineSectionHeight - 20, 12);
+    else ctx.fillRect(padding, onlineY, width - padding * 2, onlineSectionHeight - 20);
+    ctx.fill();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText('💻 시간표 외 동영상/인터넷 강좌', padding + 16, onlineY + 30);
+
+    onlineCourses.forEach((c, idx) => {
+      const itemY = onlineY + 52 + (idx * 32);
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(padding + 16, itemY - 16, width - padding * 2 - 32, 28, 6);
+      else ctx.fillRect(padding + 16, itemY - 16, width - padding * 2 - 32, 28);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(`[${c.code}-${c.division || '01'}] ${c.title || c.name} (${c.credits || 3}학점)`, padding + 26, itemY + 2);
+      ctx.fillStyle = '#60a5fa';
+      ctx.fillText(`${c.mileage || 0} 마일리지`, width - padding - 120, itemY + 2);
+    });
+  }
+
+  // Footer Watermark
+  const footerY = totalHeight - 25;
+  ctx.fillStyle = '#64748b';
+  ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Yonsei Timetable Planner • 생성일시: ' + new Date().toLocaleDateString('ko-KR'), width / 2, footerY);
+  ctx.textAlign = 'left';
+
+  const dataUrl = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.download = `yonsei_timetable_${new Date().toISOString().slice(0, 10)}.png`;
+  link.href = dataUrl;
+  link.click();
+
+  showToast('시간표 고화질 PNG 이미지가 저장되었습니다! 📸');
 }

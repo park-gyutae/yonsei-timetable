@@ -1244,10 +1244,15 @@ function renderCourses(courses) {
       toggleWishlist(c, e.currentTarget);
     });
 
-    // Stop propagation on syllabus link click to prevent parent event trigger
-    div.querySelector('.btn-view-syllabus').addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
+    // Click handler for syllabus link -> Open iframe popup modal
+    const syllabusBtn = div.querySelector('.btn-view-syllabus');
+    if (syllabusBtn) {
+      syllabusBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openSyllabusModal(c.title, syllabusUrl);
+      });
+    }
 
     // Click handler for analysis button
     div.querySelector('.btn-view-analysis').addEventListener('click', (e) => {
@@ -1807,7 +1812,14 @@ function renderSelectedCoursesList() {
     const removeBtn = item.querySelector('.btn-remove');
     const retakeCheckbox = item.querySelector('.retake-checkbox');
 
-    // Click handler for syllabus link is handled natively by the anchor tag
+    // Click handler for syllabus link -> Open iframe popup modal
+    if (syllabusBtn) {
+      syllabusBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openSyllabusModal(c.title, syllabusUrl);
+      });
+    }
 
     // 헬퍼: 확률 뱃지 및 조언 툴팁 실시간 드래그 동적 업데이트
     function updateProbBadge(val) {
@@ -3531,6 +3543,33 @@ function setupEventListeners() {
       }
     });
   }
+
+  // ── Open Syllabus In-App Popup Modal Function ──────────────────────────
+  window.openSyllabusModal = function(courseTitle, syllabusUrl) {
+    const modal = document.getElementById('syllabus-modal');
+    const iframe = document.getElementById('syllabus-iframe');
+    const titleEl = document.getElementById('syllabus-modal-title');
+    const extBtn = document.getElementById('btn-syllabus-external');
+
+    if (!modal || !iframe) {
+      window.open(syllabusUrl, '_blank');
+      return;
+    }
+
+    if (titleEl) {
+      titleEl.textContent = courseTitle ? `${courseTitle} - 강의계획서` : '강의계획서 조회';
+    }
+
+    if (extBtn) {
+      extBtn.onclick = () => {
+        window.open(syllabusUrl, '_blank');
+      };
+    }
+
+    iframe.src = syllabusUrl;
+    modal.classList.add('active');
+    if (window.lucide) window.lucide.createIcons();
+  };
 
   // ── Syllabus Modal Close Event Binding ──────────────────────────────────
   const syllabusModal = document.getElementById('syllabus-modal');
@@ -6748,10 +6787,13 @@ function openCourseActionModal(course) {
     });
   }
 
-  // Bind Syllabus Button (closes modal when native link opens new tab)
+  // Bind Syllabus Button to open in-app iframe modal
   if (syllabusBtn) {
-    syllabusBtn.addEventListener('click', () => {
+    syllabusBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       modal.classList.remove('active');
+      openSyllabusModal(course.title, syllabusUrl);
     });
   }
 

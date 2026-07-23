@@ -7004,22 +7004,55 @@ function initShareModule() {
   checkAndImportSharedTimetable();
 }
 
+function _encodeShareData(courses) {
+  // Use shortest key names to minimize JSON before compression
+  const compactData = courses.map(c => ({
+    c: c.code,
+    d: c.division || '01',
+    m: c.mileage || 18,
+    t: c.title || c.name || '',
+    s: c.time || '',
+    r: c.room || '',
+    p: c.professor || '',
+    cr: c.credits || 3
+  }));
+  const jsonStr = JSON.stringify(compactData);
+  // Use LZString if available (60% shorter), fallback to Base64
+  if (typeof LZString !== 'undefined') {
+    return LZString.compressToEncodedURIComponent(jsonStr);
+  }
+  return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+}
+
+function _decodeShareParam(param) {
+  // Try LZString first, then legacy Base64
+  if (typeof LZString !== 'undefined') {
+    try {
+      const lzResult = LZString.decompressFromEncodedURIComponent(param);
+      if (lzResult) {
+        const parsed = JSON.parse(lzResult);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+  }
+  // Fallback: legacy Base64
+  try {
+    const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(param))));
+    return JSON.parse(jsonStr);
+  } catch (e) {}
+  // Fallback2: atob without extra decode
+  try {
+    const jsonStr = decodeURIComponent(escape(atob(param)));
+    return JSON.parse(jsonStr);
+  } catch (e) {}
+  return null;
+}
+
 function generateShareUrlString() {
   if (!selectedCourses || selectedCourses.length === 0) return window.location.href;
   try {
-    const compactData = selectedCourses.map(c => ({
-      c: c.code,
-      d: c.division || '01',
-      m: c.mileage || 18,
-      t: c.title || c.name || '',
-      s: c.time || '',
-      r: c.room || '',
-      p: c.professor || '',
-      cr: c.credits || 3
-    }));
-    const jsonStr = JSON.stringify(compactData);
-    const b64Str = btoa(unescape(encodeURIComponent(jsonStr)));
-    return `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(b64Str)}`;
+    const encoded = _encodeShareData(selectedCourses);
+    return `${window.location.origin}${window.location.pathname}?share=${encoded}`;
   } catch (e) {
     return window.location.href;
   }
@@ -7127,20 +7160,7 @@ function generateShareUrl() {
   }
 
   try {
-    const compactData = selectedCourses.map(c => ({
-      c: c.code,
-      d: c.division || '01',
-      m: c.mileage || 18,
-      t: c.title || c.name || '',
-      s: c.time || '',
-      r: c.room || '',
-      p: c.professor || '',
-      cr: c.credits || 3
-    }));
-    
-    const jsonStr = JSON.stringify(compactData);
-    const b64Str = btoa(unescape(encodeURIComponent(jsonStr)));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(b64Str)}`;
+    const shareUrl = generateShareUrlString();
 
     navigator.clipboard.writeText(shareUrl).then(() => {
       showToast('1-Click 공유 링크가 클립보드에 복사되었습니다! 🔗', 'copy');
@@ -7159,9 +7179,7 @@ function checkAndImportSharedTimetable() {
   if (!shareParam) return;
 
   try {
-    const jsonStr = decodeURIComponent(escape(atob(shareParam)));
-    const compactList = JSON.parse(jsonStr);
-    
+    const compactList = _decodeShareParam(shareParam);
     if (!Array.isArray(compactList) || compactList.length === 0) return;
 
     const importModal = document.getElementById('import-share-modal');

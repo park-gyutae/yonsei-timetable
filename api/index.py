@@ -1298,13 +1298,6 @@ def _dispatch_telemetry(payload: dict, client_ip: str, user_agent: str):
     supabase_key = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if supabase_url and supabase_key:
         try:
-            endpoint = f"{supabase_url.rstrip('/')}/rest/v1/simulation_logs"
-            headers = {
-                "apikey": supabase_key,
-                "Authorization": f"Bearer {supabase_key}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal",
-            }
             db_record = {
                 "user_id": user_id,
                 "client_ip": client_ip,
@@ -1314,11 +1307,23 @@ def _dispatch_telemetry(payload: dict, client_ip: str, user_agent: str):
                 "simulation_result": sim_result,
                 "created_at": ts,
             }
-            res = requests.post(endpoint, json=db_record, headers=headers, timeout=5)
+            headers = {
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+            }
+            rpc_endpoint = f"{supabase_url.rstrip('/')}/rest/v1/rpc/insert_simulation_log"
+            res = requests.post(rpc_endpoint, json={"payload": db_record}, headers=headers, timeout=5)
+
             if res.status_code >= 400:
-                print(f"[TELEMETRY_SUPABASE_ERR] {res.status_code}: {res.text}")
+                table_endpoint = f"{supabase_url.rstrip('/')}/rest/v1/simulation_logs"
+                headers["Prefer"] = "return=minimal"
+                res_table = requests.post(table_endpoint, json=db_record, headers=headers, timeout=5)
+                if res_table.status_code >= 400:
+                    print(f"[TELEMETRY_SUPABASE_ERR] RPC: {res.status_code}, Table: {res_table.status_code} ({res_table.text})")
         except Exception as err:
             print(f"[TELEMETRY_SUPABASE_ERR] {err}")
+
 
 
 

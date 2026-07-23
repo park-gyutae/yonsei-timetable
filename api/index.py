@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -12,6 +12,25 @@ import time
 import sqlite3
 
 app = FastAPI()
+
+# ─── Load .env file if present ──────────────────────────────────────────────
+def _load_env_file():
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip().strip('"').strip("'")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+        except Exception as e:
+            print(f"[WARN] Failed to load .env: {e}")
+
+_load_env_file()
+
 
 # ─── Optimizer 경로 등록 ──────────────────────────────────────────────────────
 _CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1182,8 +1201,145 @@ def optimize_mileage(req: OptimizeRequest):
         return {"success": False, "error": str(e)}
 
 
+# ─── Telemetry / Simulation Logging ──────────────────────────────────────────
+
+class TelemetryLogRequest(BaseModel):
+    user_id: Optional[str] = None
+    user_profile: Optional[dict] = None
+    courses: Optional[List[dict]] = None
+    simulation_result: Optional[dict] = None
+    timestamp: Optional[str] = None
+
+
+def _dispatch_telemetry(payload: dict, client_ip: str, user_agent: str):
+    """
+    Asynchronously processes and dispatches telemetry logs.
+    1. Outputs structured JSON log for Vercel / server stdout.
+    2. Sends formatted Discord notification if DISCORD_WEBHOOK_URL env var is present.
+    3. Posts record to Supabase if SUPABASE_URL & SUPABASE_KEY env vars are present.
+    """
+    ts = payload.get("timestamp") or time.strftime("%Y-%m-%d %H:%M:%S")
+    user_profile = payload.get("user_profile") or {}
+    courses = payload.get("courses") or []
+    sim_result = payload.get("simulation_result") or {}
+    user_id = payload.get("user_id") or "anonymous"
+
+    # 1. Standard Output JSON Log (Always active, visible in Vercel Dashboard Logs)
+    log_entry = {
+        "event": "SIMULATION_RUN",
+        "timestamp": ts,
+        "client_ip": client_ip,
+        "user_agent": user_agent,
+        "user_id": user_id,
+        "user_profile": user_profile,
+        "courses_count": len(courses),
+        "courses": courses,
+        "simulation_result": sim_result,
+    }
+    print(f"[TELEMETRY_LOG] {json.dumps(log_entry, ensure_ascii=False)}")
+
+    # 2. Discord Webhook Dispatch (Active if DISCORD_WEBHOOK_URL is set)
+    discord_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if discord_url:
+        try:
+            course_lines = []
+            for c in courses:
+                c_name = c.get("name") or c.get("code", "미정")
+                c_code = c.get("code", "")
+                c_div = c.get("division", "01")
+                c_mlg = c.get("mileage", 0)
+                c_prob = c.get("prob")
+                prob_str = "미정"
+                if c_prob is not None:
+                    prob_str = f"{c_prob * 100:.1f}%" if isinstance(c_prob, (int, float)) and c_prob <= 1.0 else f"{c_prob:.1f}%"
+                course_lines.append(f"• **{c_name}** ({c_code}-{c_div}): **{c_mlg}점** | 예상합격률: {prob_str}")
+
+            courses_text = "\n".join(course_lines) if course_lines else "선택 과목 없음"
+
+            first_major = user_profile.get("first_major", "미지정")
+            grade = user_profile.get("grade", "미지정")
+            earned = user_profile.get("earned_credits", 0)
+            req = user_profile.get("req_credits", 0)
+            grad_str = "예" if user_profile.get("is_graduating") else "아니오"
+
+            exp_cr = sim_result.get("expected_credits")
+            exp_cr_str = f"{exp_cr:.1f}학점" if isinstance(exp_cr, (int, float)) else str(exp_cr or "-")
+            util_sc = sim_result.get("utility_score")
+            util_str = f"{util_sc}점" if util_sc is not None else "-"
+
+            embed = {
+                "title": "🚀 수강신청 시간표 시뮬레이션 실행 알림",
+                "color": 0x3498DB,
+                "fields": [
+                    {
+                        "name": "👤 유저 프로필",
+                        "value": f"• **전공**: {first_major}\n• **학년**: {grade}학년 | **졸업신청**: {grad_str}\n• **이수학점**: {earned} / {req}학점",
+                        "inline": True
+                    },
+                    {
+                        "name": "📊 시뮬레이션 결과 요약",
+                        "value": f"• **기대 학점**: {exp_cr_str}\n• **안정성 점수**: {util_str}\n• **사용자 ID**: `{user_id[:12]}`",
+                        "inline": True
+                    },
+                    {
+                        "name": f"📚 선택 과목 & 마일리지 배정 ({len(courses)}개)",
+                        "value": courses_text[:1024],
+                        "inline": False
+                    }
+                ],
+                "footer": {"text": f"IP: {client_ip} | 시각: {ts}"}
+            }
+            requests.post(discord_url, json={"embeds": [embed]}, timeout=5)
+        except Exception as err:
+            print(f"[TELEMETRY_DISCORD_ERR] {err}")
+
+    # 3. Supabase DB Insert (Active if SUPABASE_URL and SUPABASE_KEY are set)
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if supabase_url and supabase_key:
+        try:
+            endpoint = f"{supabase_url.rstrip('/')}/rest/v1/simulation_logs"
+            headers = {
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+            }
+            db_record = {
+                "user_id": user_id,
+                "client_ip": client_ip,
+                "user_agent": user_agent,
+                "user_profile": user_profile,
+                "courses": courses,
+                "simulation_result": sim_result,
+                "created_at": ts,
+            }
+            requests.post(endpoint, json=db_record, headers=headers, timeout=5)
+        except Exception as err:
+            print(f"[TELEMETRY_SUPABASE_ERR] {err}")
+
+
+@app.post("/api/telemetry/log-simulation")
+async def log_simulation(req: TelemetryLogRequest, request: Request, background_tasks: BackgroundTasks):
+    """
+    Receives simulation telemetry, queues background dispatch, and returns immediately.
+    """
+    client_ip = "unknown"
+    if request.headers.get("x-forwarded-for"):
+        client_ip = request.headers.get("x-forwarded-for").split(",")[0].strip()
+    elif request.client and request.client.host:
+        client_ip = request.client.host
+
+    user_agent = request.headers.get("user-agent", "unknown")
+    payload = req.dict()
+
+    background_tasks.add_task(_dispatch_telemetry, payload, client_ip, user_agent)
+    return {"success": True, "message": "Telemetry queued"}
+
+
 # Mount static files for local development
 if os.path.exists("index.html"):
     app.mount("/", StaticFiles(directory=".", html=True), name="static")
+
 
 

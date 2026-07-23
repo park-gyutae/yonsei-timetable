@@ -6362,7 +6362,87 @@ function runMonteCarloRiskSimulation() {
   if (contentEl) {
     contentEl.classList.add('risk-dashboard-active');
   }
+
+  // 7. Dispatch non-blocking telemetry log
+  sendSimulationTelemetry({
+    expected_credits: parseFloat(meanCredits.toFixed(1)),
+    std_credits: parseFloat(stdCredits.toFixed(1)),
+    utility_score: utilityScore,
+    mean_utility: parseFloat(meanUtility.toFixed(2)),
+    var_5pct_credits: parseFloat(var5Pct.toFixed(1)),
+    joint_fail_prob: parseFloat(jointFailProb.toFixed(4)),
+    goal_probabilities: goalProbabilities
+  });
 }
+
+// ─── Telemetry Dispatch Helpers ─────────────────────────────────────────────
+
+function getOrCreateAnonymousUserId() {
+  try {
+    let id = localStorage.getItem('yonsei_timetable_anon_user_id');
+    if (!id) {
+      id = 'usr_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+      localStorage.setItem('yonsei_timetable_anon_user_id', id);
+    }
+    return id;
+  } catch (e) {
+    return 'anon_session';
+  }
+}
+
+function sendSimulationTelemetry(simResults) {
+  try {
+    if (!selectedCourses || selectedCourses.length === 0) return;
+
+    const userId = getOrCreateAnonymousUserId();
+    const coursesData = selectedCourses.map(c => {
+      const bid = c.mileage || 0;
+      let prob = c.prob;
+      if (prob === undefined && typeof getCourseProbability === 'function') {
+        prob = getCourseProbability(c, bid);
+      }
+      return {
+        code: c.code,
+        division: c.division || '01',
+        name: c.title || c.name || c.code,
+        professor: c.professor || '',
+        credits: c.credits || 3,
+        classification: c.classification || '',
+        mileage: bid,
+        prob: prob
+      };
+    });
+
+    const payload = {
+      user_id: userId,
+      user_profile: {
+        first_major: (typeof myProfile !== 'undefined' && myProfile.firstMajor) || 'unknown',
+        second_major: (typeof myProfile !== 'undefined' && myProfile.secondMajor) || 'none',
+        grade: (typeof myProfile !== 'undefined' && myProfile.grade) || '3',
+        is_graduating: (typeof myProfile !== 'undefined' && myProfile.is_graduating) || false,
+        earned_credits: (typeof myProfile !== 'undefined' && myProfile.earnedCredits) || 0,
+        req_credits: (typeof myProfile !== 'undefined' && myProfile.reqCredits) || 0,
+        applied_credits: (typeof myProfile !== 'undefined' && myProfile.applied_credits) || 18,
+        max_mileage_budget: (typeof myProfile !== 'undefined' && myProfile.maxTotalMileage) || 72
+      },
+      courses: coursesData,
+      simulation_result: simResults || {},
+      timestamp: new Date().toISOString()
+    };
+
+    fetch('/api/telemetry/log-simulation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true
+    }).catch(err => {
+      console.warn('[Telemetry] Non-critical send error:', err);
+    });
+  } catch (err) {
+    console.warn('[Telemetry] Error packaging simulation telemetry:', err);
+  }
+}
+
 
 // Asynchronously fetch stats for sibling divisions comparative preview
 async function fetchSiblingStats(code, division) {

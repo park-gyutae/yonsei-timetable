@@ -3604,20 +3604,21 @@ function setupEventListeners() {
 
     // 새 탭 버튼 — 현재 선택된 학기 URL로 열기
     if (extBtn) {
-      extBtn.onclick = null;
-      extBtn.addEventListener('click', function _openExt() {
-        extBtn.removeEventListener('click', _openExt);
+      extBtn.onclick = () => {
         const url = iframe.dataset.currentUrl || currentUrl;
-        window.open(url, '_blank');
-        extBtn.addEventListener('click', _openExt);
-      });
+        if (url && url !== 'about:blank') {
+          window.open(url, '_blank');
+        }
+      };
     }
 
     // 폴백 버튼 — X-Frame-Options 차단 시 표시
     if (fallbackBtn) {
       fallbackBtn.onclick = () => {
         const url = iframe.dataset.currentUrl || currentUrl;
-        window.open(url, '_blank');
+        if (url && url !== 'about:blank') {
+          window.open(url, '_blank');
+        }
       };
     }
 
@@ -3645,7 +3646,7 @@ function setupEventListeners() {
   // 학기 변경 드롭다운
   const semSelect = document.getElementById('select-syllabus-semester');
   if (semSelect) {
-    semSelect.addEventListener('change', (e) => {
+    semSelect.onchange = (e) => {
       const val = e.target.value;
       if (!val || !currentSyllabusCourse || !currentSyllabusCourse.code) return;
       const [year, semester] = val.split('-');
@@ -3662,7 +3663,7 @@ function setupEventListeners() {
         iframe.src = url;
         if (fallback) fallback.style.display = 'none';
       }
-    });
+    };
   }
 
   // ── Syllabus Modal Close ──────────────────────────────────────────────

@@ -3605,16 +3605,9 @@ function setupEventListeners() {
     iframe.dataset.currentUrl = currentUrl;
     iframe.src = currentUrl;
 
-    // 새 탭 버튼 — 현재 선택된 학기 URL로 열기
+    // 새 탭 버튼 — <a> 태그의 href를 직접 업데이트하여 브라우저 네이티브 새 탭 동작
     if (extBtn) {
-      extBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const url = iframe.dataset.currentUrl || currentUrl;
-        if (url && url !== 'about:blank') {
-          window.open(url, '_blank', 'noopener,noreferrer');
-        }
-      };
+      extBtn.href = currentUrl;
     }
 
     modal.classList.add('active');
@@ -3634,9 +3627,14 @@ function setupEventListeners() {
       const [year, semester] = val.split('-');
       const url = generateSyllabusUrl(cCode, cDiv, year, semester);
       const iframe = document.getElementById('syllabus-iframe');
+      const extBtn = document.getElementById('btn-syllabus-external');
+
       if (iframe) {
         iframe.dataset.currentUrl = url;
         iframe.src = url;
+      }
+      if (extBtn) {
+        extBtn.href = url;
       }
     };
     semSelect.onchange = handleSemesterChange;

@@ -6702,24 +6702,8 @@ function renderWishlist() {
   renderCourses(wishlist);
 }
 
-// Open Course Syllabus inside a native browser popup window (avoiding X-Frame-Options sameorigin blocking)
-function openSyllabusModal(course) {
-  const year = course.year || '2026';
-  const semester = course.semester || '20';
-  const paramsObj = {
-    sysinstDivCd: "H1",
-    syy: year,
-    smtDivCd: semester,
-    subjtnb: course.code,
-    corseDvclsNo: course.division
-  };
-  const base64Params = btoa(JSON.stringify(paramsObj));
-  const url = `https://underwood1.yonsei.ac.kr/com/lgin/SsoCtr/initExtPageWork.do?link=sylla&params=${base64Params}`;
 
-  // Open in a standard new browser tab (_blank) instead of custom popup window
-  // This bypasses the popup blockers in Chrome/Safari/iOS completely and never prompts warnings!
-  window.open(url, '_blank');
-}
+
 
 // Open Course Context Action Modal (Floating Course Card Popup)
 function openCourseActionModal(course) {
@@ -6918,7 +6902,7 @@ function openCourseActionModal(course) {
       e.preventDefault();
       e.stopPropagation();
       modal.classList.remove('active');
-      openSyllabusModal(course.title, syllabusUrl);
+      openSyllabusModal(course, syllabusUrl);
     });
   }
 

@@ -1324,6 +1324,19 @@ def _dispatch_telemetry(payload: dict, client_ip: str, user_agent: str):
         except Exception as err:
             print(f"[TELEMETRY_SUPABASE_ERR] {err}")
 
+    # 4. Vercel Storage (KV / Redis) Log (Active when Vercel KV is created in Storage tab)
+    kv_url = os.environ.get("KV_REST_API_URL") or os.environ.get("UPSTASH_REDIS_REST_URL")
+    kv_token = os.environ.get("KV_REST_API_TOKEN") or os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+    if kv_url and kv_token:
+        try:
+            kv_endpoint = f"{kv_url.rstrip('/')}/lpush/simulation_logs"
+            headers = {"Authorization": f"Bearer {kv_token}"}
+            requests.post(kv_endpoint, json=[json.dumps(log_entry, ensure_ascii=False)], headers=headers, timeout=5)
+            print("[TELEMETRY_VERCEL_KV] Successfully logged to Vercel Storage KV")
+        except Exception as err:
+            print(f"[TELEMETRY_VERCEL_KV_ERR] {err}")
+
+
 
 
 

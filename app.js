@@ -3623,9 +3623,7 @@ function setupEventListeners() {
 
     // iframe load — detect X-Frame-Options block (blank page)
     iframe.onload = () => {
-      // If the iframe loads but is empty due to X-Frame-Options, contentDocument is null/cross-origin
       try {
-        // Can access contentDocument only if same-origin; cross-origin blocks will throw
         const doc = iframe.contentDocument;
         if (!doc || doc.body.innerHTML.trim() === '') {
           if (fallback) fallback.style.display = 'flex';
@@ -3633,7 +3631,7 @@ function setupEventListeners() {
           if (fallback) fallback.style.display = 'none';
         }
       } catch (e) {
-        // Cross-origin means it actually loaded (Yonsei portal content) — hide fallback
+        // Cross-origin = page actually loaded → hide fallback
         if (fallback) fallback.style.display = 'none';
       }
     };

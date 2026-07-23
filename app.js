@@ -3570,8 +3570,6 @@ function setupEventListeners() {
     const titleEl  = document.getElementById('syllabus-modal-title');
     const extBtn   = document.getElementById('btn-syllabus-external');
     const semSel   = document.getElementById('select-syllabus-semester');
-    const fallback = document.getElementById('syllabus-iframe-fallback');
-    const fallbackBtn = document.getElementById('btn-syllabus-fallback-open');
 
     if (!modal || !iframe) {
       window.open(syllabusUrl || '#', '_blank');
@@ -3600,9 +3598,6 @@ function setupEventListeners() {
     if (titleEl) titleEl.textContent = `${title} - 강의계획서`;
     if (semSel)  semSel.value = '2026-20';
 
-    // Hide fallback message initially
-    if (fallback) fallback.style.display = 'none';
-
     const currentUrl = (code && division)
       ? generateSyllabusUrl(code, division, '2026', '20')
       : (syllabusUrl || '');
@@ -3613,18 +3608,6 @@ function setupEventListeners() {
     // 새 탭 버튼 — 현재 선택된 학기 URL로 열기
     if (extBtn) {
       extBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const url = iframe.dataset.currentUrl || currentUrl;
-        if (url && url !== 'about:blank') {
-          window.open(url, '_blank', 'noopener,noreferrer');
-        }
-      };
-    }
-
-    // 폴백 버튼 — X-Frame-Options 차단 시 표시
-    if (fallbackBtn) {
-      fallbackBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         const url = iframe.dataset.currentUrl || currentUrl;
@@ -3650,12 +3633,10 @@ function setupEventListeners() {
 
       const [year, semester] = val.split('-');
       const url = generateSyllabusUrl(cCode, cDiv, year, semester);
-      const iframe   = document.getElementById('syllabus-iframe');
-      const fallback = document.getElementById('syllabus-iframe-fallback');
+      const iframe = document.getElementById('syllabus-iframe');
       if (iframe) {
         iframe.dataset.currentUrl = url;
         iframe.src = url;
-        if (fallback) fallback.style.display = 'none';
       }
     };
     semSelect.onchange = handleSemesterChange;

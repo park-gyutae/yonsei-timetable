@@ -972,15 +972,6 @@
 
       <!-- iframe container -->
       <div style="flex: 1; position: relative; overflow: hidden; background: #fff;">
-        <!-- Fallback message shown when iframe is blocked -->
-        <div id="syllabus-iframe-fallback" style="display: none; position: absolute; inset: 0; z-index: 10; background: var(--canvas-base); flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center;">
-          <i data-lucide="lock" style="width: 36px; height: 36px; color: var(--text-muted);"></i>
-          <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">iframe 로드 차단됨</div>
-          <div style="font-size: 12px; color: var(--text-muted); max-width: 320px; line-height: 1.6;">연세대 포털이 외부 iframe 임베딩을 차단하고 있습니다.<br>아래 버튼으로 새 탭에서 확인하세요.</div>
-          <button id="btn-syllabus-fallback-open" style="padding: 10px 20px; background: var(--accent-light); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-            <i data-lucide="external-link" style="width: 14px; height: 14px;"></i> 새 탭에서 강의계획서 열기
-          </button>
-        </div>
         <iframe
           id="syllabus-iframe"
           src="about:blank"

@@ -3592,6 +3592,11 @@ function setupEventListeners() {
       currentSyllabusCourse = { title, code, division };
     }
 
+    if (!code && currentSyllabusCourse && currentSyllabusCourse.code) {
+      code = currentSyllabusCourse.code;
+      division = currentSyllabusCourse.division || '01';
+    }
+
     if (titleEl) titleEl.textContent = `${title} - 강의계획서`;
     if (semSel)  semSel.value = '2026-20';
 
@@ -3602,60 +3607,49 @@ function setupEventListeners() {
       ? generateSyllabusUrl(code, division, '2026', '20')
       : (syllabusUrl || '');
 
+    iframe.dataset.currentUrl = currentUrl;
+    iframe.src = currentUrl;
+
     // 새 탭 버튼 — 현재 선택된 학기 URL로 열기
     if (extBtn) {
-      extBtn.onclick = () => {
+      extBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const url = iframe.dataset.currentUrl || currentUrl;
         if (url && url !== 'about:blank') {
-          window.open(url, '_blank');
+          window.open(url, '_blank', 'noopener,noreferrer');
         }
       };
     }
 
     // 폴백 버튼 — X-Frame-Options 차단 시 표시
     if (fallbackBtn) {
-      fallbackBtn.onclick = () => {
+      fallbackBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const url = iframe.dataset.currentUrl || currentUrl;
         if (url && url !== 'about:blank') {
-          window.open(url, '_blank');
+          window.open(url, '_blank', 'noopener,noreferrer');
         }
       };
     }
 
-    // iframe load — detect X-Frame-Options block (blank page)
-    iframe.onload = () => {
-      try {
-        const doc = iframe.contentDocument;
-        if (!doc || doc.body.innerHTML.trim() === '') {
-          if (fallback) fallback.style.display = 'flex';
-        } else {
-          if (fallback) fallback.style.display = 'none';
-        }
-      } catch (e) {
-        // Cross-origin = page actually loaded → hide fallback
-        if (fallback) fallback.style.display = 'none';
-      }
-    };
-
-    iframe.dataset.currentUrl = currentUrl;
-    iframe.src = currentUrl;
     modal.classList.add('active');
     if (window.lucide) window.lucide.createIcons();
   };
 
-  // 학기 변경 드롭다운
+  // 학기 변경 드롭다운 (글로벌 딜리게이션 및 direct handler 설정)
   const semSelect = document.getElementById('select-syllabus-semester');
   if (semSelect) {
-    semSelect.onchange = (e) => {
+    const handleSemesterChange = (e) => {
       const val = e.target.value;
-      if (!val || !currentSyllabusCourse || !currentSyllabusCourse.code) return;
+      if (!val || !currentSyllabusCourse) return;
+      const cCode = currentSyllabusCourse.code;
+      const cDiv = currentSyllabusCourse.division || '01';
+      if (!cCode) return;
+
       const [year, semester] = val.split('-');
-      const url = generateSyllabusUrl(
-        currentSyllabusCourse.code,
-        currentSyllabusCourse.division || '01',
-        year,
-        semester
-      );
+      const url = generateSyllabusUrl(cCode, cDiv, year, semester);
       const iframe   = document.getElementById('syllabus-iframe');
       const fallback = document.getElementById('syllabus-iframe-fallback');
       if (iframe) {
@@ -3664,6 +3658,8 @@ function setupEventListeners() {
         if (fallback) fallback.style.display = 'none';
       }
     };
+    semSelect.onchange = handleSemesterChange;
+    semSelect.addEventListener('change', handleSemesterChange);
   }
 
   // ── Syllabus Modal Close ──────────────────────────────────────────────

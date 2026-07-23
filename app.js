@@ -3564,105 +3564,123 @@ function setupEventListeners() {
   }
 
   // ── Open Syllabus In-App Popup Modal Function ──────────────────────────
-  const SYLLABUS_SEMESTERS = [
-    { label: '2026 2학기', value: '2026-20', badge: '최신', accent: true },
-    { label: '2026 1학기', value: '2026-10' },
-    { label: '2025 2학기', value: '2025-20' },
-    { label: '2025 1학기', value: '2025-10' },
-    { label: '2024 2학기', value: '2024-20' },
-    { label: '2024 1학기', value: '2024-10' },
-    { label: '2023 2학기', value: '2023-20' },
-    { label: '2023 1학기', value: '2023-10' },
-  ];
-
   window.openSyllabusModal = function(courseOrTitle, syllabusUrl, courseCode, courseDivision) {
-    const modal = document.getElementById('syllabus-modal');
-    if (!modal) {
+    const modal    = document.getElementById('syllabus-modal');
+    const iframe   = document.getElementById('syllabus-iframe');
+    const titleEl  = document.getElementById('syllabus-modal-title');
+    const extBtn   = document.getElementById('btn-syllabus-external');
+    const semSel   = document.getElementById('select-syllabus-semester');
+    const fallback = document.getElementById('syllabus-iframe-fallback');
+    const fallbackBtn = document.getElementById('btn-syllabus-fallback-open');
+
+    if (!modal || !iframe) {
       window.open(syllabusUrl || '#', '_blank');
       return;
     }
 
-    let title = '강의 선택';
-    let code = courseCode || '';
+    let title    = '강의계획서 조회';
+    let code     = courseCode || '';
     let division = courseDivision || '01';
-    let credits = '';
-    let professor = '';
-    let time = '';
 
     if (typeof courseOrTitle === 'object' && courseOrTitle !== null) {
       currentSyllabusCourse = courseOrTitle;
-      title = courseOrTitle.title || courseOrTitle.name || '강의 선택';
-      code = courseOrTitle.code || code;
+      title    = courseOrTitle.title || courseOrTitle.name || title;
+      code     = courseOrTitle.code || code;
       division = courseOrTitle.division || division;
-      credits = courseOrTitle.credits ? `${courseOrTitle.credits}학점` : '';
-      professor = courseOrTitle.professor || '';
-      time = courseOrTitle.time || '';
     } else if (typeof courseOrTitle === 'string') {
       title = courseOrTitle;
       currentSyllabusCourse = { title, code, division };
     }
 
-    // Update title
-    const titleEl = document.getElementById('syllabus-modal-title');
-    if (titleEl) titleEl.textContent = title;
+    if (titleEl) titleEl.textContent = `${title} - 강의계획서`;
+    if (semSel)  semSel.value = '2026-20';
 
-    // Update course info card
-    const infoEl = document.getElementById('syllabus-course-info');
-    if (infoEl) {
-      infoEl.innerHTML = `
-        <div style="font-weight: 700; font-size: 13px; color: var(--text-primary); margin-bottom: 6px;">${title}</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-          ${code ? `<span style="background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">🔢 ${code}-${division}</span>` : ''}
-          ${credits ? `<span style="background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">🎓 ${credits}</span>` : ''}
-          ${professor ? `<span style="background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">👤 ${professor}</span>` : ''}
-          ${time ? `<span style="background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--text-secondary);">🕒 ${time}</span>` : ''}
-        </div>
-      `;
+    // Hide fallback message initially
+    if (fallback) fallback.style.display = 'none';
+
+    const currentUrl = (code && division)
+      ? generateSyllabusUrl(code, division, '2026', '20')
+      : (syllabusUrl || '');
+
+    // 새 탭 버튼 — 현재 선택된 학기 URL로 열기
+    if (extBtn) {
+      extBtn.onclick = null;
+      extBtn.addEventListener('click', function _openExt() {
+        extBtn.removeEventListener('click', _openExt);
+        const url = iframe.dataset.currentUrl || currentUrl;
+        window.open(url, '_blank');
+        extBtn.addEventListener('click', _openExt);
+      });
     }
 
-    // Build semester buttons
-    const btnContainer = document.getElementById('syllabus-semester-btns');
-    if (btnContainer) {
-      btnContainer.innerHTML = SYLLABUS_SEMESTERS.map(sem => {
-        const [year, semester] = sem.value.split('-');
-        const url = (code && division)
-          ? generateSyllabusUrl(code, division, year, semester)
-          : syllabusUrl;
-        const isAccent = sem.accent;
-        return `
-          <button onclick="window.open('${url}', '_blank')" style="
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 12px; border-radius: 10px; cursor: pointer; text-align: left;
-            border: 1px solid ${isAccent ? 'var(--accent-light)' : 'var(--border-color)'};
-            background: ${isAccent ? 'rgba(0,112,243,0.1)' : 'var(--canvas-elevated)'};
-            color: var(--text-primary); font-size: 12px; font-weight: 600;
-            transition: all 0.15s; gap: 6px;
-          " onmouseover="this.style.background='${isAccent ? 'rgba(0,112,243,0.18)' : 'var(--canvas-soft)'}'"
-             onmouseout="this.style.background='${isAccent ? 'rgba(0,112,243,0.1)' : 'var(--canvas-elevated)'}'">
-            <span>${sem.label}</span>
-            <span style="display: flex; align-items: center; gap: 4px;">
-              ${sem.badge ? `<span style="background: var(--accent-light); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 10px;">${sem.badge}</span>` : ''}
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            </span>
-          </button>`;
-      }).join('');
+    // 폴백 버튼 — X-Frame-Options 차단 시 표시
+    if (fallbackBtn) {
+      fallbackBtn.onclick = () => {
+        const url = iframe.dataset.currentUrl || currentUrl;
+        window.open(url, '_blank');
+      };
     }
 
+    // iframe load — detect X-Frame-Options block (blank page)
+    iframe.onload = () => {
+      // If the iframe loads but is empty due to X-Frame-Options, contentDocument is null/cross-origin
+      try {
+        // Can access contentDocument only if same-origin; cross-origin blocks will throw
+        const doc = iframe.contentDocument;
+        if (!doc || doc.body.innerHTML.trim() === '') {
+          if (fallback) fallback.style.display = 'flex';
+        } else {
+          if (fallback) fallback.style.display = 'none';
+        }
+      } catch (e) {
+        // Cross-origin means it actually loaded (Yonsei portal content) — hide fallback
+        if (fallback) fallback.style.display = 'none';
+      }
+    };
+
+    iframe.dataset.currentUrl = currentUrl;
+    iframe.src = currentUrl;
     modal.classList.add('active');
     if (window.lucide) window.lucide.createIcons();
   };
 
-  // ── Syllabus Modal Close Event Binding ──────────────────────────────────
-  const syllabusModal = document.getElementById('syllabus-modal');
+  // 학기 변경 드롭다운
+  const semSelect = document.getElementById('select-syllabus-semester');
+  if (semSelect) {
+    semSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (!val || !currentSyllabusCourse || !currentSyllabusCourse.code) return;
+      const [year, semester] = val.split('-');
+      const url = generateSyllabusUrl(
+        currentSyllabusCourse.code,
+        currentSyllabusCourse.division || '01',
+        year,
+        semester
+      );
+      const iframe   = document.getElementById('syllabus-iframe');
+      const fallback = document.getElementById('syllabus-iframe-fallback');
+      if (iframe) {
+        iframe.dataset.currentUrl = url;
+        iframe.src = url;
+        if (fallback) fallback.style.display = 'none';
+      }
+    });
+  }
+
+  // ── Syllabus Modal Close ──────────────────────────────────────────────
+  const syllabusModal   = document.getElementById('syllabus-modal');
   const btnCloseSyllable = document.getElementById('btn-close-syllabus-modal');
   if (btnCloseSyllable && syllabusModal) {
     btnCloseSyllable.addEventListener('click', () => {
       syllabusModal.classList.remove('active');
+      const iframe = document.getElementById('syllabus-iframe');
+      if (iframe) { iframe.src = 'about:blank'; iframe.dataset.currentUrl = ''; }
     });
-
     syllabusModal.addEventListener('click', (e) => {
       if (e.target === syllabusModal) {
         syllabusModal.classList.remove('active');
+        const iframe = document.getElementById('syllabus-iframe');
+        if (iframe) { iframe.src = 'about:blank'; iframe.dataset.currentUrl = ''; }
       }
     });
   }

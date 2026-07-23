@@ -1314,9 +1314,12 @@ def _dispatch_telemetry(payload: dict, client_ip: str, user_agent: str):
                 "simulation_result": sim_result,
                 "created_at": ts,
             }
-            requests.post(endpoint, json=db_record, headers=headers, timeout=5)
+            res = requests.post(endpoint, json=db_record, headers=headers, timeout=5)
+            if res.status_code >= 400:
+                print(f"[TELEMETRY_SUPABASE_ERR] {res.status_code}: {res.text}")
         except Exception as err:
             print(f"[TELEMETRY_SUPABASE_ERR] {err}")
+
 
 
 @app.post("/api/telemetry/log-simulation")

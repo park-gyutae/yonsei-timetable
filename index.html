@@ -939,37 +939,38 @@
 
   <!-- 4. Course Syllabus Modal -->
   <div class="modal-overlay" id="syllabus-modal">
-    <div class="modal-content" style="max-width: 1000px; width: 95%; height: 90vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-      <div class="modal-header" style="padding: 10px 16px; border-bottom: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; background: var(--canvas-elevated); flex-wrap: wrap; gap: 8px;">
+    <div class="modal-content" style="max-width: 480px; width: 95%; padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid var(--border-color);">
+      <!-- Header -->
+      <div style="padding: 16px 20px 14px; border-bottom: 1px solid var(--hairline); display: flex; justify-content: space-between; align-items: center; background: var(--canvas-elevated);">
         <div style="display: flex; align-items: center; gap: 8px;">
           <i data-lucide="book-open" style="color: var(--accent-light, #0070f3); width: 18px; height: 18px;"></i>
-          <h2 id="syllabus-modal-title" style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0;">강의계획서 조회</h2>
-        </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <!-- Past Semester Select Dropdown -->
-          <div style="display: flex; align-items: center; gap: 4px; background: var(--canvas-soft); padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color);">
-            <i data-lucide="calendar" style="width: 12px; height: 12px; color: var(--text-muted);"></i>
-            <select id="select-syllabus-semester" style="font-size: 11px; font-weight: 600; background: transparent; border: none; color: var(--text-primary); cursor: pointer; outline: none; padding: 1px 2px;">
-              <option value="2026-20" selected>2026학년도 2학기 (최신)</option>
-              <option value="2026-10">2026학년도 1학기</option>
-              <option value="2025-20">2025학년도 2학기</option>
-              <option value="2025-10">2025학년도 1학기</option>
-              <option value="2024-20">2024학년도 2학기</option>
-              <option value="2024-10">2024학년도 1학기</option>
-              <option value="2023-20">2023학년도 2학기</option>
-              <option value="2023-10">2023학년도 1학기</option>
-            </select>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;">강의계획서</div>
+            <h2 id="syllabus-modal-title" style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0; line-height: 1.2;">강의 선택</h2>
           </div>
-          <button id="btn-syllabus-external" title="새 창으로 열기" style="font-size: 11px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; border: 1px solid var(--hairline); cursor: pointer; background: var(--canvas-soft); color: var(--text-secondary); transition: all 0.15s; font-weight: 500;">
-            <i data-lucide="external-link" style="width: 12px; height: 12px;"></i> 새 창
-          </button>
-          <button class="btn-close" id="btn-close-syllabus-modal" style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; display: inline-flex; align-items: center;">
-            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
-          </button>
         </div>
+        <button class="btn-close" id="btn-close-syllabus-modal" style="background: transparent; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; display: inline-flex; align-items: center; border-radius: 6px;">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
       </div>
-      <div class="iframe-mask-container" style="flex: 1; position: relative; overflow: auto; -webkit-overflow-scrolling: touch; background: #ffffff;">
-        <iframe id="syllabus-iframe" class="masked-iframe" src="about:blank" style="width: 100%; height: calc(100% + 72px); margin-top: -72px; border: none; background: #ffffff;"></iframe>
+
+      <!-- Course Info Card -->
+      <div style="padding: 16px 20px; background: var(--canvas-soft);">
+        <div id="syllabus-course-info" style="background: var(--canvas-elevated); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;">과목 정보 로딩 중...</div>
+      </div>
+
+      <!-- Notice -->
+      <div style="padding: 0 20px 8px; display: flex; align-items: flex-start; gap: 6px;">
+        <i data-lucide="info" style="width: 13px; height: 13px; color: var(--accent-light); flex-shrink: 0; margin-top: 2px;"></i>
+        <p style="font-size: 11px; color: var(--text-muted); margin: 0; line-height: 1.5;">연세대학교 포털 로그인 후 강의계획서가 표시됩니다. 학기를 선택해 새 탭에서 확인하세요.</p>
+      </div>
+
+      <!-- Semester Buttons -->
+      <div style="padding: 0 20px 20px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;">학기 선택</div>
+        <div id="syllabus-semester-btns" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <!-- Filled by JS -->
+        </div>
       </div>
     </div>
   </div>

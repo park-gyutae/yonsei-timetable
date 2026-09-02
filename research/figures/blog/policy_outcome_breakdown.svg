@@ -1,0 +1,24 @@
+<svg width="840" height="360" viewBox="0 0 840 360" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+<rect width="840" height="360" fill="#FFFFFF"/>
+<text x="50" y="45" font-size="20" font-weight="700" fill="#0F172A">Primary Basket Policy Outcome Distribution</text>
+<text x="50" y="68" font-size="13" fill="#64748B">Breakdown of realized decision utility outcomes across 886 primary headline baskets.</text>
+<rect x="50" y="110" width="554.5823927765236" height="56" fill="#94A3B8"/>
+<rect x="604.5823927765236" y="110" width="120.27088036117381" height="56" fill="#2563EB"/>
+<rect x="724.8532731376974" y="110" width="65.14672686230247" height="56" fill="#4F46E5"/>
+<rect x="50" y="110" width="740" height="56" rx="6" fill="none" stroke="#CBD5E1" stroke-width="1.5"/>
+<text x="327.2911963882618" y="134" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">Identical Realized Utility (Ties): 74.94%</text>
+<text x="327.2911963882618" y="152" font-size="12" font-weight="500" fill="#F1F5F9" text-anchor="middle">n = 664 / 886 baskets</text>
+<text x="664.7178329571105" y="134" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">C Wins</text>
+<text x="664.7178329571105" y="152" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">16.3% (144)</text>
+<text x="757.4266365688487" y="134" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">B Wins</text>
+<text x="757.4266365688487" y="152" font-size="11" font-weight="600" fill="#FFFFFF" text-anchor="middle">8.8% (78)</text>
+<rect x="50" y="201" width="14" height="14" rx="3" fill="#94A3B8"/>
+<text x="74" y="213" font-size="13" font-weight="700" fill="#1E293B">Identical Utility (Ties)</text>
+<text x="250" y="213" font-size="12" font-weight="500" fill="#64748B">74.94% (n = 664)</text>
+<rect x="50" y="231" width="14" height="14" rx="3" fill="#2563EB"/>
+<text x="74" y="243" font-size="13" font-weight="700" fill="#1E293B">Policy C Wins</text>
+<text x="250" y="243" font-size="12" font-weight="500" fill="#64748B">16.25% (n = 144)</text>
+<rect x="50" y="261" width="14" height="14" rx="3" fill="#4F46E5"/>
+<text x="74" y="273" font-size="13" font-weight="700" fill="#1E293B">Policy B Wins</text>
+<text x="250" y="273" font-size="12" font-weight="500" fill="#64748B">8.80% (n = 78)</text>
+</svg>

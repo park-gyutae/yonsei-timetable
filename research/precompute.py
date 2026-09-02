@@ -23,11 +23,14 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
+import lightgbm as lgb
 
-DB_PATH   = Path(__file__).parent / "mileage_history.db"
-OUT_PATH  = Path(__file__).parent / "precomputed_curves.json"
+DB_PATH   = Path(__file__).parent.parent / "mileage_history.db"
+OUT_PATH  = Path(__file__).parent.parent / "precomputed_curves.json"
 FEAT_PATH = Path(__file__).parent / "selected_features_dual.json"
-ENGINE_PATH = Path(__file__).parent.parent / "yonsei_mileage_engine"
+ENGINE_PATH = Path(__file__).parent.parent.parent / "yonsei_mileage_engine"
+if not ENGINE_PATH.exists():
+    ENGINE_PATH = Path(__file__).parent.parent / "yonsei_mileage_engine"
 
 # 엔진 경로 추가
 sys.path.insert(0, str(ENGINE_PATH))
@@ -616,23 +619,57 @@ def precompute(use_lgbm: bool = True, out_path: Path = OUT_PATH) -> None:
     logger.info("  전공자 학습 데이터: %d 샘플 (피처 차원: %d)", len(y_maj), X_maj.shape[1])
     logger.info("  비전공자 학습 데이터: %d 샘플 (피처 차원: %d)", len(y_non), X_non.shape[1])
 
-    # 듀얼 LightGBM 모델 학습
+    # 듀얼 LightGBM 모델 학습 (Native lgb.train 사용)
     maj_predictor = None
     non_predictor = None
     if use_lgbm and len(y_maj) >= 30:
         try:
-            from models.cut_predictor import CutoffPredictor
+            class NativeLightGBMCutoffPredictor:
+                def __init__(self):
+                    self.models = {}
+
+                def fit(self, X: np.ndarray, y: np.ndarray):
+                    for alpha in [0.10, 0.50, 0.90]:
+                        params = {
+                            "objective": "quantile",
+                            "alpha": alpha,
+                            "learning_rate": 0.05,
+                            "num_leaves": 31,
+                            "min_child_samples": 20,
+                            "random_state": 42,
+                            "verbose": -1,
+                        }
+                        ds = lgb.Dataset(X, label=y)
+                        self.models[f"q{int(alpha*100):02d}"] = lgb.train(params, ds, num_boost_round=100)
+
+                    params_mean = {
+                        "objective": "regression",
+                        "learning_rate": 0.05,
+                        "num_leaves": 31,
+                        "min_child_samples": 20,
+                        "random_state": 42,
+                        "verbose": -1,
+                    }
+                    ds = lgb.Dataset(X, label=y)
+                    self.models["mean"] = lgb.train(params_mean, ds, num_boost_round=100)
+                    return self
+
+                def predict_cutoff(self, X: np.ndarray):
+                    q10 = float(self.models["q10"].predict(X)[0])
+                    median = float(self.models["q50"].predict(X)[0])
+                    q90 = float(self.models["q90"].predict(X)[0])
+                    mean = float(self.models["mean"].predict(X)[0])
+                    return type("CutoffResult", (), {"q10": q10, "median": median, "q90": q90, "mean": mean})()
+
             logger.info("  [1/2] 전공자 LightGBM 모델 훈련 시작…")
-            maj_predictor = CutoffPredictor(use_lightgbm=True)
-            maj_predictor.fit(X_maj, y_maj)
-            
+            maj_predictor = NativeLightGBMCutoffPredictor().fit(X_maj, y_maj)
+
             logger.info("  [2/2] 비전공자 LightGBM 모델 훈련 시작…")
-            non_predictor = CutoffPredictor(use_lightgbm=True)
-            non_predictor.fit(X_non, y_non)
-            
-            logger.info("  듀얼 LightGBM 학습 완료 (최적 HPO 파라미터 및 교호작용 적용).")
-        except ImportError as e:
-            logger.warning("  LightGBM 임포트 실패. Baseline fallback 사용. %s", e)
+            non_predictor = NativeLightGBMCutoffPredictor().fit(X_non, y_non)
+
+            logger.info("  듀얼 LightGBM 학습 완료 (Native LightGBM Quantile API 적용).")
+        except Exception as e:
+            logger.warning("  LightGBM 임포트/훈련 실패. Baseline fallback 사용. %s", e)
             maj_predictor = None
             non_predictor = None
 
@@ -652,6 +689,9 @@ def precompute(use_lgbm: bool = True, out_path: Path = OUT_PATH) -> None:
 
     done = 0
     cold_start = 0
+    successful_model_preds = 0
+    fallback_count = 0
+    fallback_reasons = {"prediction_exception": 0, "predictor_none": 0}
 
     for r in all_courses:
         course_code, division, credits, time_slot, classification, dept, title = r
@@ -748,17 +788,30 @@ def precompute(use_lgbm: bool = True, out_path: Path = OUT_PATH) -> None:
                     if predictor_g is not None:
                         X_inf = np.array([[feat_dict[f] for f in selected_g_feats]], dtype=np.float32)
                         try:
-                            preds = predictor_g.predict_quantiles(X_inf)
-                            q10_p = float(preds["q10"][0])
-                            median_p = float(preds["median"][0])
-                            q90_p = float(preds["q90"][0])
-                            
+                            if hasattr(predictor_g, "predict_cutoff"):
+                                res = predictor_g.predict_cutoff(X_inf)
+                                q10_p, median_p, q90_p = float(res.q10), float(res.median), float(res.q90)
+                            elif hasattr(predictor_g, "predict_quantiles"):
+                                preds = predictor_g.predict_quantiles(X_inf)
+                                q10_p, median_p, q90_p = float(preds["q10"][0]), float(preds["median"][0]), float(preds["q90"][0])
+                            else:
+                                raise AttributeError("Predictor missing prediction interface")
                             q10_p = min(q10_p, median_p)
                             q90_p = max(q90_p, median_p)
-                        except Exception:
+                            successful_model_preds += 1
+                        except Exception as err:
+                            fallback_count += 1
+                            fallback_reasons["prediction_exception"] += 1
+                            logger.warning("Predictor fallback for %s grade %d: %s", key, g, err)
                             q10_p, median_p, q90_p = s.q10, s.median_cutoff, s.q90
                     else:
+                        fallback_count += 1
+                        fallback_reasons["predictor_none"] += 1
                         q10_p, median_p, q90_p = s.q10, s.median_cutoff, s.q90
+                        
+                    # Enforce quantile ordering strictly (Q10 <= Med <= Q90)
+                    q10_p = min(q10_p, median_p)
+                    q90_p = max(q90_p, median_p)
                         
                     p_under = float(feat_dict.get("feat_36_hist_under_enroll_rate", 0.0))
                     # Generate curve for this specific grade & major group
@@ -844,18 +897,29 @@ def precompute(use_lgbm: bool = True, out_path: Path = OUT_PATH) -> None:
                     if predictor_g is not None:
                         X_inf = np.array([[feat_dict[f] for f in selected_g_feats]], dtype=np.float32)
                         try:
-                            preds = predictor_g.predict_quantiles(X_inf)
-                            q10_p = float(preds["q10"][0])
-                            median_p = float(preds["median"][0])
-                            q90_p = float(preds["q90"][0])
-                            q10_p = min(q10_p, median_p)
-                            q90_p = max(q90_p, median_p)
-                        except Exception:
+                            if hasattr(predictor_g, "predict_cutoff"):
+                                res = predictor_g.predict_cutoff(X_inf)
+                                q10_p, median_p, q90_p = float(res.q10), float(res.median), float(res.q90)
+                            elif hasattr(predictor_g, "predict_quantiles"):
+                                preds = predictor_g.predict_quantiles(X_inf)
+                                q10_p, median_p, q90_p = float(preds["q10"][0]), float(preds["median"][0]), float(preds["q90"][0])
+                            else:
+                                raise AttributeError("Predictor missing prediction interface")
+                            successful_model_preds += 1
+                        except Exception as err:
+                            fallback_count += 1
+                            fallback_reasons["prediction_exception"] += 1
                             prior = dept_priors.get(prefix, dept_priors.get("ALL", {"median": 15.0, "q10": 8.0, "q90": 25.0}))
                             q10_p, median_p, q90_p = prior["q10"], prior["median"], prior["q90"]
                     else:
+                        fallback_count += 1
+                        fallback_reasons["predictor_none"] += 1
                         prior = dept_priors.get(prefix, dept_priors.get("ALL", {"median": 15.0, "q10": 8.0, "q90": 25.0}))
                         q10_p, median_p, q90_p = prior["q10"], prior["median"], prior["q90"]
+
+                    # Enforce quantile ordering strictly (Q10 <= Med <= Q90)
+                    q10_p = min(q10_p, median_p)
+                    q90_p = max(q90_p, median_p)
                         
                     curve = logistic_prob_curve(median_p, q10_p, q90_p, max_al, p_under)
                     curve_dest[f"grade_{g}"] = {
@@ -880,8 +944,13 @@ def precompute(use_lgbm: bool = True, out_path: Path = OUT_PATH) -> None:
             "generated_at": datetime.now().isoformat(),
             "total_sections": len(curves_out),
             "cold_start_sections": cold_start,
+            "total_quantile_predictions": successful_model_preds + fallback_count,
+            "successful_model_predictions": successful_model_preds,
+            "fallback_count": fallback_count,
+            "fallback_pct": round((fallback_count / max(successful_model_preds + fallback_count, 1)) * 100.0, 2),
+            "fallback_reasons": fallback_reasons,
             "model": "lgbm_quantile_dual_grade" if maj_predictor else "logistic_fallback",
-            "engine_version": "1.4 (Dual-Model Grade-Specific Pipeline)",
+            "engine_version": "1.5 (Post-Hoc Engineering Fix Pipeline)",
         },
         "curves": curves_out,
     }

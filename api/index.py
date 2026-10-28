@@ -82,20 +82,23 @@ def _cache_path(key: str) -> str:
 def cache_get(key: str, ttl_type: str = "courses"):
     """디스크 캐시에서 값을 읽습니다. TTL이 지났으면 None 반환."""
     path = _cache_path(key)
+    is_bundled = False
     # 캐시 파일이 /tmp에 없고 프로젝트 내장 캐시(git에 올려진 캐시)에 존재할 때, 내장 캐시 파일 경로를 바라봅니다.
     if not os.path.exists(path):
         safe = key.replace("/", "_").replace(":", "_").replace("?", "_").replace("&", "_").replace("=", "_").replace(" ", "_")
         fallback_path = os.path.join(_PROJECT_CACHE_DIR, f"{safe}.json")
         if os.path.exists(fallback_path):
             path = fallback_path
+            is_bundled = True
         else:
             return None
     try:
         with open(path, "r", encoding="utf-8") as f:
             entry = json.load(f)
-        age = time.time() - entry.get("ts", 0)
-        if age > TTL.get(ttl_type, 3600):
-            return None   # 만료
+        if not is_bundled:
+            age = time.time() - entry.get("ts", 0)
+            if age > TTL.get(ttl_type, 3600):
+                return None   # 만료
         return entry.get("data")
     except Exception:
         return None
